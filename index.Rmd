@@ -1,29 +1,23 @@
 ---
-title: "Modelling Anemonefish and Sea Anemone Hosts"
-output: html_document
-date: "2025-03-21"
+pagetitle: "index.html"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+# Title
 
-## R Markdown
+This is the home page for a template website you can build yourself.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+## More info
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+This is a regular R Markdown document. 
+Put anything you like here, including R code.
 
-```{r cars}
-summary(cars)
-```
+## About the YAML header
 
-## Including Plots
+Note that the YAML header is pretty minimal--just a title.
 
-You can also embed plots, for example:
+## Rendering the site
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+1. Run `rmarkdown::render_site()` from the same directory as the `_site.yml` file.
+2. View the output in the directory your YAML file specifies in `output_dir`.
+The template says: `output_dir: "docs"` so look in `docs/`.
+3. Open the `index.html` file in your browser to view your handywork.

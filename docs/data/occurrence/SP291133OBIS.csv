@@ -1,0 +1,24 @@
+scientificName,decimalLongitude,decimalLatitude,date_year,month,day,eventDate,dataset_id,bathymetry,occurrenceStatus,sst,source
+Stichodactyla gigantea,145.45399,-14.7045,2016,NA,NA,2016-01-05 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,10.5,present,26.45,obis.org
+Stichodactyla gigantea,158.013175,-8.499125,2006,8,21,2006-08-21,7cab72d0-12e0-46ac-823a-786cdb3ade40,2,present,29.46,obis.org
+Stichodactyla gigantea,158.0080835,-8.5006415,2006,8,21,2006-08-21,7cab72d0-12e0-46ac-823a-786cdb3ade40,-29,present,29.43,obis.org
+Stichodactyla gigantea,145.506,-14.7428,2012,NA,NA,2012-12-30 00:12:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.02,present,26.6,obis.org
+Stichodactyla gigantea,132.7219444444,-5.5972222222,1977,10,24,1977-10-24,aa16d305-d413-4c4a-90be-b1ec3298d58d,7,NA,28.15,obis.org
+Stichodactyla gigantea,168.427426,-17.517943,2003,8,2,2003-08-02,f1954032-72b9-4616-ac0a-af3ef21b16ef,4,present,27.38,obis.org
+Stichodactyla gigantea,145.45399,-14.7045,2015,NA,NA,2015-03-08 00:03:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,10.5,present,26.45,obis.org
+Stichodactyla gigantea,120.0018333333,8.9345,1995,4,20,1995-04-20,aa16d305-d413-4c4a-90be-b1ec3298d58d,9,NA,28.95,obis.org
+Stichodactyla gigantea,158.0105165,-8.4997415,2006,8,21,2006-08-21,7cab72d0-12e0-46ac-823a-786cdb3ade40,2,present,29.46,obis.org
+Stichodactyla gigantea,145.446,-14.6764,2009,NA,NA,2009-04-14 23:04:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,1.87,present,26.45,obis.org
+Stichodactyla gigantea,160.041933,-8.96485,2006,6,17,2006-06-17,7cab72d0-12e0-46ac-823a-786cdb3ade40,-4,present,29.38,obis.org
+Stichodactyla gigantea,145.45399,-14.7044,2014,NA,NA,2014-01-21 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,10.5,present,26.45,obis.org
+Stichodactyla gigantea,145.459,-14.6731,2014,NA,NA,2014-01-10 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,-25.05,present,26.45,obis.org
+Stichodactyla gigantea,78.8867,8.9532,2006,NA,NA,2002/2011,1820a42f-39b2-45e5-a935-6edcb6891eec,66,present,28.69,obis.org
+Stichodactyla gigantea,123.4667,-16.1666,1991,NA,NA,1991-08-24T14:00:00Z,0a6c216b-0abe-44d2-a45c-43d9611e2a03,12,present,28.3,obis.org
+Stichodactyla gigantea,145.44901,-14.6832,2015,NA,NA,2015-07-10 23:07:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.29,present,26.45,obis.org
+Stichodactyla gigantea,118.8211666667,9.8795,1995,4,18,1995-04-18,aa16d305-d413-4c4a-90be-b1ec3298d58d,23,NA,28.91,obis.org
+Stichodactyla gigantea,158.0185665,-8.463875,2006,8,21,2006-08-21,7cab72d0-12e0-46ac-823a-786cdb3ade40,588,present,29.46,obis.org
+Stichodactyla gigantea,160.0480915,-8.9620835,2006,6,15,2006-06-15,7cab72d0-12e0-46ac-823a-786cdb3ade40,-4,present,29.38,obis.org
+Stichodactyla gigantea,48.2333297729,-13.4083299637,1964,2,15,1964-02-15T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,4,NA,28.11,obis.org
+Stichodactyla gigantea,145.25101,-14.6561,2014,NA,NA,2014-01-04 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,-6,present,26.36,obis.org
+Stichodactyla gigantea,145.44901,-14.683,2016,NA,NA,2016-03-12 00:03:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.63,present,26.45,obis.org
+Stichodactyla gigantea,132.7219444444,-5.5972222222,1977,10,24,1977-10-24,aa16d305-d413-4c4a-90be-b1ec3298d58d,7,NA,28.15,obis.org

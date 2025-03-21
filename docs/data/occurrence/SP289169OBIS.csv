@@ -1,0 +1,37 @@
+scientificName,decimalLongitude,decimalLatitude,date_year,month,day,eventDate,dataset_id,bathymetry,occurrenceStatus,sst,source
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,123.291671753,9.30500030518,1979,5,12,1979-05-12T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,-18,NA,28.45,obis.org
+Cryptodendrum adhaesivum,162.367004395,11.3999996185,2008,NA,NA,2008-07-16T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,-3,NA,28.54,obis.org
+Cryptodendrum adhaesivum,-139.11865,-9.8368167,2011,NA,NA,2011-12-08,c5687a17-e454-40f9-9a4b-d04b2c812d74,-11,NA,27.77,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,168,-29.083,1980,NA,NA,1980-04-16,517ac935-af0f-4358-88fb-7093015182af,50,present,21.2,obis.org
+Cryptodendrum adhaesivum,145.465,-14.6874,2014,NA,NA,2014-11-09 00:11:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,13.66,present,26.45,obis.org
+Cryptodendrum adhaesivum,145.444,-14.6872,2015,NA,NA,2015-06-19 23:06:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,5.23,present,26.45,obis.org
+Cryptodendrum adhaesivum,73.5188888889,4.1938888889,1964,11,7,1964-11-07,aa16d305-d413-4c4a-90be-b1ec3298d58d,44,NA,28.98,obis.org
+Cryptodendrum adhaesivum,123.674,9.5099,2011,9,5,2011-09-05T11:15:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,294,present,28.52,obis.org
+Cryptodendrum adhaesivum,145.451,-14.6841,2016,NA,NA,2016-10-03 00:10:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.59,present,26.45,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,122.98484,-12.26233,1986,NA,NA,1986-09-11T14:00:00Z,0a6c216b-0abe-44d2-a45c-43d9611e2a03,8,present,28.66,obis.org
+Cryptodendrum adhaesivum,149.4458333333,-4.6985,1992,11,21,1992-11-21,aa16d305-d413-4c4a-90be-b1ec3298d58d,-22,NA,29.72,obis.org
+Cryptodendrum adhaesivum,122.98484,-12.26233,1986,NA,NA,1986-09-12,4de38683-84d2-4ee5-b45c-582b31c51c18,8,present,28.66,obis.org
+Cryptodendrum adhaesivum,168,-29.083,1980,NA,NA,1980-04-16,517ac935-af0f-4358-88fb-7093015182af,50,present,21.2,obis.org
+Cryptodendrum adhaesivum,78.8867,8.9532,2006,NA,NA,2002/2011,1820a42f-39b2-45e5-a935-6edcb6891eec,66,present,28.69,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,132.17799,-11.245,1985,NA,NA,1985-09-10 23:09:00,e00e2de4-7e7a-4fae-a1da-d3b49aefbf08,1,present,28.23,obis.org
+Cryptodendrum adhaesivum,41.6134,16.835,2014,NA,NA,2014-10-25,c5687a17-e454-40f9-9a4b-d04b2c812d74,-2,NA,29.76,obis.org
+Cryptodendrum adhaesivum,145.451,-14.6517,2012,NA,NA,2012-05-11 23:05:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,1.49,present,26.52,obis.org
+Cryptodendrum adhaesivum,-162.346298218,6.39470005035,2010,4,17,2010-04-17T12:00:00Z,518c8422-0a94-4926-9e7a-42aaf70002f4,31,NA,28.06,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,123.2916718,9.305000305,1979,5,12,1979-05-12,6c813a6c-86f7-4d45-beb5-33eebd8de938,-18,present,28.45,obis.org
+Cryptodendrum adhaesivum,145.66299,-14.6645,2017,NA,NA,2017-01-05 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.51,present,26.66,obis.org
+Cryptodendrum adhaesivum,-162.3462982,6.39470005,2010,4,17,2010-04-17,6c813a6c-86f7-4d45-beb5-33eebd8de938,31,present,28.06,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.45,-14.6569,2017,NA,NA,2017-02-25 00:02:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,11.56,present,26.52,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.85093689,17.3058300018,2007,6,8,2007-06-08T12:00:00Z,da77ef95-bff6-43f9-8af8-2a1dfa400ba8,86,NA,28.73,obis.org
+Cryptodendrum adhaesivum,145.45799,-14.6469,2016,NA,NA,2016-09-30 23:09:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,14,present,26.52,obis.org

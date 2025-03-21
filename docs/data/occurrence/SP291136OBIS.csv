@@ -1,0 +1,20 @@
+scientificName,decimalLongitude,decimalLatitude,date_year,month,day,eventDate,dataset_id,bathymetry,occurrenceStatus,sst,source
+Stichodactyla mertensii,145.479,-14.6717,2013,NA,NA,2013-04-20 23:04:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,14.45,present,26.45,obis.org
+Stichodactyla mertensii,145.466,-14.6924,2007,NA,NA,2007-11-01 00:11:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.06,present,26.45,obis.org
+Stichodactyla mertensii,122.98484,-12.26233,1986,NA,NA,1986-09-12,4de38683-84d2-4ee5-b45c-582b31c51c18,8,present,28.66,obis.org
+Stichodactyla mertensii,145.502,-14.4753,2012,NA,NA,2012-01-07 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,34.51,present,26.78,obis.org
+Stichodactyla mertensii,78.8867,8.9532,2006,NA,NA,2002/2011,1820a42f-39b2-45e5-a935-6edcb6891eec,66,present,28.69,obis.org
+Stichodactyla mertensii,145.438,-14.6814,2013,NA,NA,2013-01-12 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,3.46,present,26.45,obis.org
+Stichodactyla mertensii,149.3899994,-20.78300095,1987,10,12,1987-10-12,6c813a6c-86f7-4d45-beb5-33eebd8de938,7.51,present,24.82,obis.org
+Stichodactyla mertensii,103.268,5.20909,2013,9,13,2013-09-13T00:53:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,-11,present,29,obis.org
+Stichodactyla mertensii,73.553,4.25343,2007,4,11,2007-04-11T09:17:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,68,present,28.97,obis.org
+Stichodactyla mertensii,122.98484,-12.26233,1986,NA,NA,1986-09-11T14:00:00Z,0a6c216b-0abe-44d2-a45c-43d9611e2a03,8,present,28.66,obis.org
+Stichodactyla mertensii,145.451,-14.6636,2017,NA,NA,2017-07-29 23:07:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,1.98,present,26.52,obis.org
+Stichodactyla mertensii,145.465,-14.6873,2014,NA,NA,2014-01-11 00:01:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,13.66,present,26.45,obis.org
+Stichodactyla mertensii,73.5055555556,4.1805555556,1964,11,5,1964-11-05,aa16d305-d413-4c4a-90be-b1ec3298d58d,-2,NA,28.98,obis.org
+Stichodactyla mertensii,145.444,-14.686,2012,NA,NA,2012-03-31 00:03:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,3.16,present,26.45,obis.org
+Stichodactyla mertensii,149.39,-20.78333,1987,NA,NA,1987-10-12,6078be2d-e1af-47b3-bd70-3956dd95f664,-6.9,present,24.82,obis.org
+Stichodactyla mertensii,104.155,2.825,2004,NA,NA,2004,04e3fd32-b08b-4806-a016-d2dff52ae55a,3,present,28.87,obis.org
+Stichodactyla mertensii,120.94763,13.6305,2014,5,4,2014-05-04,aa16d305-d413-4c4a-90be-b1ec3298d58d,-1,NA,28.22,obis.org
+Stichodactyla mertensii,149.39,-20.783,1987,10,NA,1987-10-12T12:00:00Z,987a35d0-a3f3-4050-b8c4-de99b01d8eb6,7.51,present,24.82,obis.org
+Stichodactyla mertensii,145.44901,-14.683,2016,NA,NA,2016-03-12 00:03:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,2.63,present,26.45,obis.org

@@ -1,0 +1,12 @@
+scientificName,decimalLongitude,decimalLatitude,date_year,month,day,eventDate,dataset_id,bathymetry,occurrenceStatus,sst,source
+Radianthus doreensis,123.07526,-12.19208,1986,NA,NA,1986-09-15,4de38683-84d2-4ee5-b45c-582b31c51c18,4,present,28.63,obis.org
+Radianthus doreensis,123.07526,-12.19208,1986,NA,NA,1986-09-14T14:00:00Z,0a6c216b-0abe-44d2-a45c-43d9611e2a03,4,present,28.63,obis.org
+Radianthus doreensis,145.465,-14.6876,2016,NA,NA,2016-06-04 23:06:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,13.66,present,26.45,obis.org
+Radianthus doreensis,145.465,-14.6876,2013,NA,NA,2013-08-12 23:08:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,13.66,present,26.45,obis.org
+Radianthus doreensis,145.468,-14.6892,2013,NA,NA,2013-11-17 00:11:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,3.32,present,26.45,obis.org
+Radianthus doreensis,122.1333,-17.4833,1988,NA,NA,1988-04-03T14:00:00Z,0a6c216b-0abe-44d2-a45c-43d9611e2a03,4,present,27.68,obis.org
+Radianthus doreensis,120.60553,13.90801,2014,5,9,2014-05-09,aa16d305-d413-4c4a-90be-b1ec3298d58d,10,NA,28.3,obis.org
+Radianthus doreensis,78.8867,8.9532,2006,NA,NA,2002/2011,1820a42f-39b2-45e5-a935-6edcb6891eec,66,present,28.69,obis.org
+Radianthus doreensis,153.4,-27.49166,2005,NA,NA,2005-02-10,6078be2d-e1af-47b3-bd70-3956dd95f664,2.26,present,23.12,obis.org
+Radianthus doreensis,153.4,-27.5,1961,NA,NA,1961-08-08,517ac935-af0f-4358-88fb-7093015182af,-6.2,present,23.14,obis.org
+Radianthus doreensis,145.466,-14.6879,2015,NA,NA,2015-10-17 00:10:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,18.5,present,26.45,obis.org

@@ -1,0 +1,44 @@
+scientificName,decimalLongitude,decimalLatitude,date_year,month,day,eventDate,dataset_id,bathymetry,occurrenceStatus,sst,source
+Stichodactyla haddoni,159.0459,-31.52069,2022,NA,NA,2022-12-12,9a432a37-d1ec-4f9e-99ed-02168af5c7ee,-9,present,21.58,obis.org
+Stichodactyla haddoni,57.79168,23.78195,2022,NA,NA,2022-01-31,c5687a17-e454-40f9-9a4b-d04b2c812d74,3,NA,28.28,obis.org
+Stichodactyla haddoni,46.2066688538,-9.3983297348,1967,8,25,1967-08-25T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,-4,NA,27.13,obis.org
+Stichodactyla haddoni,48.3333282471,-13.2749996185,1964,2,1,1964-02-01T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,-1,NA,28.13,obis.org
+Stichodactyla haddoni,153.4669952,-26.96199989,1988,2,24,1988-02-24,6c813a6c-86f7-4d45-beb5-33eebd8de938,17.68,present,23.42,obis.org
+Stichodactyla haddoni,122.975,-12.225,1986,NA,NA,1986-07-29 23:07:00,e00e2de4-7e7a-4fae-a1da-d3b49aefbf08,8,present,28.64,obis.org
+Stichodactyla haddoni,153.46667,-26.96166,1988,NA,NA,1988-02-24,6078be2d-e1af-47b3-bd70-3956dd95f664,17.48,present,23.42,obis.org
+Stichodactyla haddoni,128.0703514,26.534194,2008,NA,NA,2008-07-20,61a0fac8-6bba-4c30-986b-248bc12da62c,9,Present,24.95,obis.org
+Stichodactyla haddoni,120.96561,13.62801,2014,5,4,2014-05-04,aa16d305-d413-4c4a-90be-b1ec3298d58d,47,NA,28.22,obis.org
+Stichodactyla haddoni,48.3375015259,-13.5500001907,1963,12,30,1963-12-30T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,-171,NA,28.19,obis.org
+Stichodactyla haddoni,158.3333333333,-27.6666666667,1964,10,30,1964-10-30,aa16d305-d413-4c4a-90be-b1ec3298d58d,2783.83,NA,22.86,obis.org
+Stichodactyla haddoni,56.351,25.6031,2012,9,29,2012-09-29T12:46:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,137,present,28.36,obis.org
+Stichodactyla haddoni,159.0457,-31.52069,2022,NA,NA,2022-12-12,9a432a37-d1ec-4f9e-99ed-02168af5c7ee,-9,present,21.58,obis.org
+Stichodactyla haddoni,34.0821,26.7589,2011,10,11,2011-10-11T10:09:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,230,present,25.66,obis.org
+Stichodactyla haddoni,54.69228,16.96453,2022,NA,NA,2022-01-10,c5687a17-e454-40f9-9a4b-d04b2c812d74,34,NA,26.41,obis.org
+Stichodactyla haddoni,120.61,13.93,2014,NA,NA,2014-05-17,c5687a17-e454-40f9-9a4b-d04b2c812d74,5,NA,28.36,obis.org
+Stichodactyla haddoni,79.18333333,9.233333333,2012,NA,NA,2012-01-01/2012-04-30,a4257cff-3c2c-4a60-ab29-91f65545bb08,2,present,28.88,obis.org
+Stichodactyla haddoni,56.4151,26.3759,2012,8,18,2012-08-18T13:08:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,-12,present,27.72,obis.org
+Stichodactyla haddoni,159.06604,-31.53945,2022,NA,NA,2022-12-12,9a432a37-d1ec-4f9e-99ed-02168af5c7ee,548,present,21.58,obis.org
+Stichodactyla haddoni,153.25,-27.5,2003,NA,NA,2003-04-15,6078be2d-e1af-47b3-bd70-3956dd95f664,-8.4,present,23.06,obis.org
+Stichodactyla haddoni,146.77,-19.18666,2005,NA,NA,2005-09-15,6078be2d-e1af-47b3-bd70-3956dd95f664,14.41,present,25.52,obis.org
+Stichodactyla haddoni,78.8867,8.9532,2006,NA,NA,2002/2011,1820a42f-39b2-45e5-a935-6edcb6891eec,66,present,28.69,obis.org
+Stichodactyla haddoni,56.4599,26.3716,2012,8,18,2012-08-18T11:50:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,-34,present,27.91,obis.org
+Stichodactyla haddoni,56.351,25.6031,2013,6,16,2013-06-16T12:35:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,137,present,28.36,obis.org
+Stichodactyla haddoni,159.0459,-31.52069,2022,NA,NA,2022-12-12,9a432a37-d1ec-4f9e-99ed-02168af5c7ee,-9,present,21.58,obis.org
+Stichodactyla haddoni,153.467,-26.962,1988,2,NA,1988-02-24T12:00:00Z,987a35d0-a3f3-4050-b8c4-de99b01d8eb6,17.68,present,23.42,obis.org
+Stichodactyla haddoni,59.20166,22.9503,2020,NA,NA,2020-01-28,c5687a17-e454-40f9-9a4b-d04b2c812d74,2,NA,27.81,obis.org
+Stichodactyla haddoni,122.975,-12.225,1986,NA,NA,1986-07-28 23:07:00,e00e2de4-7e7a-4fae-a1da-d3b49aefbf08,8,present,28.64,obis.org
+Stichodactyla haddoni,159.06604,-31.53975,2022,NA,NA,2022-12-12,9a432a37-d1ec-4f9e-99ed-02168af5c7ee,548,present,21.58,obis.org
+Stichodactyla haddoni,60.82,25.22,2013,NA,NA,2013,dee5dc22-095b-4669-bbc4-8fc67ad2648b,13,presence,27.29,obis.org
+Stichodactyla haddoni,122.975,-12.225,1986,NA,NA,1986-07-28 23:07:00,e00e2de4-7e7a-4fae-a1da-d3b49aefbf08,8,present,28.64,obis.org
+Stichodactyla haddoni,122.975,-12.2175,1986,NA,NA,1986-07-22 23:07:00,e00e2de4-7e7a-4fae-a1da-d3b49aefbf08,24,present,28.64,obis.org
+Stichodactyla haddoni,153.4,-27.5,1951,NA,NA,1951-08-21,6078be2d-e1af-47b3-bd70-3956dd95f664,-6.2,present,23.14,obis.org
+Stichodactyla haddoni,148.261,-19.9791,2013,6,10,2013-06-10T21:30:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,1.48,present,25.28,obis.org
+Stichodactyla haddoni,58.75833,23.51389,2020,NA,NA,2020-01-18,c5687a17-e454-40f9-9a4b-d04b2c812d74,-20,NA,28.05,obis.org
+Stichodactyla haddoni,153.26667,-27.51667,2000,NA,NA,2000-07-31,6078be2d-e1af-47b3-bd70-3956dd95f664,-0.14,present,23.06,obis.org
+Stichodactyla haddoni,56.3661,25.4824,2012,9,29,2012-09-29T15:29:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,-16,present,28.46,obis.org
+Stichodactyla haddoni,159.0451,-31.52069,2022,NA,NA,2022-12-12,9a432a37-d1ec-4f9e-99ed-02168af5c7ee,-9,present,21.58,obis.org
+Stichodactyla haddoni,153.4,-27.5,2000,NA,NA,2000-09-23,6078be2d-e1af-47b3-bd70-3956dd95f664,-6.2,present,23.14,obis.org
+Stichodactyla haddoni,145.44299,-14.6604,2014,NA,NA,2014-11-30 00:11:00,0e4e4700-5e70-48b1-b100-d6b05888dfa9,12.3,present,26.52,obis.org
+Stichodactyla haddoni,38.948,22.2010667,2012,NA,NA,2012-10-09,c5687a17-e454-40f9-9a4b-d04b2c812d74,21,NA,28.55,obis.org
+Stichodactyla haddoni,46.2066688538,-9.3983297348,1967,8,25,1967-08-25T12:00:00Z,89e23fc8-3f61-4480-9de3-358fe6eefe0b,-4,NA,27.13,obis.org
+Stichodactyla haddoni,147.744,-19.3422,2013,6,12,2013-06-12T22:20:00,4d2a31a3-bb76-4ffe-a2f9-817e975f6ba9,34.56,present,25.57,obis.org
