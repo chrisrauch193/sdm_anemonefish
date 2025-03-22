@@ -16,11 +16,11 @@ download_occurrence_data <- function(species_list_file, output_dir) {
     aphia_id <- species_list$AphiaID[i]
     
     # Fetch occurrence data from OBIS
-    print(paste("Processing", group, "OBIS", i, "/", length(species_list$AphiaID)))
+    print(paste("Processing OBIS", i, "/", length(species_list$AphiaID)))
     obis_results <- robis::occurrence(taxonid = aphia_id, fields = obis_fields)
     
     # Fetch occurrence data from GBIF
-    print(paste("Processing", group, "GBIF", i, "/", length(species_list$AphiaID)))
+    print(paste("Processing GBIF", i, "/", length(species_list$AphiaID)))
     gbif_results <- obissdm::occurrence_gbif(
       taxonid = as.numeric(aphia_id),
       absence = "include",
@@ -29,7 +29,7 @@ download_occurrence_data <- function(species_list_file, output_dir) {
     
     # Skip to the next iteration if either OBIS or GBIF data is NULL
     if (is.null(obis_results) || is.null(gbif_results)) {
-      warning(paste("Skipping iteration", i, "for", group, "due to missing OBIS or GBIF data."))
+      warning(paste("Skipping iteration", i, "due to missing OBIS or GBIF data."))
       next
     }
     
@@ -76,6 +76,6 @@ download_occurrence_data <- function(species_list_file, output_dir) {
     write_csv(data_deduplicated, file = filepath)
     
     # Print a message indicating the file has been saved
-    print(paste("Saved", group, "data to", filepath))
+    print(paste("Saved data to", filepath))
   }
 }
