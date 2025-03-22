@@ -6,14 +6,28 @@ editor: visual
 
 # Modelling Anemonefish and Sea Anemone Hosts
 
-Walking through all code used to produce results for Modelling Anemonefish and Sea Anemone Hosts paper
+This document outlines the process of downloading and preparing occurrence data for anemonefish and their host sea anemones. This data is crucial for building species distribution models (SDMs) and understanding the ecological relationships between these species.
 
-# Install Requirements
+# Script Overview
 
-```{r setup, error = FALSE, warning = FALSE, message = FALSE, results = "hide"}
+The data acquisition process is orchestrated through a series of R scripts. Here's a summary of each script:
+
+-   `00_run_all_scripts.R`: This script acts as the main entry point, executing all other scripts in the correct sequence.
+-   `01_install_requirements.R`: Ensures all necessary R packages are installed before proceeding with data acquisition.
+-   `02_get_species_metadata.R`: Downloads and processes species metadata (scientific names, AphiaIDs, etc.) for both anemones and anemonefish from online databases like WoRMS and GBIF.
+-   `03_download_occurrence_data.R`: Downloads occurrence data (location records) for anemones and anemonefish from OBIS and GBIF, using the species metadata obtained in the previous step.
+
+# 1. Install Requirements
+
+The `01_install_requirements.R` script installs the necessary R packages for the entire workflow. This ensures that all dependencies are met before running the data acquisition and processing scripts.
+
+```{r}
+#| echo: true
+#| eval: false
 # Install all requirements for scripts
+# install.packages(c("dplyr", "devtools", "sf", "wk", "worrms", "here", "httr2", "tidyr", "ggplot2", "readr", "rfishbase", "rnaturalearth", "robis", "rgbif", "stringr", "ggtext"))
+# devtools::install_github("ropensci/mregions2", build_vignettes = TRUE)
 library(dplyr)
-library(mregions2)
 library(sf)
 library(wk)
 library(worrms)
@@ -30,199 +44,207 @@ library(stringr)
 library(ggtext)
 ```
 
-# Download Data
+# 2. Download Species Metadata
 
-## Download Sea Anemone Occurence Data
+The `02_get_species_metadata.R` script retrieves species metadata for both anemones and anemonefish. This script is crucial for obtaining the correct scientific names and identification codes (AphiaIDs) needed for querying occurrence databases.
+
+## 2.1 Processed Species Lists
+
+Species lists for both anemones and anemonefish, stored in separate Excel files (`Anemone List.xlsx` and `Anemonefish List.xlsx`), are read into R. The script then performs the following steps:
+
+1.  **Read Species Lists:** Reads species lists from Excel files, ensuring correct column names.
+2.  **Match Scientific Names:** Uses `obistools::match_taxa` to match original scientific names with the accepted names in WoRMS. This ensures that the most up-to-date taxonomic information is used.
+3.  **Combine Data:** Combines the original species list with the WoRMS-matched names and AphiaIDs.
+4.  **Add GBIF Information:** Queries GBIF for additional species information, including GBIF species keys and match types.
+5.  **Save Species Lists:** Saves the processed species lists to CSV files (`final_anemone_species_list.csv` and `final_anemonefish_species_list.csv`). These files contain the scientific names, AphiaIDs, and GBIF species keys, which are used in the next step to download occurrence data.
 
 ```{r}
-# Step 1: Obtain species list
-final_anemone_list <- read.csv("final_anemone_species_list.csv")
+#| echo: true
+#| eval: false
+# Download species metadata from WoRMS and GBIF for anemones and anemonefish.
+# Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
 
-# STEP 2: Download all data from OBIS, GBIF and other sources
-# Loop through each anemone in the final_anemone_list using `seq_along`
-for (i in seq_along(final_anemone_list$AphiaID)) {  # Loop based on the AphiaID column, assuming it's consistent
-  # Fetch occurrence data from OBIS
-  print(paste("Processing OBIS", i, "/", length(final_anemone_list$AphiaID)))
-  obis_fields = c("scientificName", "decimalLongitude", "decimalLatitude", "date_year", "month", "day", "eventDate", "dataset_id", "occurrenceStatus", "depth")
-  obis_results <- tryCatch({
-    robis::occurrence(taxonid = final_anemone_list$AphiaID[i], fields = obis_fields)
-  },
-  error = function(e) {
-    warning(paste("OBIS query failed for AphiaID", final_anemone_list$AphiaID[i], ":", e$message))
-    return(NULL) 
-  }
+# Anemone species list:
+# Original:
+# Entacmaea quadricolor
+# Radianthus crispa (formerly Heteractis crispa)
+# Radianthus magnifica (formerly Heteractis magnifica)
+# Stichodactyla gigantea
+# Cryptodendrum adhaesivum
+# Macrodactyla doreensis
+# Stichodactyla mertensii
+
+# Extra:
+# Stichodactyla haddoni
+# Radianthus malu (formerly Heteractis malu)
+# Radianthus aurora (formerly Heteractis aurora)
+
+# Anemonefish species list:
+# Generalist
+# Original:
+# Amphiprion clarkii
+# Amphiprion ocellaris
+# Amphiprion perideraion
+
+# Extra:
+# Amphiprion bicinctus
+# Amphiprion chrysopterus
+# Amphiprion akindynos
+# Amphiprion melanopus
+# Amphiprion leucokranos
+# Amphiprion percula
+# Amphiprion omanensis
+# Amphiprion tricinctus
+# Amphiprion allardi
+# Amphiprion chrysogaster
+# Amphiprion latifasciatus (double check, it might be some sort of specialist)
+
+
+# Specialist
+# Original:
+# Amphiprion frenatus
+# Amphiprion sandaracinos
+# Amphiprion polymnus
+
+# Extra:
+# Amphiprion akallopisos
+# Amphiprion ephippium
+# Amphiprion sebae
+# Amphiprion chagosensis
+# Amphiprion nigripes
+# Amphiprion latezonatus
+# Amphiprion biaculeatus
+# Amphiprion mccullochi
+# Amphiprion rubrocinctus
+# Amphiprion barberi
+# Amphiprion fuscocaudatus
+
+# Function to process species list
+process_species_list <- function(file_path, output_file_path) {
+  # Read in species list from xlsx file
+  species_list <- readxl::read_excel(file_path)
+  colnames(species_list) <- c(
+    "vernacularName",
+    "scientificNameOriginal",
+    "rank"
   )
-  
-  # Fetch occurrence data from GBIF
-  print(paste("Processing GBIF", i, "/", length(final_anemone_list$AphiaID)))
-  gbif_results <- tryCatch({
-    obissdm::occurrence_gbif(
-      taxonid = final_anemone_list$AphiaID[i],
-      absence = "include",
-      exclude = c("FOSSIL_SPECIMEN","LIVING_SPECIMEN")
-    )
-  },
-  error = function(e) {
-    warning(paste("GBIF query failed for AphiaID", final_anemone_list$AphiaID[i], ":", e$message))
-    return(NULL)
-  }
-  )
 
+  # Match original Scientific Names with correct WoRMS ACCEPTED Scientific Names
+  new_names <- obistools::match_taxa(species_list$scientificNameOriginal)
 
-  # Skip to the next iteration if either OBIS or GBIF data is NULL
-  if (is.null(obis_results) || is.null(gbif_results)) {
-    warning(paste("Skipping iteration", i, "due to missing OBIS or GBIF data."))
-    next
-  }
-  
-  # Select and rename columns from OBIS data
-  obis_select <- obis_results %>%
-    dplyr::select(scientificName, decimalLongitude, decimalLatitude, date_year, month, day, eventDate, dataset_id, occurrenceStatus, depth) %>%
-    dplyr::mutate(source = "obis.org")
-  
-  # Select and rename columns from GBIF data
-  gbif_select <- gbif_results %>%
-    dplyr::select(scientificName, decimalLongitude, decimalLatitude, year, month, day, eventDate, datasetKey, occurrenceStatus, depth)
-  
-  # Rename GBIF columns to match OBIS
-  names(gbif_select) <- obis_fields
-  
-  # Add a source column to GBIF data
-  gbif_select <- gbif_select %>%
-    dplyr::mutate(source = "gbif.org")
-  
-  # Combine OBIS and GBIF data
-  data_combined <- rbind(obis_select, gbif_select)
-  
-  # Convert eventDate to Date format
-  data_combined$eventDate <- as.Date(data_combined$eventDate, format = "%Y-%m-%d")
-  
-  
-  # Remove duplicate rows based on longitude, latitude, and eventDate
-  data_deduplicated <- data_combined[!duplicated(cbind(data_combined$decimalLongitude, data_combined$decimalLatitude, data_combined$eventDate)), ]
-  
-  # Create a filename based on AphiaID with an "SP" prefix
-  filename <- paste0(final_anemone_list$AphiaID[i], ".csv")
-  filepath <- file.path(output_dir, filename)
-  
-  # Save the deduplicated data as a CSV file
-  write_csv(data_deduplicated, file = filepath)
-  
-  # Print a message indicating the file has been saved
-  print(paste("Saved data to", filepath))
+  # Bind new names
+  final_list <- bind_cols(new_names, species_list)
+
+  final_list <- final_list %>%
+    mutate(AphiaID = acceptedNameUsageID) %>%
+    relocate(AphiaID, scientificName)
+
+  print(final_list)
+
+  # Print the number of species
+  print(paste("Number of species:", nrow(final_list)))
+
+  # Add GBIF information
+  gbif_names <- lapply(final_list$scientificName, rgbif::name_backbone)
+  gbif_names <- bind_rows(gbif_names)
+  gbif_names <- gbif_names %>%
+    select(gbif_speciesKey = usageKey, gbif_scientificName = scientificName, gbif_matchType = matchType)
+
+  final_list <- final_list %>% bind_cols(gbif_names)
+
+  # Display the first few rows of the combined data frame
+  print(head(final_list))
+
+  # Add taxonID column (same as AphiaID)
+  final_list$taxonID <- final_list$AphiaID
+
+  # Save the species list to a CSV file
+  write.csv(final_list, output_file_path, row.names = FALSE)
+
+  return(final_list) # Return the processed dataframe
 }
+
+# Process anemone species list
+final_anemone_list <- process_species_list("Anemone List.xlsx", "final_anemone_species_list.csv")
+
+# Process anemonefish species list
+final_anemonefish_list <- process_species_list("Anemonefish List.xlsx", "final_anemonefish_species_list.csv")
 ```
 
-## Download Anemonefish Occurence Data
+## 2.2 Anemone Species List
+
+A species list of anemones is compiled from online resources, this is used to download occurence data in the next script.
+
+## 2.3 Anemonefish Species List
+
+A species list of anemonefish is compiled from online resources, this is used to download occurence data in the next script.
+
+# 3. Download Occurrence Data
+
+The `03_download_occurrence_data.R` script downloads occurrence data for the anemone and anemonefish species. This script uses the AphiaIDs from the processed species lists to query OBIS and GBIF for occurrence records.
+
+## 3.1 Download Sea Anemone Occurence Data
+
+This downloads all the sea anemone occurence data for the species in teh species list in section 2.1 and saves it to the data/occurence/anemone directory. The species list it reads in is the final_anemone_species_list.csv. The script merges the GBIF and OBIS datsets for each species. The datasets are deduplicated before saving.
 
 ```{r}
-# Step 1: Obtain species list
-final_anemonefish_list <- read.csv("final_anemonefish_species_list.csv")
+#| echo: true
+#| eval: false
 
-# STEP 2: Download all data from OBIS, GBIF and other sources
-# Loop through each anemonefish in the final_anemonefish_list using `seq_along`
-for (i in seq_along(final_anemonefish_list$AphiaID)) {  # Loop based on the AphiaID column, assuming it's consistent
-  # Fetch occurrence data from OBIS
-  print(paste("Processing OBIS", i, "/", length(final_anemonefish_list$AphiaID)))
-  obis_fields = c("scientificName", "decimalLongitude", "decimalLatitude", "date_year", "month", "day", "eventDate", "dataset_id", "occurrenceStatus", "depth")
-  obis_results <- tryCatch({
-    robis::occurrence(taxonid = final_anemonefish_list$AphiaID[i], fields = obis_fields)
-  },
-  error = function(e) {
-    warning(paste("OBIS query failed for AphiaID", final_anemonefish_list$AphiaID[i], ":", e$message))
-    return(NULL) 
-  }
-  )
-  
-  # Fetch occurrence data from GBIF
-  print(paste("Processing GBIF", i, "/", length(final_anemonefish_list$AphiaID)))
-  gbif_results <- tryCatch({
-    obissdm::occurrence_gbif(
-      taxonid = final_anemonefish_list$AphiaID[i],
-      absence = "include",
-      exclude = c("FOSSIL_SPECIMEN","LIVING_SPECIMEN")
-    )
-  },
-  error = function(e) {
-    warning(paste("GBIF query failed for AphiaID", final_anemonefish_list$AphiaID[i], ":", e$message))
-    return(NULL)
-  }
-  )
-  
-  
-  # Skip to the next iteration if either OBIS or GBIF data is NULL
-  if (is.null(obis_results) || is.null(gbif_results)) {
-    warning(paste("Skipping iteration", i, "due to missing OBIS or GBIF data."))
-    next
-  }
-  
-  # Select and rename columns from OBIS data
-  obis_select <- obis_results %>%
-    dplyr::select(scientificName, decimalLongitude, decimalLatitude, date_year, month, day, eventDate, dataset_id, occurrenceStatus, depth) %>%
-    dplyr::mutate(source = "obis.org")
-  
-  # Select and rename columns from GBIF data
-  gbif_select <- gbif_results %>%
-    dplyr::select(scientificName, decimalLongitude, decimalLatitude, year, month, day, eventDate, datasetKey, occurrenceStatus, depth)
-  
-  # Rename GBIF columns to match OBIS
-  names(gbif_select) <- obis_fields
-  
-  # Add a source column to GBIF data
-  gbif_select <- gbif_select %>%
-    dplyr::mutate(source = "gbif.org")
-  
-  # Combine OBIS and GBIF data
-  data_combined <- rbind(obis_select, gbif_select)
-  
-  # Convert eventDate to Date format
-  data_combined$eventDate <- as.Date(data_combined$eventDate, format = "%Y-%m-%d")
-  
-  
-  # Remove duplicate rows based on longitude, latitude, and eventDate
-  data_deduplicated <- data_combined[!duplicated(cbind(data_combined$decimalLongitude, data_combined$decimalLatitude, data_combined$eventDate)), ]
-  
-  # Create a filename based on AphiaID with an "SP" prefix
-  filename <- paste0(final_anemonefish_list$AphiaID[i], ".csv")
-  filepath <- file.path(output_dir, filename)
-  
-  # Save the deduplicated data as a CSV file
-  write_csv(data_deduplicated, file = filepath)
-  
-  # Print a message indicating the file has been saved
-  print(paste("Saved data to", filepath))
-}
+# Download occurrence data from OBIS and GBIF for anemones and anemonefish.
+# Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
+
+source("helpers/occurrence_helpers.R")
+
+# Run the function for anemones and anemonefish
+download_occurrence_data("final_anemone_species_list.csv", "data/occurrence/anemone")
+# download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence/anemonefish")
 ```
 
-## Download Environmental Data
+## 3.2 Download Anemonefish Occurence Data
+
+This downloads all the anemonefish occurence data for the species in teh species list in section 2.1 and saves it to the data/occurence/anemonefish directory. The species list it reads in is the final_anemonefish_species_list.csv. The script merges the GBIF and OBIS datsets for each species. The datasets are deduplicated before saving.
+
+```{r}
+#| echo: true
+#| eval: false
+
+# Download occurrence data from OBIS and GBIF for anemones and anemonefish.
+# Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
+
+source("helpers/occurrence_helpers.R")
+
+# Run the function for anemones and anemonefish
+# download_occurrence_data("final_anemone_species_list.csv", "data/occurrence/anemone")
+download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence/anemonefish")
+```
+
+## 3.3 Download Environmental Data
 
 ```{r}
 
 ```
 
-# Data Standardisation
+# 4. Data Standardisation
 
 ```{r}
 
 ```
 
-# PCA
+# 5. PCA
 
 ```{r}
 
 ```
 
-# Run SDMs
+# 6. Run SDMs
 
 ```{r}
 
 ```
 
-# Post Analysis
+# 7. Post Analysis
 
 ```{r}
 
 ```
-
-
-

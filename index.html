@@ -98,481 +98,221 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="modelling-anemonefish-and-sea-anemone-hosts" class="level1">
 <h1>Modelling Anemonefish and Sea Anemone Hosts</h1>
-<p>Walking through all code used to produce results for Modelling Anemonefish and Sea Anemone Hosts paper</p>
+<p>This document outlines the process of downloading and preparing occurrence data for anemonefish and their host sea anemones. This data is crucial for building species distribution models (SDMs) and understanding the ecological relationships between these species.</p>
+</section>
+<section id="script-overview" class="level1">
+<h1>Script Overview</h1>
+<p>The data acquisition process is orchestrated through a series of R scripts. Here’s a summary of each script:</p>
+<ul>
+<li><code>00_run_all_scripts.R</code>: This script acts as the main entry point, executing all other scripts in the correct sequence.</li>
+<li><code>01_install_requirements.R</code>: Ensures all necessary R packages are installed before proceeding with data acquisition.</li>
+<li><code>02_get_species_metadata.R</code>: Downloads and processes species metadata (scientific names, AphiaIDs, etc.) for both anemones and anemonefish from online databases like WoRMS and GBIF.</li>
+<li><code>03_download_occurrence_data.R</code>: Downloads occurrence data (location records) for anemones and anemonefish from OBIS and GBIF, using the species metadata obtained in the previous step.</li>
+</ul>
 </section>
 <section id="install-requirements" class="level1">
-<h1>Install Requirements</h1>
+<h1>1. Install Requirements</h1>
+<p>The <code>01_install_requirements.R</code> script installs the necessary R packages for the entire workflow. This ensures that all dependencies are met before running the data acquisition and processing scripts.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install all requirements for scripts</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mregions2)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(wk)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(worrms)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(httr2)</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rfishbase)</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rnaturalearth)</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(robis)</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rgbif)</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggtext)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages(c("dplyr", "devtools", "sf", "wk", "worrms", "here", "httr2", "tidyr", "ggplot2", "readr", "rfishbase", "rnaturalearth", "robis", "rgbif", "stringr", "ggtext"))</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># devtools::install_github("ropensci/mregions2", build_vignettes = TRUE)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(wk)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(worrms)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(httr2)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rfishbase)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rnaturalearth)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(robis)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rgbif)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggtext)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="download-data" class="level1">
-<h1>Download Data</h1>
-<section id="download-sea-anemone-occurence-data" class="level2">
-<h2 class="anchored" data-anchor-id="download-sea-anemone-occurence-data">Download Sea Anemone Occurence Data</h2>
+<section id="download-species-metadata" class="level1">
+<h1>2. Download Species Metadata</h1>
+<p>The <code>02_get_species_metadata.R</code> script retrieves species metadata for both anemones and anemonefish. This script is crucial for obtaining the correct scientific names and identification codes (AphiaIDs) needed for querying occurrence databases.</p>
+<section id="processed-species-lists" class="level2">
+<h2 class="anchored" data-anchor-id="processed-species-lists">2.1 Processed Species Lists</h2>
+<p>Species lists for both anemones and anemonefish, stored in separate Excel files (<code>Anemone List.xlsx</code> and <code>Anemonefish List.xlsx</code>), are read into R. The script then performs the following steps:</p>
+<ol type="1">
+<li><strong>Read Species Lists:</strong> Reads species lists from Excel files, ensuring correct column names.</li>
+<li><strong>Match Scientific Names:</strong> Uses <code>obistools::match_taxa</code> to match original scientific names with the accepted names in WoRMS. This ensures that the most up-to-date taxonomic information is used.</li>
+<li><strong>Combine Data:</strong> Combines the original species list with the WoRMS-matched names and AphiaIDs.</li>
+<li><strong>Add GBIF Information:</strong> Queries GBIF for additional species information, including GBIF species keys and match types.</li>
+<li><strong>Save Species Lists:</strong> Saves the processed species lists to CSV files (<code>final_anemone_species_list.csv</code> and <code>final_anemonefish_species_list.csv</code>). These files contain the scientific names, AphiaIDs, and GBIF species keys, which are used in the next step to download occurrence data.</li>
+</ol>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Obtain species list</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>final_anemone_list <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"final_anemone_species_list.csv"</span>)</span>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download species metadata from WoRMS and GBIF for anemones and anemonefish.</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># STEP 2: Download all data from OBIS, GBIF and other sources</span></span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through each anemone in the final_anemone_list using `seq_along`</span></span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(final_anemone_list<span class="sc">$</span>AphiaID)) {  <span class="co"># Loop based on the AphiaID column, assuming it's consistent</span></span>
-<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fetch occurrence data from OBIS</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Processing OBIS"</span>, i, <span class="st">"/"</span>, <span class="fu">length</span>(final_anemone_list<span class="sc">$</span>AphiaID)))</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  obis_fields <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"scientificName"</span>, <span class="st">"decimalLongitude"</span>, <span class="st">"decimalLatitude"</span>, <span class="st">"date_year"</span>, <span class="st">"month"</span>, <span class="st">"day"</span>, <span class="st">"eventDate"</span>, <span class="st">"dataset_id"</span>, <span class="st">"occurrenceStatus"</span>, <span class="st">"depth"</span>)</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  obis_results <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    robis<span class="sc">::</span><span class="fu">occurrence</span>(<span class="at">taxonid =</span> final_anemone_list<span class="sc">$</span>AphiaID[i], <span class="at">fields =</span> obis_fields)</span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  },</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"OBIS query failed for AphiaID"</span>, final_anemone_list<span class="sc">$</span>AphiaID[i], <span class="st">":"</span>, e<span class="sc">$</span>message))</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>) </span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fetch occurrence data from GBIF</span></span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Processing GBIF"</span>, i, <span class="st">"/"</span>, <span class="fu">length</span>(final_anemone_list<span class="sc">$</span>AphiaID)))</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>  gbif_results <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    obissdm<span class="sc">::</span><span class="fu">occurrence_gbif</span>(</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">taxonid =</span> final_anemone_list<span class="sc">$</span>AphiaID[i],</span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">absence =</span> <span class="st">"include"</span>,</span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">exclude =</span> <span class="fu">c</span>(<span class="st">"FOSSIL_SPECIMEN"</span>,<span class="st">"LIVING_SPECIMEN"</span>)</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>  },</span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"GBIF query failed for AphiaID"</span>, final_anemone_list<span class="sc">$</span>AphiaID[i], <span class="st">":"</span>, e<span class="sc">$</span>message))</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Skip to the next iteration if either OBIS or GBIF data is NULL</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(obis_results) <span class="sc">||</span> <span class="fu">is.null</span>(gbif_results)) {</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"Skipping iteration"</span>, i, <span class="st">"due to missing OBIS or GBIF data."</span>))</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">next</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Select and rename columns from OBIS data</span></span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  obis_select <span class="ot">&lt;-</span> obis_results <span class="sc">%&gt;%</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(scientificName, decimalLongitude, decimalLatitude, date_year, month, day, eventDate, dataset_id, occurrenceStatus, depth) <span class="sc">%&gt;%</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">"obis.org"</span>)</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Select and rename columns from GBIF data</span></span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  gbif_select <span class="ot">&lt;-</span> gbif_results <span class="sc">%&gt;%</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(scientificName, decimalLongitude, decimalLatitude, year, month, day, eventDate, datasetKey, occurrenceStatus, depth)</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Rename GBIF columns to match OBIS</span></span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(gbif_select) <span class="ot">&lt;-</span> obis_fields</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add a source column to GBIF data</span></span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>  gbif_select <span class="ot">&lt;-</span> gbif_select <span class="sc">%&gt;%</span></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">"gbif.org"</span>)</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Combine OBIS and GBIF data</span></span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  data_combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(obis_select, gbif_select)</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Convert eventDate to Date format</span></span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  data_combined<span class="sc">$</span>eventDate <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(data_combined<span class="sc">$</span>eventDate, <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>)</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remove duplicate rows based on longitude, latitude, and eventDate</span></span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>  data_deduplicated <span class="ot">&lt;-</span> data_combined[<span class="sc">!</span><span class="fu">duplicated</span>(<span class="fu">cbind</span>(data_combined<span class="sc">$</span>decimalLongitude, data_combined<span class="sc">$</span>decimalLatitude, data_combined<span class="sc">$</span>eventDate)), ]</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create a filename based on AphiaID with an "SP" prefix</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>  filename <span class="ot">&lt;-</span> <span class="fu">paste0</span>(final_anemone_list<span class="sc">$</span>AphiaID[i], <span class="st">".csv"</span>)</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  filepath <span class="ot">&lt;-</span> <span class="fu">file.path</span>(output_dir, filename)</span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Save the deduplicated data as a CSV file</span></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_csv</span>(data_deduplicated, <span class="at">file =</span> filepath)</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Print a message indicating the file has been saved</span></span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Saved data to"</span>, filepath))</span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 1 / 10"</code></pre>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Anemone species list:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Original:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Entacmaea quadricolor</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Radianthus crispa (formerly Heteractis crispa)</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Radianthus magnifica (formerly Heteractis magnifica)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Stichodactyla gigantea</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Cryptodendrum adhaesivum</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Macrodactyla doreensis</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Stichodactyla mertensii</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Extra:</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Stichodactyla haddoni</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Radianthus malu (formerly Heteractis malu)</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Radianthus aurora (formerly Heteractis aurora)</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Anemonefish species list:</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Generalist</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Original:</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion clarkii</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion ocellaris</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion perideraion</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Extra:</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion bicinctus</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion chrysopterus</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion akindynos</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion melanopus</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion leucokranos</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion percula</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion omanensis</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion tricinctus</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion allardi</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion chrysogaster</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion latifasciatus (double check, it might be some sort of specialist)</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Specialist</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co"># Original:</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion frenatus</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion sandaracinos</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion polymnus</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Extra:</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion akallopisos</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion ephippium</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion sebae</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion chagosensis</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion nigripes</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion latezonatus</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion biaculeatus</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion mccullochi</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion rubrocinctus</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion barberi</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Amphiprion fuscocaudatus</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to process species list</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>process_species_list <span class="ot">&lt;-</span> <span class="cf">function</span>(file_path, output_file_path) {</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Read in species list from xlsx file</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  species_list <span class="ot">&lt;-</span> readxl<span class="sc">::</span><span class="fu">read_excel</span>(file_path)</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(species_list) <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    <span class="st">"vernacularName"</span>,</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="st">"scientificNameOriginal"</span>,</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    <span class="st">"rank"</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Match original Scientific Names with correct WoRMS ACCEPTED Scientific Names</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>  new_names <span class="ot">&lt;-</span> obistools<span class="sc">::</span><span class="fu">match_taxa</span>(species_list<span class="sc">$</span>scientificNameOriginal)</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Bind new names</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>  final_list <span class="ot">&lt;-</span> <span class="fu">bind_cols</span>(new_names, species_list)</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>  final_list <span class="ot">&lt;-</span> final_list <span class="sc">%&gt;%</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">AphiaID =</span> acceptedNameUsageID) <span class="sc">%&gt;%</span></span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>    <span class="fu">relocate</span>(AphiaID, scientificName)</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(final_list)</span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Print the number of species</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of species:"</span>, <span class="fu">nrow</span>(final_list)))</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add GBIF information</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>  gbif_names <span class="ot">&lt;-</span> <span class="fu">lapply</span>(final_list<span class="sc">$</span>scientificName, rgbif<span class="sc">::</span>name_backbone)</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>  gbif_names <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(gbif_names)</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>  gbif_names <span class="ot">&lt;-</span> gbif_names <span class="sc">%&gt;%</span></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(<span class="at">gbif_speciesKey =</span> usageKey, <span class="at">gbif_scientificName =</span> scientificName, <span class="at">gbif_matchType =</span> matchType)</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>  final_list <span class="ot">&lt;-</span> final_list <span class="sc">%&gt;%</span> <span class="fu">bind_cols</span>(gbif_names)</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Display the first few rows of the combined data frame</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">head</span>(final_list))</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add taxonID column (same as AphiaID)</span></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>  final_list<span class="sc">$</span>taxonID <span class="ot">&lt;-</span> final_list<span class="sc">$</span>AphiaID</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Save the species list to a CSV file</span></span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(final_list, output_file_path, <span class="at">row.names =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(final_list) <span class="co"># Return the processed dataframe</span></span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a><span class="co"># Process anemone species list</span></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>final_anemone_list <span class="ot">&lt;-</span> <span class="fu">process_species_list</span>(<span class="st">"Anemone List.xlsx"</span>, <span class="st">"final_anemone_species_list.csv"</span>)</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a><span class="co"># Process anemonefish species list</span></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>final_anemonefish_list <span class="ot">&lt;-</span> <span class="fu">process_species_list</span>(<span class="st">"Anemonefish List.xlsx"</span>, <span class="st">"final_anemonefish_species_list.csv"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 452 records of approximately 452 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 1 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 289898 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 1 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 2 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 297 records of approximately 297 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 2 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 290089 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 2 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 3 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 208 records of approximately 208 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 3 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 854493 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 3 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 4 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 185 records of approximately 185 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 4 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 291133 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 4 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 5 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 108 records of approximately 108 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 5 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 289169 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 5 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 6 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 59 records of approximately 59 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 6 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 1783466 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 6 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 7 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 74 records of approximately 74 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 7 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 291136 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 7 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 8 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 113 records of approximately 113 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 8 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 291134 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 8 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 9 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 197 records of approximately 197 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 9 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 289229 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 9 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 10 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 765 records of approximately 765 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 10 / 10"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 206704 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 10 due to missing OBIS or GBIF data.</code></pre>
-</div>
+</section>
+<section id="anemone-species-list" class="level2">
+<h2 class="anchored" data-anchor-id="anemone-species-list">2.2 Anemone Species List</h2>
+<p>A species list of anemones is compiled from online resources, this is used to download occurence data in the next script.</p>
+</section>
+<section id="anemonefish-species-list" class="level2">
+<h2 class="anchored" data-anchor-id="anemonefish-species-list">2.3 Anemonefish Species List</h2>
+<p>A species list of anemonefish is compiled from online resources, this is used to download occurence data in the next script.</p>
+</section>
+</section>
+<section id="download-occurrence-data" class="level1">
+<h1>3. Download Occurrence Data</h1>
+<p>The <code>03_download_occurrence_data.R</code> script downloads occurrence data for the anemone and anemonefish species. This script uses the AphiaIDs from the processed species lists to query OBIS and GBIF for occurrence records.</p>
+<section id="download-sea-anemone-occurence-data" class="level2">
+<h2 class="anchored" data-anchor-id="download-sea-anemone-occurence-data">3.1 Download Sea Anemone Occurence Data</h2>
+<p>This downloads all the sea anemone occurence data for the species in teh species list in section 2.1 and saves it to the data/occurence/anemone directory. The species list it reads in is the final_anemone_species_list.csv. The script merges the GBIF and OBIS datsets for each species. The datasets are deduplicated before saving.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download occurrence data from OBIS and GBIF for anemones and anemonefish.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"helpers/occurrence_helpers.R"</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the function for anemones and anemonefish</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">download_occurrence_data</span>(<span class="st">"final_anemone_species_list.csv"</span>, <span class="st">"data/occurrence/anemone"</span>)</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence/anemonefish")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="download-anemonefish-occurence-data" class="level2">
-<h2 class="anchored" data-anchor-id="download-anemonefish-occurence-data">Download Anemonefish Occurence Data</h2>
+<h2 class="anchored" data-anchor-id="download-anemonefish-occurence-data">3.2 Download Anemonefish Occurence Data</h2>
+<p>This downloads all the anemonefish occurence data for the species in teh species list in section 2.1 and saves it to the data/occurence/anemonefish directory. The species list it reads in is the final_anemonefish_species_list.csv. The script merges the GBIF and OBIS datsets for each species. The datasets are deduplicated before saving.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Obtain species list</span></span>
-<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>final_anemonefish_list <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">"final_anemonefish_species_list.csv"</span>)</span>
-<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a><span class="co"># STEP 2: Download all data from OBIS, GBIF and other sources</span></span>
-<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through each anemonefish in the final_anemonefish_list using `seq_along`</span></span>
-<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="fu">seq_along</span>(final_anemonefish_list<span class="sc">$</span>AphiaID)) {  <span class="co"># Loop based on the AphiaID column, assuming it's consistent</span></span>
-<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fetch occurrence data from OBIS</span></span>
-<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Processing OBIS"</span>, i, <span class="st">"/"</span>, <span class="fu">length</span>(final_anemonefish_list<span class="sc">$</span>AphiaID)))</span>
-<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a>  obis_fields <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"scientificName"</span>, <span class="st">"decimalLongitude"</span>, <span class="st">"decimalLatitude"</span>, <span class="st">"date_year"</span>, <span class="st">"month"</span>, <span class="st">"day"</span>, <span class="st">"eventDate"</span>, <span class="st">"dataset_id"</span>, <span class="st">"occurrenceStatus"</span>, <span class="st">"depth"</span>)</span>
-<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a>  obis_results <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
-<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a>    robis<span class="sc">::</span><span class="fu">occurrence</span>(<span class="at">taxonid =</span> final_anemonefish_list<span class="sc">$</span>AphiaID[i], <span class="at">fields =</span> obis_fields)</span>
-<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a>  },</span>
-<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
-<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"OBIS query failed for AphiaID"</span>, final_anemonefish_list<span class="sc">$</span>AphiaID[i], <span class="st">":"</span>, e<span class="sc">$</span>message))</span>
-<span id="cb53-15"><a href="#cb53-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>) </span>
-<span id="cb53-16"><a href="#cb53-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb53-17"><a href="#cb53-17" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb53-18"><a href="#cb53-18" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-19"><a href="#cb53-19" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Fetch occurrence data from GBIF</span></span>
-<span id="cb53-20"><a href="#cb53-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Processing GBIF"</span>, i, <span class="st">"/"</span>, <span class="fu">length</span>(final_anemonefish_list<span class="sc">$</span>AphiaID)))</span>
-<span id="cb53-21"><a href="#cb53-21" aria-hidden="true" tabindex="-1"></a>  gbif_results <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>({</span>
-<span id="cb53-22"><a href="#cb53-22" aria-hidden="true" tabindex="-1"></a>    obissdm<span class="sc">::</span><span class="fu">occurrence_gbif</span>(</span>
-<span id="cb53-23"><a href="#cb53-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">taxonid =</span> final_anemonefish_list<span class="sc">$</span>AphiaID[i],</span>
-<span id="cb53-24"><a href="#cb53-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">absence =</span> <span class="st">"include"</span>,</span>
-<span id="cb53-25"><a href="#cb53-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">exclude =</span> <span class="fu">c</span>(<span class="st">"FOSSIL_SPECIMEN"</span>,<span class="st">"LIVING_SPECIMEN"</span>)</span>
-<span id="cb53-26"><a href="#cb53-26" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb53-27"><a href="#cb53-27" aria-hidden="true" tabindex="-1"></a>  },</span>
-<span id="cb53-28"><a href="#cb53-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">error =</span> <span class="cf">function</span>(e) {</span>
-<span id="cb53-29"><a href="#cb53-29" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"GBIF query failed for AphiaID"</span>, final_anemonefish_list<span class="sc">$</span>AphiaID[i], <span class="st">":"</span>, e<span class="sc">$</span>message))</span>
-<span id="cb53-30"><a href="#cb53-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NULL</span>)</span>
-<span id="cb53-31"><a href="#cb53-31" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb53-32"><a href="#cb53-32" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb53-33"><a href="#cb53-33" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-34"><a href="#cb53-34" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-35"><a href="#cb53-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Skip to the next iteration if either OBIS or GBIF data is NULL</span></span>
-<span id="cb53-36"><a href="#cb53-36" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">is.null</span>(obis_results) <span class="sc">||</span> <span class="fu">is.null</span>(gbif_results)) {</span>
-<span id="cb53-37"><a href="#cb53-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">warning</span>(<span class="fu">paste</span>(<span class="st">"Skipping iteration"</span>, i, <span class="st">"due to missing OBIS or GBIF data."</span>))</span>
-<span id="cb53-38"><a href="#cb53-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">next</span></span>
-<span id="cb53-39"><a href="#cb53-39" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb53-40"><a href="#cb53-40" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-41"><a href="#cb53-41" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Select and rename columns from OBIS data</span></span>
-<span id="cb53-42"><a href="#cb53-42" aria-hidden="true" tabindex="-1"></a>  obis_select <span class="ot">&lt;-</span> obis_results <span class="sc">%&gt;%</span></span>
-<span id="cb53-43"><a href="#cb53-43" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(scientificName, decimalLongitude, decimalLatitude, date_year, month, day, eventDate, dataset_id, occurrenceStatus, depth) <span class="sc">%&gt;%</span></span>
-<span id="cb53-44"><a href="#cb53-44" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">"obis.org"</span>)</span>
-<span id="cb53-45"><a href="#cb53-45" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-46"><a href="#cb53-46" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Select and rename columns from GBIF data</span></span>
-<span id="cb53-47"><a href="#cb53-47" aria-hidden="true" tabindex="-1"></a>  gbif_select <span class="ot">&lt;-</span> gbif_results <span class="sc">%&gt;%</span></span>
-<span id="cb53-48"><a href="#cb53-48" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(scientificName, decimalLongitude, decimalLatitude, year, month, day, eventDate, datasetKey, occurrenceStatus, depth)</span>
-<span id="cb53-49"><a href="#cb53-49" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-50"><a href="#cb53-50" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Rename GBIF columns to match OBIS</span></span>
-<span id="cb53-51"><a href="#cb53-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(gbif_select) <span class="ot">&lt;-</span> obis_fields</span>
-<span id="cb53-52"><a href="#cb53-52" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-53"><a href="#cb53-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add a source column to GBIF data</span></span>
-<span id="cb53-54"><a href="#cb53-54" aria-hidden="true" tabindex="-1"></a>  gbif_select <span class="ot">&lt;-</span> gbif_select <span class="sc">%&gt;%</span></span>
-<span id="cb53-55"><a href="#cb53-55" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">source =</span> <span class="st">"gbif.org"</span>)</span>
-<span id="cb53-56"><a href="#cb53-56" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-57"><a href="#cb53-57" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Combine OBIS and GBIF data</span></span>
-<span id="cb53-58"><a href="#cb53-58" aria-hidden="true" tabindex="-1"></a>  data_combined <span class="ot">&lt;-</span> <span class="fu">rbind</span>(obis_select, gbif_select)</span>
-<span id="cb53-59"><a href="#cb53-59" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-60"><a href="#cb53-60" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Convert eventDate to Date format</span></span>
-<span id="cb53-61"><a href="#cb53-61" aria-hidden="true" tabindex="-1"></a>  data_combined<span class="sc">$</span>eventDate <span class="ot">&lt;-</span> <span class="fu">as.Date</span>(data_combined<span class="sc">$</span>eventDate, <span class="at">format =</span> <span class="st">"%Y-%m-%d"</span>)</span>
-<span id="cb53-62"><a href="#cb53-62" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-63"><a href="#cb53-63" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-64"><a href="#cb53-64" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remove duplicate rows based on longitude, latitude, and eventDate</span></span>
-<span id="cb53-65"><a href="#cb53-65" aria-hidden="true" tabindex="-1"></a>  data_deduplicated <span class="ot">&lt;-</span> data_combined[<span class="sc">!</span><span class="fu">duplicated</span>(<span class="fu">cbind</span>(data_combined<span class="sc">$</span>decimalLongitude, data_combined<span class="sc">$</span>decimalLatitude, data_combined<span class="sc">$</span>eventDate)), ]</span>
-<span id="cb53-66"><a href="#cb53-66" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-67"><a href="#cb53-67" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create a filename based on AphiaID with an "SP" prefix</span></span>
-<span id="cb53-68"><a href="#cb53-68" aria-hidden="true" tabindex="-1"></a>  filename <span class="ot">&lt;-</span> <span class="fu">paste0</span>(final_anemonefish_list<span class="sc">$</span>AphiaID[i], <span class="st">".csv"</span>)</span>
-<span id="cb53-69"><a href="#cb53-69" aria-hidden="true" tabindex="-1"></a>  filepath <span class="ot">&lt;-</span> <span class="fu">file.path</span>(output_dir, filename)</span>
-<span id="cb53-70"><a href="#cb53-70" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-71"><a href="#cb53-71" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Save the deduplicated data as a CSV file</span></span>
-<span id="cb53-72"><a href="#cb53-72" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write_csv</span>(data_deduplicated, <span class="at">file =</span> filepath)</span>
-<span id="cb53-73"><a href="#cb53-73" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb53-74"><a href="#cb53-74" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Print a message indicating the file has been saved</span></span>
-<span id="cb53-75"><a href="#cb53-75" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Saved data to"</span>, filepath))</span>
-<span id="cb53-76"><a href="#cb53-76" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 1 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 895 records of approximately 895 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 1 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 212783 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 1 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 2 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 131 records of approximately 131 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 2 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 278394 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 2 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 3 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 324 records of approximately 324 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 3 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 278400 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 3 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 4 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 617 records of approximately 617 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 4 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 278403 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 4 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 5 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 96 records of approximately 96 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 5 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 212781 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 5 due to missing OBIS or GBIF data.</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing OBIS 6 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Retrieved 72 records of approximately 72 (100%)</code></pre>
-</div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] "Processing GBIF 6 / 6"</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning in value[[3L]](cond): GBIF query failed for AphiaID 278405 : supply a
-username</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: Skipping iteration 6 due to missing OBIS or GBIF data.</code></pre>
-</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Download occurrence data from OBIS and GBIF for anemones and anemonefish.</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"helpers/occurrence_helpers.R"</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the function for anemones and anemonefish</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># download_occurrence_data("final_anemone_species_list.csv", "data/occurrence/anemone")</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">download_occurrence_data</span>(<span class="st">"final_anemonefish_species_list.csv"</span>, <span class="st">"data/occurrence/anemonefish"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="download-environmental-data" class="level2">
-<h2 class="anchored" data-anchor-id="download-environmental-data">Download Environmental Data</h2>
+<h2 class="anchored" data-anchor-id="download-environmental-data">3.3 Download Environmental Data</h2>
 </section>
 </section>
 <section id="data-standardisation" class="level1">
-<h1>Data Standardisation</h1>
+<h1>4. Data Standardisation</h1>
 </section>
 <section id="pca" class="level1">
-<h1>PCA</h1>
+<h1>5. PCA</h1>
 </section>
 <section id="run-sdms" class="level1">
-<h1>Run SDMs</h1>
+<h1>6. Run SDMs</h1>
 </section>
 <section id="post-analysis" class="level1">
-<h1>Post Analysis</h1>
+<h1>7. Post Analysis</h1>
 </section>
 
 </main>
