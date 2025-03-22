@@ -3,6 +3,7 @@
 # install.packages(c("dplyr", "devtools", "sf", "wk", "worrms", "here", "httr2", "tidyr", "ggplot2", "readr", "rfishbase", "rnaturalearth", "robis", "rgbif", "stringr", "ggtext"))
 # devtools::install_github("ropensci/mregions2", build_vignettes = TRUE)
 # devtools::install_github("bio-oracle/biooracler")
+library(biooracler)
 library(dplyr)
 # library(mregions2)
 library(sf)

@@ -38,7 +38,7 @@ time_steps <- list(
 # Define variables to be downloaded
 variables <- c("min", "mean", "max")
 
-get_env_data(datasets = datasets, future_scenarios = future_scenarios,
+obissdm::get_env_data(datasets = datasets, future_scenarios = future_scenarios,
              time_steps = time_steps, variables = variables,
              terrain_vars = c(
                "bathymetry_mean",
@@ -47,7 +47,7 @@ get_env_data(datasets = datasets, future_scenarios = future_scenarios,
              ), average_time = T)
 
 # For just temperature, download also the range, ltmin and ltmax
-get_env_data(datasets = "thetao_baseline_2000_2019_depthsurf",
+obissdm::get_env_data(datasets = "thetao_baseline_2000_2019_depthsurf",
              future_scenarios = future_scenarios,
              time_steps = time_steps, variables = c("range", "ltmin", "ltmax"),
              average_time = T)

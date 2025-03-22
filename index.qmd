@@ -28,6 +28,7 @@ The `01_install_requirements.R` script installs the necessary R packages for the
 # install.packages(c("dplyr", "devtools", "sf", "wk", "worrms", "here", "httr2", "tidyr", "ggplot2", "readr", "rfishbase", "rnaturalearth", "robis", "rgbif", "stringr", "ggtext"))
 # devtools::install_github("ropensci/mregions2", build_vignettes = TRUE)
 # devtools::install_github("bio-oracle/biooracler")
+library(biooracler)
 library(dplyr)
 library(sf)
 library(wk)
@@ -265,7 +266,7 @@ time_steps <- list(
 # Define variables to be downloaded
 variables <- c("min", "mean", "max")
 
-get_env_data(datasets = datasets, future_scenarios = future_scenarios,
+obissdm::get_env_data(datasets = datasets, future_scenarios = future_scenarios,
              time_steps = time_steps, variables = variables,
              terrain_vars = c(
                "bathymetry_mean",
@@ -274,7 +275,7 @@ get_env_data(datasets = datasets, future_scenarios = future_scenarios,
              ), average_time = T)
 
 # For just temperature, download also the range, ltmin and ltmax
-get_env_data(datasets = "thetao_baseline_2000_2019_depthsurf",
+obissdm::get_env_data(datasets = "thetao_baseline_2000_2019_depthsurf",
              future_scenarios = future_scenarios,
              time_steps = time_steps, variables = c("range", "ltmin", "ltmax"),
              average_time = T)
