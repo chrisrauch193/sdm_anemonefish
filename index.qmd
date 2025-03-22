@@ -1,0 +1,228 @@
+---
+title: "Results"
+format: html
+editor: visual
+---
+
+# Modelling Anemonefish and Sea Anemone Hosts
+
+Walking through all code used to produce results for Modelling Anemonefish and Sea Anemone Hosts paper
+
+# Install Requirements
+
+```{r setup, error = FALSE, warning = FALSE, message = FALSE, results = "hide"}
+# Install all requirements for scripts
+library(dplyr)
+library(mregions2)
+library(sf)
+library(wk)
+library(worrms)
+library(here)
+library(httr2)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(rfishbase)
+library(rnaturalearth)
+library(robis)
+library(rgbif)
+library(stringr)
+library(ggtext)
+```
+
+# Download Data
+
+## Download Sea Anemone Occurence Data
+
+```{r}
+# Step 1: Obtain species list
+final_anemone_list <- read.csv("final_anemone_species_list.csv")
+
+# STEP 2: Download all data from OBIS, GBIF and other sources
+# Loop through each anemone in the final_anemone_list using `seq_along`
+for (i in seq_along(final_anemone_list$AphiaID)) {  # Loop based on the AphiaID column, assuming it's consistent
+  # Fetch occurrence data from OBIS
+  print(paste("Processing OBIS", i, "/", length(final_anemone_list$AphiaID)))
+  obis_fields = c("scientificName", "decimalLongitude", "decimalLatitude", "date_year", "month", "day", "eventDate", "dataset_id", "occurrenceStatus", "depth")
+  obis_results <- tryCatch({
+    robis::occurrence(taxonid = final_anemone_list$AphiaID[i], fields = obis_fields)
+  },
+  error = function(e) {
+    warning(paste("OBIS query failed for AphiaID", final_anemone_list$AphiaID[i], ":", e$message))
+    return(NULL) 
+  }
+  )
+  
+  # Fetch occurrence data from GBIF
+  print(paste("Processing GBIF", i, "/", length(final_anemone_list$AphiaID)))
+  gbif_results <- tryCatch({
+    obissdm::occurrence_gbif(
+      taxonid = final_anemone_list$AphiaID[i],
+      absence = "include",
+      exclude = c("FOSSIL_SPECIMEN","LIVING_SPECIMEN")
+    )
+  },
+  error = function(e) {
+    warning(paste("GBIF query failed for AphiaID", final_anemone_list$AphiaID[i], ":", e$message))
+    return(NULL)
+  }
+  )
+
+
+  # Skip to the next iteration if either OBIS or GBIF data is NULL
+  if (is.null(obis_results) || is.null(gbif_results)) {
+    warning(paste("Skipping iteration", i, "due to missing OBIS or GBIF data."))
+    next
+  }
+  
+  # Select and rename columns from OBIS data
+  obis_select <- obis_results %>%
+    dplyr::select(scientificName, decimalLongitude, decimalLatitude, date_year, month, day, eventDate, dataset_id, occurrenceStatus, depth) %>%
+    dplyr::mutate(source = "obis.org")
+  
+  # Select and rename columns from GBIF data
+  gbif_select <- gbif_results %>%
+    dplyr::select(scientificName, decimalLongitude, decimalLatitude, year, month, day, eventDate, datasetKey, occurrenceStatus, depth)
+  
+  # Rename GBIF columns to match OBIS
+  names(gbif_select) <- obis_fields
+  
+  # Add a source column to GBIF data
+  gbif_select <- gbif_select %>%
+    dplyr::mutate(source = "gbif.org")
+  
+  # Combine OBIS and GBIF data
+  data_combined <- rbind(obis_select, gbif_select)
+  
+  # Convert eventDate to Date format
+  data_combined$eventDate <- as.Date(data_combined$eventDate, format = "%Y-%m-%d")
+  
+  
+  # Remove duplicate rows based on longitude, latitude, and eventDate
+  data_deduplicated <- data_combined[!duplicated(cbind(data_combined$decimalLongitude, data_combined$decimalLatitude, data_combined$eventDate)), ]
+  
+  # Create a filename based on AphiaID with an "SP" prefix
+  filename <- paste0(final_anemone_list$AphiaID[i], ".csv")
+  filepath <- file.path(output_dir, filename)
+  
+  # Save the deduplicated data as a CSV file
+  write_csv(data_deduplicated, file = filepath)
+  
+  # Print a message indicating the file has been saved
+  print(paste("Saved data to", filepath))
+}
+```
+
+## Download Anemonefish Occurence Data
+
+```{r}
+# Step 1: Obtain species list
+final_anemonefish_list <- read.csv("final_anemonefish_species_list.csv")
+
+# STEP 2: Download all data from OBIS, GBIF and other sources
+# Loop through each anemonefish in the final_anemonefish_list using `seq_along`
+for (i in seq_along(final_anemonefish_list$AphiaID)) {  # Loop based on the AphiaID column, assuming it's consistent
+  # Fetch occurrence data from OBIS
+  print(paste("Processing OBIS", i, "/", length(final_anemonefish_list$AphiaID)))
+  obis_fields = c("scientificName", "decimalLongitude", "decimalLatitude", "date_year", "month", "day", "eventDate", "dataset_id", "occurrenceStatus", "depth")
+  obis_results <- tryCatch({
+    robis::occurrence(taxonid = final_anemonefish_list$AphiaID[i], fields = obis_fields)
+  },
+  error = function(e) {
+    warning(paste("OBIS query failed for AphiaID", final_anemonefish_list$AphiaID[i], ":", e$message))
+    return(NULL) 
+  }
+  )
+  
+  # Fetch occurrence data from GBIF
+  print(paste("Processing GBIF", i, "/", length(final_anemonefish_list$AphiaID)))
+  gbif_results <- tryCatch({
+    obissdm::occurrence_gbif(
+      taxonid = final_anemonefish_list$AphiaID[i],
+      absence = "include",
+      exclude = c("FOSSIL_SPECIMEN","LIVING_SPECIMEN")
+    )
+  },
+  error = function(e) {
+    warning(paste("GBIF query failed for AphiaID", final_anemonefish_list$AphiaID[i], ":", e$message))
+    return(NULL)
+  }
+  )
+  
+  
+  # Skip to the next iteration if either OBIS or GBIF data is NULL
+  if (is.null(obis_results) || is.null(gbif_results)) {
+    warning(paste("Skipping iteration", i, "due to missing OBIS or GBIF data."))
+    next
+  }
+  
+  # Select and rename columns from OBIS data
+  obis_select <- obis_results %>%
+    dplyr::select(scientificName, decimalLongitude, decimalLatitude, date_year, month, day, eventDate, dataset_id, occurrenceStatus, depth) %>%
+    dplyr::mutate(source = "obis.org")
+  
+  # Select and rename columns from GBIF data
+  gbif_select <- gbif_results %>%
+    dplyr::select(scientificName, decimalLongitude, decimalLatitude, year, month, day, eventDate, datasetKey, occurrenceStatus, depth)
+  
+  # Rename GBIF columns to match OBIS
+  names(gbif_select) <- obis_fields
+  
+  # Add a source column to GBIF data
+  gbif_select <- gbif_select %>%
+    dplyr::mutate(source = "gbif.org")
+  
+  # Combine OBIS and GBIF data
+  data_combined <- rbind(obis_select, gbif_select)
+  
+  # Convert eventDate to Date format
+  data_combined$eventDate <- as.Date(data_combined$eventDate, format = "%Y-%m-%d")
+  
+  
+  # Remove duplicate rows based on longitude, latitude, and eventDate
+  data_deduplicated <- data_combined[!duplicated(cbind(data_combined$decimalLongitude, data_combined$decimalLatitude, data_combined$eventDate)), ]
+  
+  # Create a filename based on AphiaID with an "SP" prefix
+  filename <- paste0(final_anemonefish_list$AphiaID[i], ".csv")
+  filepath <- file.path(output_dir, filename)
+  
+  # Save the deduplicated data as a CSV file
+  write_csv(data_deduplicated, file = filepath)
+  
+  # Print a message indicating the file has been saved
+  print(paste("Saved data to", filepath))
+}
+```
+
+## Download Environmental Data
+
+```{r}
+
+```
+
+# Data Standardisation
+
+```{r}
+
+```
+
+# PCA
+
+```{r}
+
+```
+
+# Run SDMs
+
+```{r}
+
+```
+
+# Post Analysis
+
+```{r}
+
+```
+
+
+

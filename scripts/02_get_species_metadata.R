@@ -1,3 +1,4 @@
+# scripts/02_get_species_metadata.R
 # Download species metadata from WoRMS and GBIF for anemones and anemonefish.
 # Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
 

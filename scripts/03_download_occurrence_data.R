@@ -1,16 +1,11 @@
+# scripts/03_download_occurrence_data.R
 # Download occurrence data from OBIS and GBIF for anemones and anemonefish.
 # Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
 
 # Function to download and save occurrence data for a given species list
-download_occurrence_data <- function(species_list_file, output_dir_base) {
+download_occurrence_data <- function(species_list_file, output_dir) {
   # Load the species list from the CSV file
   species_list <- read.csv(species_list_file)
-  
-  # Determine the group (anemone or anemonefish) from the filename
-  group <- ifelse(grepl("anemone", species_list_file), "anemone", "anemonefish")
-  
-  # Construct the output directory path
-  output_dir <- here("data", "occurrence", group)
   
   # Ensure the output directory exists
   if (!dir.exists(output_dir)) {
@@ -90,5 +85,5 @@ download_occurrence_data <- function(species_list_file, output_dir_base) {
 }
 
 # Run the function for anemones and anemonefish
-download_occurrence_data("final_anemone_species_list.csv", "data/occurrence")
-download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence")
+download_occurrence_data("final_anemone_species_list.csv", "data/occurrence/anemone")
+download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence/anemonefish")
