@@ -1,6 +1,6 @@
 # Install all requirements for scripts
 library(dplyr)
-library(mregions2)
+# library(mregions2)
 library(sf)
 library(wk)
 library(worrms)
