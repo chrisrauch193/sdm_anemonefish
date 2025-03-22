@@ -282,31 +282,55 @@ $(document).ready(function () {
 </div>
 
 
-<div id="title" class="section level1">
-<h1>Title</h1>
-<p>This is the home page for a template website you can build
-yourself.</p>
-<div id="more-info" class="section level2">
-<h2>More info</h2>
-<p>This is a regular R Markdown document. Put anything you like here,
-including R code.</p>
+<div id="modelling-anemonefish-and-sea-anemone-hosts"
+class="section level1">
+<h1>Modelling Anemonefish and Sea Anemone Hosts</h1>
+<p>Walking through all code used to produce results for Modelling
+Anemonefish and Sea Anemone Hosts paper</p>
 </div>
-<div id="about-the-yaml-header" class="section level2">
-<h2>About the YAML header</h2>
-<p>Note that the YAML header is pretty minimal–just a title.</p>
+<div id="install-requirements" class="section level1">
+<h1>Install Requirements</h1>
+<pre class="r"><code># Install all requirements for scripts
+library(dplyr)
+library(mregions2)
+library(sf)
+library(wk)
+library(worrms)
+library(here)
+library(httr2)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(rfishbase)
+library(rnaturalearth)
+library(robis)
+library(rgbif)
+library(stringr)
+library(ggtext)</code></pre>
 </div>
-<div id="rendering-the-site" class="section level2">
-<h2>Rendering the site</h2>
-<ol style="list-style-type: decimal">
-<li>Run <code>rmarkdown::render_site()</code> from the same directory as
-the <code>_site.yml</code> file.</li>
-<li>View the output in the directory your YAML file specifies in
-<code>output_dir</code>. The template says:
-<code>output_dir: "docs"</code> so look in <code>docs/</code>.</li>
-<li>Open the <code>index.html</code> file in your browser to view your
-handywork.</li>
-</ol>
+<div id="download-data" class="section level1">
+<h1>Download Data</h1>
+<div id="download-sea-anemone-occurence-data" class="section level2">
+<h2>Download Sea Anemone Occurence Data</h2>
 </div>
+<div id="download-anemonefish-occurence-data" class="section level2">
+<h2>Download Anemonefish Occurence Data</h2>
+</div>
+<div id="download-environmental-data" class="section level2">
+<h2>Download Environmental Data</h2>
+</div>
+</div>
+<div id="data-standardisation" class="section level1">
+<h1>Data Standardisation</h1>
+</div>
+<div id="pca" class="section level1">
+<h1>PCA</h1>
+</div>
+<div id="run-sdms" class="section level1">
+<h1>Run SDMs</h1>
+</div>
+<div id="post-analysis" class="section level1">
+<h1>Post Analysis</h1>
 </div>
 
 <p>CC0 1.0 Universal License</p>
