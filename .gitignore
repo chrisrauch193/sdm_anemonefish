@@ -4,3 +4,4 @@
 .Ruserdata
 *.zip
 data/
+*.DS_Store
