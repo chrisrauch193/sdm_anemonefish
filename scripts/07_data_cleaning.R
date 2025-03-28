@@ -10,11 +10,23 @@ library(raster)
 source("helpers/sdm_helpers.R")
 
 # Load the environmental stack (if not already in memory)
-# env_stack <- readRDS("data/env/selected_env_stack.rds") #Uncomment if you saved
+env_stack <- readRDS("data/env/selected_env_stack.rds") #Uncomment if you saved
 
 if (!exists("env_stack")) {
   stop("env_stack not found. Please run 05_1_env_variable_selection.R first.")
 }
+
+# Preprocess env layers
+coral_areas <- terra::vect("data/shapefiles/WCMC008_CoralReef2018_Py_v4_1.shp")
+
+# 1. Coral Reef Restriction (crop and mask)
+env_stack$layers <- terra::crop(env_stack$layers, coral_areas)
+env_stack$layers <- terra::mask(env_stack$layers, coral_areas)
+
+# 2. Depth Restriction (0m to -50m)
+depth_range <- c(-50, 0)  # Depth range (max depth, min depth)
+env_stack$layers[bath < depth_range[0] | bath > depth_range[1]] <- NA
+
 
 # Function to process species data
 process_species_data <- function(species_list_file, occurrence_folder, output_folder, env_stack) {
