@@ -11,14 +11,14 @@ output_folder <- "data/sdm_output"  # Create this folder if it doesn't exist
 # env_stack <- readRDS("data/env/selected_env_stack.rds") #Uncomment if you saved
 
 if (!exists("env_stack")) {
-  stop("env_stack not found. Please run 05_1_env_variable_selection.R first.")
+  stop("env_stack not found. Please run 05_env_variable_selection.R first.")
 }
 
 # Load species lists
 anemone_list <- read.csv("final_anemone_species_list.csv")
 
 #Run the main SDM script
-source("scripts/05_5_run_sdm.R")
+source("scripts/09_run_sdm.R")
 
 # Run SDM for all anemone species
 print("Starting SDMs for anemones...")

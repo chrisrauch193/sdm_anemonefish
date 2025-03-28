@@ -55,4 +55,4 @@ for (i in 1:nrow(anemone_list)) {
 }
 
 # Optionally, save the background points list
-# saveRDS(background_points_list, file = "data/sdm_output/background_points_list.rds")
+saveRDS(background_points_list, file = "data/sdm_output/background_points_list.rds")

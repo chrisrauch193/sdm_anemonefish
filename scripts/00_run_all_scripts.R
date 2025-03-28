@@ -14,7 +14,7 @@ if (force | !any(grepl(".csv", list.files("data/occurrence/anemone")))  | !any(g
 }
 
 # Don't need to check if files exist for this code
-source("scripts/04_download_env_data.R")
+# source("scripts/04_download_env_data.R")
 
 # Run the SDM scripts
 print("Doing env variable selection")
