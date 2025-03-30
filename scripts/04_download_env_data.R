@@ -46,7 +46,7 @@ range_datasets <- c(
 )
 
 # Download also the range, ltmin and ltmax
-get_env_data(datasets = range_datasets,
+obissdm::get_env_data(datasets = range_datasets,
              future_scenarios = future_scenarios,
              time_steps = time_steps, variables = c("range", "ltmin", "ltmax"),
              average_time = T)
