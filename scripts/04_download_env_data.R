@@ -2,6 +2,7 @@
 # Download all environmental data form Bio-Oracle using obissdm library
 # https://github.com/iobis/mpaeu_sdm/blob/main/codes/get_env_data.R
 
+
 # List datasets to download
 datasets <- c(
   "par_mean_baseline_2000_2020_depthsurf",
@@ -47,9 +48,9 @@ range_datasets <- c(
 
 # Download also the range, ltmin and ltmax
 obissdm::get_env_data(datasets = range_datasets,
-             future_scenarios = future_scenarios,
-             time_steps = time_steps, variables = c("range", "ltmin", "ltmax"),
-             average_time = T)
+                      future_scenarios = future_scenarios,
+                      time_steps = time_steps, variables = c("range", "ltmin", "ltmax"),
+                      average_time = T)
 
 # Rename terrain_ruggedness
 to_rename <- list.files("data/env/terrain/", recursive = T, full.names = T)
