@@ -8,6 +8,8 @@ library(dplyr)
 library(ggplot2)
 library(terra) # For raster operations
 library(tools)  # file_path_sans_ext
+library(tidyr) #for pivot_longer
+
 
 #-------------------------------------------------------------------------------
 # Setup
@@ -54,13 +56,11 @@ perform_vegan_pca <- function(env_values_df, output_prefix, save_location) {
   # --- 2. Perform PCA (rda) ---
   env.pca <- rda(env.d)
   
-  # --- 3. Calculate Variance Explained ---
+  # --- 3. Extract Variance Explained ---
   a <- summary(env.pca)
   b <- a$cont$importance
-  prop1 <- b[2,1] * 100
-  prop1 <- round(prop1, digits = 2)
-  prop2 <- b[2,2] * 100
-  prop2 <- round(prop2, digits = 2)
+  prop_explained <- b[2, ] # Get the proportion of variance explained for all axes
+  num_components <- length(prop_explained)
   
   # --- 4. Extract Scores and Scale Loadings ---
   
@@ -92,8 +92,8 @@ perform_vegan_pca <- function(env_values_df, output_prefix, save_location) {
     geom_text(data = species_df, aes(x = PC1, y = PC2, label = rownames(species_df)),
               hjust = 0.5, vjust = 0.5, size = 3, color = "black") + # Variable labels
     
-    labs(x = paste("PCA Axis 1 (", prop1, "%)", sep = ""),
-         y = paste("PCA Axis 2 (", prop2, "%)", sep = ""),
+    labs(x = paste("PCA Axis 1 (", round(prop_explained[1] * 100, 2), "%)", sep = ""),
+         y = paste("PCA Axis 2 (", round(prop_explained[2] * 100, 2), "%)", sep = ""),
          title = paste0(output_prefix, " PCA Biplot")) +
     theme_bw() +
     theme(panel.grid.major = element_blank(),
@@ -103,10 +103,49 @@ perform_vegan_pca <- function(env_values_df, output_prefix, save_location) {
           legend.position = "none",
           text = element_text(size=13))
   
-  # --- 6. Save the Plot ---
-  save_path <- file.path(save_location, paste0(output_prefix, "_vegan_pca.png"))
-  ggsave(save_path, plot = pca_plot, width = 8, height = 6)
-  cat(paste("Vegan PCA plot saved to", save_path, "\n"))
+  
+  # --- 6. Stacked Bar Plot (Contribution per Variable per Component) ---
+  
+  # Extract variable loadings for the first four PCs
+  var_loadings <- scores(env.pca, display = "species", choices = 1:4)
+  var_loadings_df <- as.data.frame(var_loadings)
+  var_loadings_df$Variable <- rownames(var_loadings_df)
+  
+  # Reshape the data for easier plotting
+  var_loadings_long <- var_loadings_df %>%
+    pivot_longer(cols = starts_with("PC"),
+                 names_to = "Principal Component",
+                 values_to = "Contribution")
+  
+  # Factorize Principal Component for consistent order
+  var_loadings_long$`Principal Component` <- factor(var_loadings_long$`Principal Component`, levels = paste0("PC", 1:4))
+  
+  # Define color palette
+  #Color scheme
+  num_vars <- length(unique(var_loadings_long$Variable))
+  colors <- colorRampPalette(c("#1F3F8C", "#A9192A"))(num_vars)
+  
+  contribution_plot <- ggplot(var_loadings_long, aes(x = `Principal Component`, y = Contribution, fill = Variable)) +
+    geom_bar(stat = "identity", position = "stack") + # Stack bars
+    scale_fill_manual(values = colors) +
+    labs(title = paste0(output_prefix, " - Variable Contribution to PCs"),
+         x = "Principal Component",
+         y = "Contribution") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.title = element_blank(),
+          panel.grid.minor = element_blank()) #Remove grid lines
+  
+  # --- 7. Save the Plots ---
+  pca_save_path <- file.path(save_location, paste0(output_prefix, "_vegan_pca.png"))
+  ggsave(pca_save_path, plot = pca_plot, width = 8, height = 6)
+  
+  contribution_save_path <- file.path(save_location, paste0(output_prefix, "_contribution_plot.png"))
+  ggsave(contribution_save_path, plot = contribution_plot, width = 10, height = 7)
+  
+  
+  cat(paste("Vegan PCA plot saved to", pca_save_path, "\n"))
+  cat(paste("Variable contribution plot saved to", contribution_save_path, "\n"))
 }
 #-------------------------------------------------------------------------------
 # Main Analysis
