@@ -70,42 +70,109 @@ initial_full_variable_list <- list()
 
 # --- CURRENT Scenario Variables ---
 initial_full_variable_list[['current']] <- c(
-  "par_baseline_depthsurf_mean", "sws_baseline_depthsurf_mean",
-  "thetao_baseline_depthsurf_mean",
-  "thetao_baseline_depthmax_mean", "thetao_baseline_depthmax_ltmin",
-  "thetao_baseline_depthmax_ltmax", "thetao_baseline_depthmax_range",
-  "so_baseline_depthmax_mean", "no3_baseline_depthmax_mean",
-  "no3_baseline_depthmax_ltmin", "no3_baseline_depthmax_ltmax",
-  "no3_baseline_depthmax_range", "chl_baseline_depthmax_mean",
-  "phyc_baseline_depthmax_mean", "o2_baseline_depthmax_mean",
-  "o2_baseline_depthmax_ltmin", "o2_baseline_depthmax_ltmax",
+  "no3_baseline_depthmax_ltmax",
+  "no3_baseline_depthmax_ltmin",
+  "no3_baseline_depthmax_mean",
+  "no3_baseline_depthmax_range",
+  "o2_baseline_depthmax_ltmax",
+  "o2_baseline_depthmax_ltmin",
+  "o2_baseline_depthmax_mean",
   "o2_baseline_depthmax_range",
+  "phyc_baseline_depthmax_mean",
+  "so_baseline_depthmax_mean",
+  "sws_baseline_depthsurf_mean",
+  "thetao_baseline_depthmax_ltmax",
+  "thetao_baseline_depthmax_ltmin",
+  "thetao_baseline_depthmax_mean",
+  "thetao_baseline_depthmax_range",
+  "thetao_baseline_depthsurf_mean",
+  "chl_baseline_depthmax_mean",
+  "par_baseline_depthsurf_mean",
+  # Terrain Vars
   "bathymetry_mean", "slope", "rugosity", "distcoast"
 )
+
+# # --- SSP119 dec50 (2050) ---
+# # List based on your debug output for ssp119 dec50 files + terrain
+# initial_full_variable_list[['ssp119_2050']] <- c(
+#   "no3_ssp119_depthmax_dec50_ltmax",
+#   "no3_ssp119_depthmax_dec50_ltmin",
+#   "no3_ssp119_depthmax_dec50_mean",
+#   "no3_ssp119_depthmax_dec50_range",
+#   "o2_ssp119_depthmax_dec50_ltmax",
+#   "o2_ssp119_depthmax_dec50_ltmin",
+#   "o2_ssp119_depthmax_dec50_mean",
+#   "o2_ssp119_depthmax_dec50_range",
+#   "phyc_ssp119_depthmax_dec50_mean",
+#   "so_ssp119_depthmax_dec50_mean",
+#   "sws_ssp119_depthsurf_dec50_mean", # Assuming depthsurf
+#   "thetao_ssp119_depthmax_dec50_ltmax",
+#   "thetao_ssp119_depthmax_dec50_ltmin",
+#   "thetao_ssp119_depthmax_dec50_mean",
+#   "thetao_ssp119_depthmax_dec50_range",
+#   "thetao_ssp119_depthsurf_dec50_mean", # Assuming depthsurf
+#   # Copied & Renamed Baseline Vars
+#   "chl_ssp119_depthmax_dec50_mean",
+#   "par_ssp119_depthsurf_dec50_mean", # Assuming depthsurf
+#   # Terrain Vars
+#   "bathymetry_mean", "slope", "rugosity", "distcoast"
+# )
+
+
+# --- FIRST CUT Scenario Variables ---
+initial_full_variable_list[['current']] <- c(
+  "par_baseline_depthsurf_mean",
+  "sws_baseline_depthsurf_mean",
+  # "thetao_baseline_depthsurf_mean",
+  "thetao_baseline_depthmax_mean",
+  "thetao_baseline_depthmax_range",
+  "so_baseline_depthmax_mean",
+  "no3_baseline_depthmax_mean",
+  "no3_baseline_depthmax_range",
+  # "no3_baseline_depthmax_ltmax",
+  # "no3_baseline_depthmax_ltmin",
+  "chl_baseline_depthmax_mean",
+  # "o2_baseline_depthmax_mean",
+  "o2_baseline_depthmax_range",
+  # "o2_baseline_depthmax_ltmax",
+  # "o2_baseline_depthmax_ltmin",
+  # "phyc_baseline_depthmax_mean",
+  # "ph_baseline_depthmax_mean",
+  # Terrain Vars
+  "bathymetry_mean", "distcoast", "rugosity"
+)
+
+# PROPOSED ANEMONEFISH Starting List
+initial_full_variable_list[['current']] <- c(
+  "par_baseline_depthsurf_mean",    # Vision/orientation
+  "sws_baseline_depthsurf_mean",    # Lower priority - larval transport?
+  "thetao_baseline_depthmax_mean",  # Juvenile/Adult temp
+  "thetao_baseline_depthmax_range", # Temp variability/stress
+  "so_baseline_depthmax_mean",      # Osmoregulation
+  "no3_baseline_depthmax_mean",     # Larval food web proxy
+  "no3_baseline_depthmax_range",  # Consider removing (lower priority for fish)
+  "chl_baseline_depthmax_mean",     # Larval food web proxy
+  "o2_baseline_depthmax_ltmin",     # ADDED/SWAPPED - Physiological limit
+  # Terrain Vars
+  "bathymetry_mean",                # Depth limit
+  "distcoast",                      # Coastal affinity
+  "rugosity"                        # Habitat structure
+)
+
 # --- SSP119 dec50 (2050) ---
 # List based on your debug output for ssp119 dec50 files + terrain
 initial_full_variable_list[['ssp119_2050']] <- c(
-  "no3_ssp119_depthmax_dec50_ltmax",
-  "no3_ssp119_depthmax_dec50_ltmin",
-  "no3_ssp119_depthmax_dec50_mean",
-  "no3_ssp119_depthmax_dec50_range",
-  "o2_ssp119_depthmax_dec50_ltmax",
-  "o2_ssp119_depthmax_dec50_ltmin",
-  "o2_ssp119_depthmax_dec50_mean",
-  "o2_ssp119_depthmax_dec50_range",
-  "phyc_ssp119_depthmax_dec50_mean",
-  "so_ssp119_depthmax_dec50_mean",
-  "sws_ssp119_depthsurf_dec50_mean", # Assuming depthsurf
-  "thetao_ssp119_depthmax_dec50_ltmax",
-  "thetao_ssp119_depthmax_dec50_ltmin",
+  "par_ssp119_depthsurf_dec50_mean",
+  "sws_ssp119_depthsurf_dec50_mean",
   "thetao_ssp119_depthmax_dec50_mean",
   "thetao_ssp119_depthmax_dec50_range",
-  "thetao_ssp119_depthsurf_dec50_mean", # Assuming depthsurf
-  # Copied & Renamed Baseline Vars
+  "so_ssp119_depthmax_dec50_mean",
+  "no3_ssp119_depthmax_dec50_mean",
+  "no3_ssp119_depthmax_dec50_range",
   "chl_ssp119_depthmax_dec50_mean",
-  "par_ssp119_depthsurf_dec50_mean", # Assuming depthsurf
+  "o2_ssp119_depthmax_dec50_range",
   # Terrain Vars
-  "bathymetry_mean", "slope", "rugosity", "distcoast"
+  "bathymetry_mean", "distcoast", "rugosity"
 )
 
 # --- SSP119 dec100 (2100) ---
@@ -188,7 +255,7 @@ cat("\n--- PART 1 FINISHED: Review INITIAL VIF/Correlation plots in", exp_log_di
 # Based on INITIAL VIF/Corr plots, define the FINAL list for PCA below.
 # Use the EXACT layer names from the 'Initial variables for VIF/Corr' printout above.
 
-stop("SCRIPT HALTED: Review INITIAL VIF/Corr plots in the log directory then define 'final_selected_vars_experiment' list below and comment out this stop() line.")
+# stop("SCRIPT HALTED: Review INITIAL VIF/Corr plots in the log directory then define 'final_selected_vars_experiment' list below and comment out this stop() line.")
 
 final_selected_vars_experiment <- list()
 
@@ -372,3 +439,102 @@ if(run_sdms) {
 
 cat("\n--- EXPERIMENTAL Script Finished ---\n")
 #-------------------------------------------------------------------------------
+
+
+
+
+
+
+# Start final 8
+# mean surface temperature
+# mean current velocity (surface wind speed)
+# mean salinity
+# mean temperature
+# mean nitrate concentration
+# nitrate concentration range
+# mean chlorophyll concentration
+# dissolved oxygen concentration range
+# mean phytoplankton concentration.
+# bath >= 50m
+
+# General start
+# mean depthsurf light availability (PAR)
+# mean depthsurf wind speed
+# mean depthsurf temperature
+# mean depthmax temperature
+# ltmin depthmax temperature
+# ltmax depthmax temperature
+# mean depthmax salinity
+# mean depthmax nitrate concentration
+# ltmin depthmax nitrate concentration
+# ltmax depthmax nitrate concentration
+# mean depthmax chlorophyll concentration
+# mean depthmax dissolved oxygen concentration
+# ltmin depthmax dissolved oxygen concentration
+# ltmax depthmax dissolved oxygen concentration
+# mean depthmax phytoplankton concentration.
+# distcoast
+# rugosity
+# bath >= 50m
+
+
+# Initial Selection (TODO: Check colinearity)
+# mean depthmax light availability (PAR)
+# mean surface wind speed
+# mean surface temperature
+# mean depthmax temperature
+# ltmin depthmax temperature
+# ltmax depthmax temperature
+# mean depthmax salinity
+# ltmin depthmax nitrate concentration
+# ltmax depthmax nitrate concentration
+# mean depthmax chlorophyll concentration
+# ltmin depthmax dissolved oxygen concentration
+# ltmax depthmax dissolved oxygen concentration
+# mean depthmax phytoplankton concentration.
+# distcoast
+# rugosity
+# bath >= 50m
+
+# Potential additions for anemonefish only
+# current speed at different depths (for dispersal, maybe add in dispersal land barriers)
+
+
+
+
+
+
+#FINAL FINAL ANEMONE HOST
+initial_full_variable_list[['current']] <- c(
+  "par_baseline_depthsurf_mean",
+  "sws_baseline_depthsurf_mean",
+  "thetao_baseline_depthmax_mean",
+  "thetao_baseline_depthmax_range",
+  "so_baseline_depthmax_mean",
+  "no3_baseline_depthmax_mean",
+  "no3_baseline_depthmax_range",
+  "chl_baseline_depthmax_mean",
+  "o2_baseline_depthmax_range",
+  # Terrain Vars
+  "bathymetry_mean", "distcoast", "rugosity"
+)
+
+# PROPOSED ANEMONEFISH Starting List
+initial_full_variable_list[['current']] <- c(
+  "par_baseline_depthsurf_mean",    # Vision/orientation
+  "sws_baseline_depthsurf_mean",    # Lower priority - larval transport?
+  "thetao_baseline_depthsurf_mean", # ADDED - Larval temp
+  "thetao_baseline_depthmax_mean",  # Juvenile/Adult temp
+  "thetao_baseline_depthmax_range", # Temp variability/stress
+  "so_baseline_depthmax_mean",      # Osmoregulation
+  # "no3_baseline_depthmax_mean",     # Larval food web proxy
+  # "no3_baseline_depthmax_range",  # Consider removing (lower priority for fish)
+  "chl_baseline_depthmax_mean",     # Larval food web proxy
+  "o2_baseline_depthmax_ltmin",     # ADDED/SWAPPED - Physiological limit
+  # "ph_baseline_depthmax_mean",           # ADDED - CRITICAL for behavior/physiology
+  # Terrain Vars
+  "bathymetry_mean",                # Depth limit
+  "distcoast",                      # Coastal affinity
+  "rugosity"                        # Habitat structure
+)
+

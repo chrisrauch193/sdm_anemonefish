@@ -66,7 +66,7 @@ original_datasets_mean <- c(
   "thetao_baseline_2000_2019_depthsurf", "thetao_baseline_2000_2019_depthmax",
   "so_baseline_2000_2019_depthmax", "no3_baseline_2000_2018_depthmax",
   "chl_baseline_2000_2018_depthmax", "phyc_baseline_2000_2020_depthmax",
-  "o2_baseline_2000_2018_depthmax"
+  "o2_baseline_2000_2018_depthmax", "ph_baseline_2000_2018_depthmax"
 )
 original_range_datasets <- c(
   "thetao_baseline_2000_2019_depthmax", "o2_baseline_2000_2018_depthmax",
@@ -120,8 +120,8 @@ chl_variable_stem <- "chl_baseline_2000_2018_depthmax"
 chl_file_path <- file.path(scenario_folder_map[["current"]], paste0(chl_variable_stem, "_mean.tif"))
 
 # VIF/Correlation Settings
-vif_threshold <- 5
-correlation_threshold <- 0.7
+vif_threshold <- 10
+correlation_threshold <- 0.8
 n_pca_components <- 4
 
 # SDM Settings
