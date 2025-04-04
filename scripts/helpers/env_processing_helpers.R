@@ -20,128 +20,80 @@ pacman::p_load(terra, sf, dplyr, readr, ggplot2, corrplot, tools, stringr) # Add
 load_stack_env_data <- function(scenario_name, config) {
   cat("--- Loading environmental data for scenario:", scenario_name, "---\n")
   
-  raster_files <- c()
+  scenario_specific_files <- c() # Files specific to current/future time step
+  terrain_paths_to_stack <- c() # Terrain files found
   
-  # --- Get Scenario Specific Files ---
+  # --- Get Scenario Specific Files (Current or Future) ---
+  target_dir <- config$scenario_folder_map[[scenario_name]]
+  if (is.null(target_dir) || !dir.exists(target_dir)) {
+    warning("Scenario directory not found/mapped for '", scenario_name, "' at path: ", target_dir); return(NULL)
+  }
+  
   if (scenario_name == "current") {
-    target_dir <- config$scenario_folder_map$current
-    if (!dir.exists(target_dir)) {
-      warning("Current scenario directory not found: ", target_dir, call. = FALSE)
-      return(NULL)
-    }
-    # List all .tif files directly in the 'current' directory
-    scenario_files <- list.files(target_dir, pattern = "\\.tif$", full.names = TRUE, recursive = FALSE) # Changed recursive=FALSE
-    scenario_files <- scenario_files[!grepl("\\.aux\\.xml$", scenario_files)]
-    raster_files <- c(raster_files, scenario_files)
-    cat("  Found", length(scenario_files), "files in", target_dir, "\n")
-    
+    current_files <- list.files(target_dir, pattern = "\\.tif$", full.names = TRUE, recursive = FALSE)
+    current_files <- current_files[!grepl("\\.aux\\.xml$", current_files)]
+    scenario_specific_files <- c(scenario_specific_files, current_files)
+    cat("  Found", length(current_files), "files in current directory:", target_dir, "\n")
   } else if (grepl("ssp", scenario_name)) {
-    # --- Handle Future Scenarios ---
-    # 1. Determine the base SSP directory from the map
-    target_dir <- config$scenario_folder_map[[scenario_name]] # e.g., data/env/future/ssp119
-    
-    # 2. Determine the required time step identifier from the name
-    time_step_tag <- if (grepl("_2050$", scenario_name)) {
-      "_dec50_" # Matches the middle part of filenames like ..._dec50_ltmin.tif
-    } else if (grepl("_2100$", scenario_name)) {
-      "_dec100_" # Matches the middle part of filenames like ..._dec100_mean.tif
-    } else {
-      warning("Cannot determine time step (dec50/dec100) from scenario name:", scenario_name, call. = FALSE)
-      return(NULL)
-    }
-    cat("  Targeting time step tag:", time_step_tag, "\n")
-    
-    if (!dir.exists(target_dir)) {
-      warning("Future scenario base directory not found: ", target_dir, call. = FALSE)
-      return(NULL)
-    }
-    
-    # 3. List ALL .tif files in the base SSP directory
-    all_ssp_files <- list.files(target_dir, pattern = "\\.tif$", full.names = TRUE, recursive = FALSE) # Changed recursive=FALSE
+    time_step_tag <- if (grepl("_2050$", scenario_name)) "_dec50_" else if (grepl("_2100$", scenario_name)) "_dec100_" else { warning("Invalid future scenario name format."); return(NULL) }
+    cat("  Targeting time step tag:", time_step_tag, "in directory:", target_dir, "\n")
+    all_ssp_files <- list.files(target_dir, pattern = "\\.tif$", full.names = TRUE, recursive = FALSE)
     all_ssp_files <- all_ssp_files[!grepl("\\.aux\\.xml$", all_ssp_files)]
-    
-    # 4. Filter files based on the time step tag in the filename
-    scenario_files <- all_ssp_files[stringr::str_detect(basename(all_ssp_files), fixed(time_step_tag))]
-    
-    if(length(scenario_files) == 0) {
-      warning("No files found containing the tag '", time_step_tag, "' in directory: ", target_dir, call. = FALSE)
-      # Don't return NULL yet, still need to add CHL and Terrain
-    } else {
-      raster_files <- c(raster_files, scenario_files)
-      cat("  Found", length(scenario_files), "files matching time step '", time_step_tag, "' in ", target_dir, "\n", sep="")
-    }
-    
-    # 5. Add current Chlorophyll-a layer if it exists
-    if (!is.null(config$chl_file_path) && file.exists(config$chl_file_path)) {
-      cat("  Adding current Chlorophyll layer:", basename(config$chl_file_path), "\n")
-      raster_files <- c(raster_files, config$chl_file_path)
-    } else {
-      cat("  Warning: Current Chlorophyll layer not found at:", config$chl_file_path, "\n")
-    }
-    
-  } else {
-    warning("Unknown scenario name:", scenario_name, call. = FALSE)
-    return(NULL)
-  }
-  
-  # --- Get Terrain Files (Same as before) ---
-  if (!is.null(config$terrain_folder) && dir.exists(config$terrain_folder)) {
-    terrain_files <- list.files(config$terrain_folder, pattern = "\\.tif$", full.names = TRUE, recursive = FALSE) # Changed recursive=FALSE
-    terrain_files <- terrain_files[!grepl("\\.aux\\.xml$", terrain_files)]
-    terrain_to_include <- sapply(config$terrain_variables_final, function(var_name) {
-      grep(paste0("^", var_name, "\\.tif$"), basename(terrain_files), value = TRUE, ignore.case=TRUE) # Match exact basename
+    # Files matching time tag
+    future_time_files <- all_ssp_files[stringr::str_detect(basename(all_ssp_files), fixed(time_step_tag))]
+    if(length(future_time_files) > 0) { scenario_specific_files <- c(scenario_specific_files, future_time_files); cat("  Found", length(future_time_files), "files matching time step.\n") } else { warning("No files found containing tag '", time_step_tag, "'") }
+    # Find copied/renamed current vars
+    copied_vars_to_find <- config$vars_to_copy_to_future
+    ssp_name <- sub("_.*", "", scenario_name); time_tag_clean <- gsub("^_|_$", "", time_step_tag)
+    expected_copied_names <- sapply(copied_vars_to_find, function(var_basename){
+      new_basename_step1 <- stringr::str_replace(var_basename, "_baseline_\\d{4}_\\d{4}", "")
+      parts <- stringr::str_split(new_basename_step1, "_")[[1]]
+      if (length(parts) >= 3) { paste(parts[1], ssp_name, parts[grepl("depth", parts)], time_tag_clean, parts[length(parts)], sep = "_") } else { paste(new_basename_step1, ssp_name, time_tag_clean, sep = "_") }
     })
-    terrain_to_include <- unlist(terrain_to_include)
-    terrain_to_include <- terrain_to_include[!sapply(terrain_to_include, is.null) & !duplicated(terrain_to_include)]
-    # Get full paths
-    terrain_paths_to_include <- file.path(config$terrain_folder, terrain_to_include)
-    
-    
-    if (length(terrain_paths_to_include) > 0) {
-      cat("  Adding", length(terrain_paths_to_include), "terrain files:", paste(basename(terrain_paths_to_include), collapse=", "), "\n")
-      raster_files <- c(raster_files, terrain_paths_to_include)
-    } else {
-      cat("  No terrain files matching config$terrain_variables_final found directly in", config$terrain_folder, "\n")
+    found_copied_files <- all_ssp_files[basename(tools::file_path_sans_ext(all_ssp_files)) %in% expected_copied_names]
+    if(length(found_copied_files) > 0) { cat("  Found", length(found_copied_files), "copied current variables:", paste(basename(found_copied_files), collapse=", "), "\n"); scenario_specific_files <- c(scenario_specific_files, found_copied_files) } else { cat("  Note: Did not find expected copied/renamed current variables.\n") }
+  } else { warning("Unknown scenario name:", scenario_name); return(NULL) }
+  
+  # --- Get Terrain Files (Simplified Logic) ---
+  cat("  Checking for terrain files...\n")
+  if (!is.null(config$terrain_folder) && dir.exists(config$terrain_folder)) {
+    # Loop through the final names expected (e.g., "bathymetry_mean", "slope", "rugosity", "distcoast")
+    for (terrain_var_final_name in config$terrain_variables_final) {
+      expected_terrain_file <- file.path(config$terrain_folder, paste0(terrain_var_final_name, ".tif"))
+      if (file.exists(expected_terrain_file)) {
+        terrain_paths_to_stack <- c(terrain_paths_to_stack, expected_terrain_file)
+        cat("    Found terrain file:", basename(expected_terrain_file), "\n")
+      } else {
+        cat("    Terrain file not found:", basename(expected_terrain_file), "in", config$terrain_folder, "\n")
+      }
     }
-  } else {
-    warning("Terrain folder not found or not specified in config:", config$terrain_folder, call. = FALSE)
+  } else { warning("Terrain folder not found or not specified.", call. = FALSE) }
+  if(length(terrain_paths_to_stack) == 0) {
+    cat("  Warning: No terrain files were found to add.\n")
   }
   
-  # --- Stack Rasters ---
-  raster_files <- unique(raster_files)
-  if (length(raster_files) == 0) {
-    warning("No raster files identified to stack for scenario:", scenario_name, call. = FALSE)
-    return(NULL)
-  }
+  # --- Combine and Stack ---
+  all_raster_files <- unique(c(scenario_specific_files, terrain_paths_to_stack))
+  if (length(all_raster_files) == 0) { warning("No raster files identified for scenario:", scenario_name); return(NULL) }
   
-  cat("  Attempting to stack", length(raster_files), "raster files...\n")
-  # print(basename(raster_files)) # Optional: print files being stacked
+  cat("  Attempting to stack", length(all_raster_files), "raster files...\n")
+  # print(basename(all_raster_files)) # Debug
   tryCatch({
-    env_stack <- terra::rast(raster_files)
-    # Clean layer names: remove time step tags, baseline tags etc. for consistency
-    clean_names <- names(env_stack)
-    clean_names <- gsub("_dec50_|_dec100_", "_", clean_names) # Remove time step tag
-    clean_names <- gsub("_baseline_\\d{4}_\\d{4}", "", clean_names) # Remove baseline year tag
-    clean_names <- gsub("_\\d{4}_\\d{4}", "", clean_names) # Remove other year tags if present
-    # Use file path sans ext on basename for final cleanup
-    clean_names <- tools::file_path_sans_ext(basename(clean_names))
-    names(env_stack) <- clean_names
-    cat("  Final stacked raster names:", paste(names(env_stack), collapse=", "), "\n")
-    # Check for duplicate names after cleaning
-    if(any(duplicated(names(env_stack)))) {
-      warning("Duplicate layer names found after cleaning for scenario ", scenario_name, ": ",
-              paste(names(env_stack)[duplicated(names(env_stack))], collapse=", "),
-              ". This may cause issues in analysis.", call.=FALSE)
+    env_stack <- terra::rast(all_raster_files)
+    layer_names <- tools::file_path_sans_ext(basename(sources(env_stack)))
+    # Quick check for obvious duplicates before assigning
+    if(any(duplicated(layer_names))){
+      warning("Duplicate source file basenames detected before stacking for scenario ", scenario_name, ". Check input file lists and paths.", call.=FALSE)
+      # Potentially try unique() again, although it might hide path issues
+      # env_stack <- terra::rast(unique(all_raster_files))
+      # layer_names <- tools::file_path_sans_ext(basename(sources(env_stack)))
     }
+    names(env_stack) <- layer_names
+    cat("  Final stacked raster names:", paste(names(env_stack), collapse=", "), "\n")
+    if(any(duplicated(names(env_stack)))) { warning("Duplicate layer names exist in the final stack for scenario ", scenario_name, ". This will likely cause errors downstream.") }
     return(env_stack)
-  }, error = function(e) {
-    warning("Error stacking rasters for scenario ", scenario_name, ": ", e$message, call. = FALSE)
-    cat("Files attempted to stack:\n")
-    print(basename(raster_files))
-    return(NULL)
-  })
+  }, error = function(e) { warning("Error stacking rasters: ", e$message); print(basename(all_raster_files)); return(NULL) })
 }
-
 
 # --- Other Helper Functions (preprocess_env_rasters, load_clean_thin_group_occurrences, extract_env_values, plotting functions) ---
 # --- remain unchanged from the previous version ---

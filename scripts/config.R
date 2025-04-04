@@ -82,7 +82,16 @@ original_terrain_vars_for_download <- c(
 )
 # --- End Original Download Lists ---
 
-terrain_variables_final <- c("bathymetry_mean", "slope", "rugosity")
+terrain_variables_final <- c("bathymetry_mean", "slope", "rugosity", "distcoast")
+
+# --- !!! Variables Missing in Future Data !!! ---
+# List the EXACT FILENAMES (without extension) of variables in the 'current' folder
+# that need to be copied to future scenario folders because they lack future versions.
+vars_to_copy_to_future <- c(
+  "chl_baseline_depthmax_mean", # Assuming this is the final CHL name
+  "par_baseline_depthsurf_mean"  # Assuming this is the final PAR name
+  # Add any others if necessary
+)
 
 # Scenarios and Time Steps (Internal logical names used in loops)
 env_scenarios <- c(
@@ -176,6 +185,7 @@ config <- list(
   original_terrain_vars_for_download = original_terrain_vars_for_download,
   # --- End Original Download Lists ---
   terrain_variables_final = terrain_variables_final,
+  vars_to_copy_to_future = vars_to_copy_to_future,
   env_scenarios = env_scenarios, scenario_folder_map = scenario_folder_map, # Use updated map
   chl_variable_stem = chl_variable_stem,
   vif_threshold = vif_threshold, correlation_threshold = correlation_threshold,
