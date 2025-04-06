@@ -23,7 +23,7 @@ source("helpers/extract_env.R")
 # Define global variables (adjust as needed)
 env_folder      <- "data/env/current"
 save_location   <- "data/log"
-vif_threshold   <- 5
+vif_threshold   <- 10
 coral_shapefile <- "data/shapefiles/WCMC008_CoralReef2018_Py_v4_1.shp"
 occurrence_crs  <- "EPSG:4326"
 env_crs         <- "EPSG:4326"
