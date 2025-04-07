@@ -109,7 +109,7 @@ results_list <- progressr::with_progress({
     dir.create(species_models_dir, recursive = TRUE, showWarnings = FALSE)
     
     # Configure logger for THIS species run (appends to file)
-    log_threshold(INFO) # Set desired level (INFO, DEBUG, etc.)
+    log_threshold("INFO") # Set desired level (INFO, DEBUG, etc.)
     log_layout(layout_glue('{time} [{level}] {msg}'))
     log_appender(appender_file(species_log_file))
     
