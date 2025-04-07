@@ -124,14 +124,15 @@ vif_threshold <- 10
 correlation_threshold <- 0.8
 n_pca_components <- 4
 
-# SDM Settings
-sdm_algorithm <- "maxnet"
-sdm_partitions <- "randomkfold"
+# SDM Settings (Updated for sdmtune)
+sdm_method <- "Maxnet" # sdmtune uses method names like "Maxnet", "RF", etc.
+sdm_partitions <- "randomkfold" # sdmtune uses this term
 sdm_n_folds <- 5
-sdm_tune_args <- list(fc = c("L", "LQ", "H", "LQH", "LQP"), rm = seq(0.5, 4, 0.5))
-sdm_evaluation_metric <- "AUC_val"
+# sdmtune uses 'reg' for regularization multiplier and 'fc' for feature class
+sdm_tune_grid <- list(fc = c("L", "LQ", "H", "LQH", "LQP"), reg = seq(0.5, 4, 0.5))
+sdm_evaluation_metric <- "AUC" # Common metric used by sdmtune tuning/results
 background_points_n <- 10000
-thinning_method <- "cell"
+thinning_method <- "cell" # Or your preferred method
 
 # Study Area / Environmental Constraints
 apply_coral_mask <- TRUE
@@ -255,9 +256,9 @@ config <- list(
   env_scenarios = env_scenarios, scenario_folder_map = scenario_folder_map, # Use updated map
   chl_variable_stem = chl_variable_stem,
   vif_threshold = vif_threshold, correlation_threshold = correlation_threshold,
-  n_pca_components = n_pca_components, sdm_algorithm = sdm_algorithm,
+  n_pca_components = n_pca_components, sdm_method = sdm_method,
   sdm_partitions = sdm_partitions, sdm_n_folds = sdm_n_folds,
-  sdm_tune_args = sdm_tune_args, sdm_evaluation_metric = sdm_evaluation_metric,
+  sdm_tune_grid = sdm_tune_grid, sdm_evaluation_metric = sdm_evaluation_metric,
   background_points_n = background_points_n, thinning_method = thinning_method,
   apply_coral_mask = apply_coral_mask, apply_depth_filter = apply_depth_filter,
   depth_min = depth_min, depth_max = depth_max, min_occurrences_sdm = min_occurrences_sdm,

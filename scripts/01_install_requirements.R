@@ -12,7 +12,8 @@ pkg_list <- c(
   "tidyr", "vegan", "ggvegan", "corrplot", "car", "usdm",
   "robis", "rgbif", "worrms", "obistools", # Added worrms/obistools for script 02
   "ENMeval", "dismo", "raster", "parallel", # Added parallel
-  "devtools", "tools", "ggtext"
+  "devtools", "tools", "ggtext",
+  "sdmtune"
 )
 
 # Check for biooracler (specific install from GitHub if needed)
