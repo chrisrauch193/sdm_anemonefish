@@ -202,19 +202,9 @@ final_vars_anemone <- c(
   "bathymetry_mean", "distcoast", "rugosity"
 )
 
-final_vars_anemonefish_env <- c(
-  "par_baseline_depthsurf_mean",
-  "sws_baseline_depthsurf_mean",
-  "thetao_baseline_depthmax_mean",
-  "thetao_baseline_depthmax_range",
-  "so_baseline_depthmax_mean",
-  "no3_baseline_depthmax_mean",
-  "no3_baseline_depthmax_range",
-  "chl_baseline_depthmax_mean",
-  "o2_baseline_depthmax_range",
-  # Terrain Vars
-  "bathymetry_mean", "distcoast", "rugosity"
-)
+final_vars_anemonefish_env <- final_vars_anemone
+
+final_env_vars_anemonefish_combined <- final_vars_anemone
 
 # Function to get display name from a potentially scenario-specific technical name
 get_display_name <- function(technical_name, lookup = core_var_display_names) {
@@ -294,7 +284,8 @@ config <- list(
   use_parallel = use_parallel,
   get_display_name = get_display_name,
   final_vars_anemone = final_vars_anemone,
-  final_vars_anemonefish_env = final_vars_anemonefish_env
+  final_vars_anemonefish_env = final_vars_anemonefish_env,
+  final_env_vars_anemonefish_combined = final_env_vars_anemonefish_combined
 )
 
 cat("Configuration loaded and bundled into 'config' list.\n")

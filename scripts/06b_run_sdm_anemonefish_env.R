@@ -1,180 +1,252 @@
 # scripts/06b_run_sdm_anemonefish_env.R
 #-------------------------------------------------------------------------------
 # Run Standard SDMs for Anemonefish Species (Env Variables Only) using SDMtune
-# PARALLELIZED VERSION over species. Saves thinned occurrence count.
+# PARALLELIZED VERSION over species with future/progressr.
+# Logs detailed output for EACH SPECIES to a separate file.
+# Saves outputs to species-specific directories.
+# Saves thinned occurrence count.
 #-------------------------------------------------------------------------------
 cat("--- Running Script 06b: Run Standard Anemonefish (Env Only) SDMs (SDMtune - Parallelized) ---\n")
 
 # --- 1. Setup ---
 if (!exists("config")) { source("scripts/config.R"); if (!exists("config")) stop("Failed load config.") }
+# Load necessary packages
 pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools, stringr,
-               foreach, doParallel)
+               future, future.apply, progressr, logger) # Added logger
 
 # Source helpers
 env_helper_path <- file.path(config$helpers_dir, "env_processing_helpers.R"); source(env_helper_path)
 sdm_helper_path <- file.path(config$helpers_dir, "sdm_modeling_helpers.R"); source(sdm_helper_path)
+# No global logging setup needed here
 
 # --- 2. Define Group Specifics ---
 group_name <- "anemonefish" # **** CHANGED ****
 species_list_file <- config$anemonefish_species_list_file # **** CHANGED ****
 occurrence_dir <- config$anemonefish_occurrence_dir     # **** CHANGED ****
-cat("Analyzing Group:", group_name, "(Environment Variables Only)\n")
+log_info("Analyzing Group: {group_name} (Environment Variables Only)") # Use logger
 
-# --- 3. *** Load FINAL Selected Environmental Variable List for Anemonefish *** ---
+# --- 3. Load FINAL Selected Variable List ---
 # Load from config (ensure it was defined there after VIF analysis in 05b).
 if (!exists("final_vars_anemonefish_env", where = config)) { # **** CHANGED variable name ****
-  stop("Object 'final_vars_anemonefish_env' not found in config. Define it after VIF analysis in 05b.")
+  log_error("Object 'final_vars_anemonefish_env' not found in config. Define it after VIF analysis in 05b.")
+  stop("Missing final_vars_anemonefish_env in config.")
 }
 final_core_vars_group <- config$final_vars_anemonefish_env # **** CHANGED variable name ****
 if(is.null(final_core_vars_group) || length(final_core_vars_group) < 1) {
-  stop("Final core variable list for '", group_name, "' (env only) is missing or empty.")
+  log_error("Final core variable list for '{group_name}' (env only) is missing or empty.")
+  stop("Invalid final variable list.")
 }
-cat("--- Using FINAL core variables for Fish Env-Only SDMs:", paste(final_core_vars_group, collapse=", "), "---\n")
+log_info("Using FINAL core variables for SDMs: {paste(final_core_vars_group, collapse=', ')}")
 
-# --- 4. Create Output Directories ---
-# Note: These might overlap with 06a if not careful. Consider adding "_env_only" suffix if needed.
-# Using group_name ensures separation from anemones.
-group_pred_dir <- file.path(config$predictions_dir, group_name)
-group_results_dir <- file.path(config$results_dir, group_name)
-group_models_dir <- file.path(config$models_dir, group_name)
-dir.create(group_pred_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(group_results_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(group_models_dir, recursive = TRUE, showWarnings = FALSE)
+# --- 4. Define BASE Output Directories (Adding suffix) ---
+base_pred_dir <- file.path(config$predictions_dir, paste0(group_name, "_env_only")) # **** ADDED SUFFIX ****
+base_results_dir <- file.path(config$results_dir, paste0(group_name, "_env_only"))    # **** ADDED SUFFIX ****
+base_models_dir <- file.path(config$models_dir, paste0(group_name, "_env_only"))     # **** ADDED SUFFIX ****
+base_log_dir <- file.path(config$log_dir, paste0("species_logs_", group_name, "_env_only")) # **** ADDED SUFFIX ****
+dir.create(base_pred_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(base_results_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(base_models_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(base_log_dir, recursive = TRUE, showWarnings = FALSE)
+log_info("Base output directories ensured. Species logs in: {base_log_dir}")
 
 # --- 5. Load Species List ---
 tryCatch({ species_df <- readr::read_csv(species_list_file, show_col_types = FALSE)
-}, error = function(e) { stop("Failed load species list: ", e$message) })
+}, error = function(e) { log_error("Failed load species list: {e$message}"); stop("Cannot load species list.") })
+log_info("Loaded {nrow(species_df)} species for group '{group_name}'.")
 
-# --- 6. Setup Parallel Backend ---
+# --- 6. Setup Parallel Backend (Future) & Progress Reporting ---
 n_cores_to_use <- 1
-if (config$use_parallel) {
-  n_cores_detected <- parallel::detectCores()
+if (config$use_parallel && nrow(species_df) > 1) {
+  n_cores_detected <- future::availableCores()
   n_cores_to_use <- min(config$num_cores, n_cores_detected - 1, nrow(species_df))
   if (n_cores_to_use < 1) n_cores_to_use <- 1
-  
   if (n_cores_to_use > 1) {
-    cat("Setting up parallel backend with", n_cores_to_use, "cores...\n")
-    cl <- parallel::makeCluster(n_cores_to_use)
-    doParallel::registerDoParallel(cl)
-    # Export necessary variables/functions to the workers
-    parallel::clusterExport(cl, varlist = ls(all.names = TRUE), envir = .GlobalEnv) # Export all from global (simpler but less precise)
-    # parallel::clusterExport(cl, varlist = c("config", "load_clean_individual_occ", "thin_individual_occ", "generate_sdm_background", "run_sdm_sdmtune_grid", "predict_sdm_sdmtune", "load_selected_env_data", "generate_scenario_variable_list", "preprocess_env_rasters", "load_stack_env_data", "final_core_vars_group", "occurrence_dir", "group_pred_dir", "group_results_dir", "group_models_dir")) # More explicit export
-    parallel::clusterEvalQ(cl, { library(terra); library(sf); library(dplyr); library(SDMtune); library(readr); library(tools); library(stringr) })
+    log_info("Setting up parallel backend with {n_cores_to_use} cores (future::multisession)...")
+    future::plan(future::multisession, workers = n_cores_to_use)
   } else {
-    cat("Parallel disabled or only 1 core available/needed. Running sequentially.\n")
-    foreach::registerDoSEQ()
+    log_info("Parallel disabled or only 1 core available/needed. Running sequentially.")
+    future::plan(future::sequential)
   }
 } else {
-  cat("Running sequentially.\n")
-  foreach::registerDoSEQ()
+  log_info("Running sequentially (parallel disabled or only 1 species).")
+  future::plan(future::sequential)
 }
 
-# --- 7. Parallel Loop over Species ---
-results_list <- foreach::foreach(
-  i = 1:nrow(species_df),
-  .packages = c("terra", "sf", "dplyr", "readr", "SDMtune", "tools", "stringr"), # Load packages on each worker
-  .errorhandling = 'pass'
-) %dopar% {
+# Setup progressr handlers
+progressr::handlers(global = TRUE)
+if (interactive() && requireNamespace("progress", quietly = TRUE)) {
+  progressr::handlers("progress")
+} else {
+  progressr::handlers("txtprogressbar")
+}
+
+# --- 7. Parallel Loop over Species (using future_lapply with progressr) ---
+log_info("Starting SDM processing loop for {nrow(species_df)} {group_name} species (Env Only)...")
+results_list <- progressr::with_progress({
   
-  # Reload helpers and config just in case export didn't work perfectly
-  # source("scripts/config.R") # Might be needed depending on cluster setup
-  # source(file.path(config$helpers_dir, "env_processing_helpers.R"))
-  # source(file.path(config$helpers_dir, "sdm_modeling_helpers.R"))
+  p <- progressr::progressor(steps = nrow(species_df)) # Initialize progressor
   
-  species_name_sanitized <- gsub(" ", "_", species_df$scientificName[i])
-  species_aphia_id <- species_df$AphiaID[i]
-  log_prefix <- paste0("[Worker ", Sys.getpid(), " | Species ", i, "/", nrow(species_df), " (", species_df$scientificName[i], ")] ")
-  cat(log_prefix, "Starting processing...\n")
-  
-  species_sdms_run <- 0; species_sdms_skipped <- 0; species_results <- list()
-  
-  occ_sf_clean <- load_clean_individual_occ(species_aphia_id, occurrence_dir, config)
-  if(is.null(occ_sf_clean) || nrow(occ_sf_clean) < config$min_occurrences_sdm) {
-    cat(log_prefix, "Skipping: Not enough occurrences (", NROW(occ_sf_clean), ").\n")
-    return(list(species=species_df$scientificName[i], status="skipped_no_occ", run=0, skipped=length(config$env_scenarios)))
-  }
-  cat(log_prefix, "Loaded", nrow(occ_sf_clean), "initial occurrences.\n")
-  
-  for (scenario in config$env_scenarios) {
-    cat(log_prefix, "--- Scenario:", scenario, "---\n")
-    scenario_status <- "skipped_unknown"; n_thinned_for_scenario <- NA
+  future.apply::future_lapply(1:nrow(species_df), function(i) {
+    # --- Worker Setup ---
+    suppressPackageStartupMessages({
+      library(terra); library(sf); library(dplyr); library(readr);
+      library(SDMtune); library(tools); library(stringr); library(logger)
+    })
+    # config object *should* be available via future's default export mechanism
     
-    pred_file <- file.path(group_pred_dir, paste0("sdm_prediction_env_only_", species_name_sanitized, "_", scenario, ".tif")) # Added _env_only_
-    results_file <- file.path(group_results_dir, paste0("sdm_results_env_only_", species_name_sanitized, "_", scenario, ".rds"))
-    eval_file <- file.path(group_results_dir, paste0("sdm_eval_env_only_", species_name_sanitized, "_", scenario, ".csv"))
-    model_obj_file <- file.path(group_models_dir, paste0("sdm_model_env_only_", species_name_sanitized, "_", scenario, ".rds"))
+    # --- Species Info ---
+    species_name_sci <- species_df$scientificName[i]
+    species_name_sanitized <- gsub(" ", "_", species_name_sci)
+    species_aphia_id <- species_df$AphiaID[i]
     
-    if (!config$force_rerun$run_standard_sdms && file.exists(pred_file)) {
-      cat(log_prefix, "  Prediction exists. Skipping.\n"); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "skipped_exists"; next
+    # --- Species-Specific Directories & Logging ---
+    species_pred_dir <- file.path(base_pred_dir, species_name_sanitized)
+    species_results_dir <- file.path(base_results_dir, species_name_sanitized)
+    species_models_dir <- file.path(base_models_dir, species_name_sanitized)
+    species_log_file <- file.path(base_log_dir, paste0("sdm_log_", species_name_sanitized, ".log"))
+    dir.create(species_pred_dir, recursive = TRUE, showWarnings = FALSE)
+    dir.create(species_results_dir, recursive = TRUE, showWarnings = FALSE)
+    dir.create(species_models_dir, recursive = TRUE, showWarnings = FALSE)
+    
+    # Configure logger for THIS species run (appends to file)
+    log_threshold(INFO) # Set desired level (INFO, DEBUG, etc.)
+    log_layout(layout_glue('{time} [{level}] {msg}'))
+    log_appender(appender_file(species_log_file))
+    
+    log_info("--- Starting Species: {species_name_sci} (ID: {species_aphia_id}) ---")
+    
+    # Initialize results for this species run
+    species_run_count = 0; species_skip_count = 0; scenario_details_list = list()
+    
+    # --- Load Occurrences ---
+    occ_sf_clean <- load_clean_individual_occ(species_aphia_id, occurrence_dir, config)
+    if(is.null(occ_sf_clean) || nrow(occ_sf_clean) < config$min_occurrences_sdm) {
+      log_warn("Skipping: Not enough occurrences ({NROW(occ_sf_clean)}).")
+      p(amount = 1)
+      # Reset logger to default (console or whatever was set before) before returning
+      log_appender(appender_console, index = 1)
+      return(list(species=species_name_sci, status="skipped_no_occ", run=0, skipped=length(config$env_scenarios)))
     }
+    log_info("Loaded {nrow(occ_sf_clean)} initial occurrences.")
     
-    scenario_vars <- generate_scenario_variable_list(final_core_vars_group, scenario, config)
-    if(length(scenario_vars) < 1) { warning(log_prefix, "No vars generated. Skipping."); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "skipped_no_vars"; next }
+    # --- Loop through Scenarios ---
+    for (scenario in config$env_scenarios) {
+      log_info("--- Scenario: {scenario} ---")
+      scenario_status <- "skipped_unknown"; n_thinned_for_scenario <- NA
+      
+      # --- Define Output Paths (with suffix) ---
+      pred_file <- file.path(species_pred_dir, paste0("sdm_prediction_env_only_", species_name_sanitized, "_", scenario, ".tif")) # Added suffix
+      results_file <- file.path(species_results_dir, paste0("sdm_results_env_only_", species_name_sanitized, "_", scenario, ".rds"))
+      eval_file <- file.path(species_results_dir, paste0("sdm_eval_env_only_", species_name_sanitized, "_", scenario, ".csv"))
+      model_obj_file <- file.path(species_models_dir, paste0("sdm_model_env_only_", species_name_sanitized, "_", scenario, ".rds"))
+      
+      # --- Skip Check ---
+      if (!config$force_rerun$run_standard_sdms && file.exists(pred_file)) {
+        log_info("Prediction exists. Skipping."); species_skip_count <- species_skip_count + 1; scenario_status <- "skipped_exists"; scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=NA); next
+      }
+      
+      # --- Prepare Predictors ---
+      scenario_vars <- generate_scenario_variable_list(final_core_vars_group, scenario, config)
+      if(length(scenario_vars) < 1) { log_warn("No variables generated. Skipping."); species_skip_count <- species_skip_count + 1; scenario_status <- "skipped_no_vars"; scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=NA); next }
+      predictor_stack <- load_selected_env_data(scenario, scenario_vars, config)
+      if(is.null(predictor_stack)) { log_warn("Failed load env data. Skipping."); species_skip_count <- species_skip_count + 1; scenario_status <- "skipped_load_fail"; scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=NA); next }
+      log_info("Loaded predictor stack with {terra::nlyr(predictor_stack)} layers.")
+      
+      # --- Thin Occurrences ---
+      occ_sf_thinned <- thin_individual_occ(occ_sf_clean, predictor_stack, config)
+      if(is.null(occ_sf_thinned) || nrow(occ_sf_thinned) < config$min_occurrences_sdm) {
+        log_warn("Not enough occs after thinning ({NROW(occ_sf_thinned)}). Skipping."); species_skip_count <- species_skip_count + 1; scenario_status <- "skipped_thinning"; rm(predictor_stack); gc(); scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=NROW(occ_sf_thinned)); next
+      }
+      n_thinned_for_scenario <- nrow(occ_sf_thinned)
+      log_info("Thinned occurrences: {n_thinned_for_scenario} points.")
+      
+      # --- Background Points ---
+      background_points <- generate_sdm_background(predictor_stack, config$background_points_n, config) # Uses internal log/warn
+      if (is.null(background_points)) {
+        log_warn("Failed background gen. Skipping."); species_skip_count <- species_skip_count + 1; scenario_status <- "skipped_background"; rm(predictor_stack, occ_sf_thinned); gc(); scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=n_thinned_for_scenario); next
+      }
+      
+      # --- Run SDM Tuning ---
+      sdmtune_results <- run_sdm_sdmtune_grid(occ_sf_thinned, predictor_stack, background_points, config) # Uses internal log/warn
+      if (is.null(sdmtune_results)) {
+        log_warn("SDMtune::gridSearch failed. Skipping."); species_skip_count <- species_skip_count + 1; scenario_status <- "failed_tuning"; rm(predictor_stack, occ_sf_thinned, background_points); gc(); scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=n_thinned_for_scenario); next
+      }
+      
+      # --- Save Results ---
+      tryCatch(saveRDS(sdmtune_results, file = results_file), error=function(e){log_warn("Failed save sdmtune results object: {e$message}")})
+      tryCatch({ results_df <- SDMtune::results(sdmtune_results); results_df$n_thinned_occurrences <- n_thinned_for_scenario; readr::write_csv(results_df, file = eval_file) }, error=function(e){log_warn("Failed save Eval table: {e$message}")})
+      log_info("SDMtune results and evaluation table saved.")
+      
+      # --- Predict Best Model ---
+      prediction_raster <- predict_sdm_sdmtune(sdmtune_results, predictor_stack, config) # Uses internal log/warn
+      if (is.null(prediction_raster)) {
+        log_warn("Prediction failed. Skipping save."); species_skip_count <- species_skip_count + 1; scenario_status <- "failed_prediction"; rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results); gc(); scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=n_thinned_for_scenario); next
+      }
+      
+      # --- Save Prediction & Model ---
+      save_success <- FALSE
+      tryCatch({
+        terra::writeRaster(prediction_raster, filename = pred_file, overwrite = TRUE, gdal=c("COMPRESS=LZW", "TFW=YES"))
+        log_info("Prediction raster saved.")
+        species_run_count <- species_run_count + 1
+        save_success <- TRUE
+        scenario_status <- "completed"
+      }, error=function(e){ log_error("Failed save prediction: {e$message}"); species_skip_count <- species_skip_count + 1; scenario_status <- "failed_save_pred" })
+      
+      if(save_success) {
+        tryCatch({ saveRDS(sdmtune_results, file = model_obj_file); log_info("SDMtune object saved.")
+        }, error=function(e){log_warn("Failed save SDMtune object: {e$message}")})
+      }
+      
+      scenario_details_list[[scenario]] <- list(status=scenario_status, n_thinned=n_thinned_for_scenario)
+      rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results, prediction_raster); gc()
+      
+    } # End scenario loop
     
-    predictor_stack <- load_selected_env_data(scenario, scenario_vars, config)
-    if(is.null(predictor_stack)) { warning(log_prefix, "Failed load env data. Skipping."); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "skipped_load_fail"; next }
-    cat(log_prefix, "  Loaded predictor stack.\n")
+    rm(occ_sf_clean); gc()
     
-    occ_sf_thinned <- thin_individual_occ(occ_sf_clean, predictor_stack, config)
-    if(is.null(occ_sf_thinned) || nrow(occ_sf_thinned) < config$min_occurrences_sdm) {
-      warning(log_prefix, "Skipping: Not enough occs after thinning (", NROW(occ_sf_thinned), ")."); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "skipped_thinning"; rm(predictor_stack); gc(); next
-    }
-    n_thinned_for_scenario <- nrow(occ_sf_thinned)
-    cat(log_prefix, "  Thinned occurrences:", n_thinned_for_scenario, "points.\n")
+    # Increment overall progress bar when a species finishes
+    p()
     
-    background_points <- generate_sdm_background(predictor_stack, config$background_points_n, config)
-    if (is.null(background_points)) {
-      warning(log_prefix, "Failed background gen."); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "skipped_background"; rm(predictor_stack, occ_sf_thinned); gc(); next
-    }
+    # Restore default console+main file logging before returning
+    log_appender(appender_console, index = 1) # Assuming console is index 1, adjust if needed
     
-    sdmtune_results <- run_sdm_sdmtune_grid(occ_sf_thinned, predictor_stack, background_points, config)
-    if (is.null(sdmtune_results)) {
-      warning(log_prefix, "SDMtune::gridSearch failed."); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "failed_tuning"; rm(predictor_stack, occ_sf_thinned, background_points); gc(); next
-    }
+    log_info("--- Finished Species: {species_name_sci} ---")
     
-    tryCatch(saveRDS(sdmtune_results, file = results_file), error=function(e){warning(log_prefix, "Failed save sdmtune results: ", e$message)})
-    tryCatch({ results_df <- SDMtune::results(sdmtune_results); results_df$n_thinned_occurrences <- n_thinned_for_scenario; readr::write_csv(results_df, file = eval_file) }, error=function(e){warning(log_prefix, "Failed save Eval table: ", e$message)})
-    cat(log_prefix, "  SDMtune results saved.\n")
+    # Return results for this species
+    list(species=species_name_sci, status="finished_species_loop", run=species_run_count, skipped=species_skip_count, scenario_details = scenario_details_list)
     
-    prediction_raster <- predict_sdm_sdmtune(sdmtune_results, predictor_stack, config)
-    if (is.null(prediction_raster)) {
-      warning(log_prefix, "Prediction failed."); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "failed_prediction"; rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results); gc(); next
-    }
-    
-    save_success <- FALSE
-    tryCatch({ terra::writeRaster(prediction_raster, filename = pred_file, overwrite = TRUE, gdal=c("COMPRESS=LZW", "TFW=YES")); cat(log_prefix, "  Prediction raster saved.\n"); species_sdms_run <- species_sdms_run + 1; save_success <- TRUE; scenario_status <- "completed"
-    }, error=function(e){ warning(log_prefix, "Failed save prediction: ", e$message); species_sdms_skipped <- species_sdms_skipped + 1; scenario_status <- "failed_save_pred" })
-    
-    if(save_success) {
-      tryCatch({ saveRDS(sdmtune_results, file = model_obj_file); cat(log_prefix, "  SDMtune object saved.\n")
-      }, error=function(e){warning(log_prefix, "Failed save SDMtune object: ", e$message)})
-    }
-    
-    species_results[[scenario]] <- list(status=scenario_status, n_thinned=n_thinned_for_scenario)
-    rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results, prediction_raster); gc()
-    
-  } # End scenario loop
+  }, future.seed = TRUE) # End future_lapply
   
-  rm(occ_sf_clean); gc()
-  list(species=species_df$scientificName[i], status="finished_species_loop", run=species_sdms_run, skipped=species_sdms_skipped, scenario_details = species_results)
-  
-} # End foreach species loop
+}) # End with_progress
 
 # --- 8. Stop Parallel Backend ---
-if (config$use_parallel && exists("cl") && inherits(cl, "cluster")) {
-  cat("\nStopping parallel backend...\n")
-  tryCatch(parallel::stopCluster(cl), error = function(e) {warning("Error stopping cluster: ", e$message)})
+current_plan <- class(future::plan())[1]
+if (!current_plan %in% c("sequential", "uniprocess")) {
+  log_info("Shutting down parallel workers ({current_plan})...")
+  future::plan(future::sequential)
 }
 
 # --- 9. Summarize Results ---
+# Restore console logging for summary
+log_appender(appender_console)
+log_threshold(INFO)
+log_layout(layout_glue_colors)
+
 cat("\n=========================================================\n")
-cat("Standard Anemonefish (Env Only) SDM runs finished.\n")
+log_info("Standard Anemonefish (Env Only) SDM runs finished.")
 total_sdms_run <- sum(sapply(results_list, function(x) if(is.list(x) && !is.null(x$run)) x$run else 0), na.rm = TRUE)
 total_sdms_skipped <- sum(sapply(results_list, function(x) if(is.list(x) && !is.null(x$skipped)) x$skipped else 0), na.rm = TRUE)
-cat("Total SDMs successfully run and saved:", total_sdms_run, "\n")
-cat("Total SDMs skipped:", total_sdms_skipped, "\n")
-# Optional: More detailed summary of errors/skips from results_list
+log_info("Total SDMs successfully run and prediction saved: {total_sdms_run}")
+log_info("Total SDM runs skipped: {total_sdms_skipped}")
+errors <- results_list[sapply(results_list, inherits, "error")]
+if (length(errors) > 0) {
+  log_error("{length(errors)} species tasks failed entirely.")
+  for(err_idx in 1:min(5, length(errors))) {
+    log_error("Error details (task {which(sapply(results_list, inherits, 'error'))[err_idx]}): {conditionMessage(errors[[err_idx]])}")
+  }
+}
 cat("=========================================================\n")
 
-cat("\n--- Script 06b finished. ---\n")
+cat("\n--- Script 06b finished. Check species log files in: ", base_log_dir, " ---\n")
 #-------------------------------------------------------------------------------

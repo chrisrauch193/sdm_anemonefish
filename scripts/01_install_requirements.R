@@ -13,7 +13,7 @@ pkg_list <- c(
   "robis", "rgbif", "worrms", "obistools", # Added worrms/obistools for script 02
   "ENMeval", "dismo", "raster", "parallel", # Added parallel
   "devtools", "tools", "ggtext",
-  "SDMtune"
+  "SDMtune", "future", "future.apply", "progressr", "logger"
 )
 
 # Check for biooracler (specific install from GitHub if needed)
