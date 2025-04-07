@@ -159,6 +159,72 @@ dir.create(results_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(models_dir, showWarnings = FALSE, recursive = TRUE)
 dir.create(env_data_dir, showWarnings = FALSE, recursive = TRUE)
 
+# Define CORE variable stems and their display names
+core_var_display_names <- c(
+  "par_depthsurf_mean"  = "Surface PAR",
+  "sws_depthsurf_mean"  = "Surface Wind Stress",
+  "thetao_depthsurf_mean"= "Surface Temp.", # Added Surf Temp
+  "thetao_depthmax_mean"= "Bottom Temp. Mean",
+  "thetao_depthmax_range"= "Bottom Temp. Range",
+  "thetao_depthmax_ltmin" = "Bottom Temp. LT Min", # Added LTMin/Max
+  "thetao_depthmax_ltmax" = "Bottom Temp. LT Max",
+  "so_depthmax_mean"    = "Bottom Salinity",
+  "no3_depthmax_mean"   = "Bottom Nitrate Mean",
+  "no3_depthmax_range"  = "Bottom Nitrate Range",
+  "no3_depthmax_ltmin"  = "Bottom Nitrate LT Min", # Added LTMin/Max
+  "no3_depthmax_ltmax"  = "Bottom Nitrate LT Max",
+  "chl_depthmax_mean"   = "Bottom Chlorophyll",
+  "phyc_depthmax_mean"  = "Bottom Phytoplankton", # Added Phyc
+  "o2_depthmax_mean"    = "Bottom Oxygen Mean", # Added O2 Mean
+  "o2_depthmax_range"   = "Bottom Oxygen Range",
+  "o2_depthmax_ltmin"   = "Bottom Oxygen LT Min", # Added LTMin/Max
+  "o2_depthmax_ltmax"   = "Bottom Oxygen LT Max",
+  "ph_depthmax_mean"    = "Bottom pH", # Added pH
+  "bathymetry_mean"     = "Bathymetry",
+  "distcoast"           = "Distance to Coast",
+  "rugosity"            = "Rugosity",
+  "slope"               = "Slope" # Added Slope
+  # Add other CORE variable stems as needed
+)
+
+# Function to get display name from a potentially scenario-specific technical name
+get_display_name <- function(technical_name, lookup = core_var_display_names) {
+  # Remove scenario/time tags to find the core name
+  # Regex tries to remove _baseline_YYYY_YYYY, _sspXXX_decYY, etc.
+  core_name <- gsub("_ssp\\d{3}_depth(surf|max)_dec\\d{3,3}_", "_depth\\1_", technical_name) # Future pattern
+  core_name <- gsub("_baseline_\\d{4}_\\d{4}_", "_", core_name) # Baseline pattern
+  core_name <- gsub("_baseline_", "_", core_name) # Simpler baseline if years missing
+  
+  # Special case for terrain vars that don't have scenario tags
+  if (technical_name %in% names(lookup)) {
+    core_name <- technical_name
+  } else {
+    # More robust: find which key *starts* the technical name
+    possible_keys <- names(lookup)[sapply(names(lookup), function(key) startsWith(technical_name, key))]
+    if(length(possible_keys) == 1) {
+      core_name <- possible_keys[1]
+    } else {
+      # Fallback if pattern matching failed or multiple matches (less likely with good keys)
+      core_name_alt <- gsub("_ssp\\d{3}_dec\\d{3,3}", "", technical_name) # Try simpler remove
+      core_name_alt <- gsub("_baseline_\\d{4}_\\d{4}", "", core_name_alt)
+      core_name_alt <- gsub("(_mean|_range|_ltmin|_ltmax)$", "", core_name_alt) # Remove stat suffix? Maybe too risky
+      # Find the best match based on what's left if primary didn't work
+      if (core_name_alt %in% names(lookup)) {
+        core_name <- core_name_alt
+      } else {
+        # Last resort: return original if no match found after cleaning
+        warning("No display name mapping found for: ", technical_name, call. = FALSE)
+        return(technical_name)
+      }
+    }
+  }
+  
+  
+  display_name <- lookup[core_name]
+  # Return original technical name if lookup failed
+  return(ifelse(is.na(display_name), technical_name, display_name))
+}
+# labels = sapply(technical_names_vector, get_display_name)
 
 # --- Bundle settings into a list named 'config' ---
 config <- list(
@@ -196,7 +262,8 @@ config <- list(
   apply_coral_mask = apply_coral_mask, apply_depth_filter = apply_depth_filter,
   depth_min = depth_min, depth_max = depth_max, min_occurrences_sdm = min_occurrences_sdm,
   selected_variables_for_pca = selected_variables_for_pca, num_cores = num_cores,
-  use_parallel = use_parallel
+  use_parallel = use_parallel,
+  get_display_name = get_display_name
 )
 
 cat("Configuration loaded and bundled into 'config' list.\n")
