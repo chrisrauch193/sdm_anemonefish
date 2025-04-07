@@ -206,202 +206,11 @@ extract_env_values <- function(occurrences_sf, env_stack) {
 #'   }, error = function(e){warning("Failed to create or save correlation plot: ", e$message, call.=FALSE); return(NULL)})
 #' }
 
-
-
-#' Plot VIF results using ggplot (Updated for Display Names)
-#' Uses car::vif output. Applies display name lookup.
-#'
-#' @param vif_result Named numeric vector (output from car::vif).
-#' @param save_path Optional file path to save the plot.
-#' @param display_lookup Named character vector mapping technical names to display names (e.g., config$core_var_display_names).
-#' @return A ggplot object, or NULL on error.
-#' @export
-plot_vif_results_original <- function(vif_result, save_path = NULL, display_lookup = NULL) {
-  if(!is.numeric(vif_result) || is.null(names(vif_result)) || length(vif_result) == 0){
-    warning("plot_vif_results_original expects a non-empty named numeric vector.", call.=FALSE)
-    return(NULL)
-  }
-  
-  original_names <- names(vif_result)
-  
-  # Use display lookup if provided
-  if (!is.null(display_lookup) && !is.null(config$get_display_name)) {
-    display_names <- sapply(original_names, config$get_display_name, lookup = display_lookup, USE.NAMES = FALSE)
-  } else {
-    display_names <- original_names # Fallback to technical names
-  }
-  
-  # Create data frame with both names
-  df <- data.frame(
-    OriginalName = original_names,
-    DisplayName = display_names,
-    VIF = as.numeric(vif_result) # Ensure VIF is numeric
-  )
-  
-  num_vars <- nrow(df)
-  if (num_vars == 0) return(NULL)
-  
-  # Generate colors based on the number of variables
-  # Using a consistent palette helps comparison, but order might change
-  # colors <- grDevices::colorRampPalette(c("#1F3F8C", "#A9192A"))(num_vars)
-  
-  # Ensure VIF is not negative for plotting scale
-  df$VIF <- pmax(0, df$VIF)
-  
-  # Reorder factor levels based on VIF for plotting
-  df$DisplayName <- factor(df$DisplayName, levels = df$DisplayName[order(df$VIF)])
-  
-  p <- ggplot2::ggplot(df, aes(x = DisplayName, y = VIF)) +
-    # Use original name for fill if you want consistent color *per variable* across plots
-    # If you want colors based on display name order, use fill = DisplayName
-    ggplot2::geom_bar(stat = "identity", aes(fill = OriginalName), show.legend = FALSE) +
-    # ggplot2::scale_fill_manual(values = colors) + # Manual colors can be tricky if vars change
-    ggplot2::scale_fill_viridis_d(option = "plasma") + # Example alternative palette
-    ggplot2::labs(
-      title = "VIF Analysis Results (car::vif)",
-      x = "Environmental Variables",
-      y = "VIF Value"
-    ) +
-    ggplot2::scale_y_continuous(
-      limits = c(0, max(config$vif_threshold, ceiling(max(df$VIF, na.rm = TRUE)))), # Ensure threshold is visible
-      breaks = scales::pretty_breaks(n = 5)
-    ) +
-    # Add horizontal line for threshold
-    ggplot2::geom_hline(yintercept = config$vif_threshold, linetype = "dashed", color = "red") +
-    ggplot2::theme_minimal(base_size = 12) +
-    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
-  if (!is.null(save_path)) {
-    tryCatch({
-      ggplot2::ggsave(save_path, plot = p, width = max(8, 4 + 0.2 * num_vars), height = 6, limitsize = FALSE) # Adjust width dynamically
-      cat("  VIF plot saved to", save_path, "\n")
-    }, error = function(e) {
-      warning("Failed to save VIF plot: ", e$message, call.=FALSE)
-    })
-  }
-  return(p)
-}
-
-
-#' Plot Pearson Correlation using corrplot (Updated for Display Names)
-#' Uses Pearson correlation results. Applies display name lookup.
-#'
-#' @param env_extract Data frame or matrix of environmental values.
-#' @param save_path Optional file path to save the plot.
-#' @param display_lookup Named character vector mapping technical names to display names (e.g., config$core_var_display_names).
-#' @return NULL (invisibly). Plot is saved or printed.
-#' @export
-plot_correlation_results_original <- function(env_extract, save_path = NULL, display_lookup = NULL) {
-  if(!is.data.frame(env_extract) && !is.matrix(env_extract) || ncol(env_extract) < 2) {
-    warning("plot_correlation_results_original requires df/matrix with >= 2 columns.", call.=FALSE)
-    return(invisible(NULL))
-  }
-  
-  # Calculate correlation matrix with original names
-  env.cor <- tryCatch(stats::cor(env_extract, method = "pearson", use = "pairwise.complete.obs"),
-                      error = function(e) {warning("Correlation calculation failed: ", e$message, call.=FALSE); NULL})
-  if(is.null(env.cor)) return(invisible(NULL))
-  
-  # Calculate p-values (optional, requires Hmisc)
-  env.p <- NULL
-  if(requireNamespace("Hmisc", quietly = TRUE)){
-    # Hmisc::rcorr requires matrix, handles non-numeric gracefully? Check docs.
-    # Ensure only numeric columns are passed if necessary
-    numeric_cols <- sapply(env_extract, is.numeric)
-    if(sum(numeric_cols) < 2) {
-      warning("Need at least 2 numeric columns for Hmisc::rcorr.", call.=FALSE)
-    } else {
-      env_extract_num <- as.matrix(env_extract[, numeric_cols, drop = FALSE])
-      # Check for sufficient non-NA pairs
-      n_obs <- crossprod(!is.na(env_extract_num))
-      if(any(n_obs < 3)) {
-        warning("Insufficient non-NA pairs for some variables, p-values from Hmisc may be unreliable or NA.", call.=FALSE)
-        # Pad p-matrix with NAs if needed, or skip p-value display
-        env.p <- matrix(NA, nrow=ncol(env_extract_num), ncol=ncol(env_extract_num))
-        colnames(env.p) <- rownames(env.p) <- colnames(env_extract_num)
-      } else {
-        hmisc_result <- tryCatch(Hmisc::rcorr(env_extract_num, type="pearson"), error=function(e){warning("Hmisc::rcorr failed: ",e$message, call.=FALSE); NULL})
-        if(!is.null(hmisc_result)) env.p <- hmisc_result$P
-      }
-    }
-  } else {
-    warning("Hmisc package not found, p-values on corrplot will be missing.", call.=FALSE)
-  }
-  
-  # Get display names and rename matrix for corrplot
-  original_names <- colnames(env.cor) # Use colnames, which should exist
-  if (!is.null(display_lookup) && !is.null(config$get_display_name)) {
-    display_names <- sapply(original_names, config$get_display_name, lookup = display_lookup, USE.NAMES = FALSE)
-  } else {
-    display_names <- original_names # Fallback
-  }
-  rownames(env.cor) <- display_names
-  colnames(env.cor) <- display_names
-  
-  # Rename p-value matrix if it exists and matches dimensions
-  if (!is.null(env.p) && all(dim(env.p) == dim(env.cor)) && all(colnames(env.p) %in% original_names) ) {
-    # Ensure p-matrix columns/rows match the (potentially subsetted numeric) original names
-    p_original_names <- colnames(env_extract)[numeric_cols] # Get names of cols used for p-val calc
-    p_display_names <- sapply(p_original_names, config$get_display_name, lookup = display_lookup, USE.NAMES = FALSE)
-    rownames(env.p) <- p_display_names
-    colnames(env.p) <- p_display_names
-    # Reorder p-matrix to match the correlation matrix if needed (e.g., if zero-var cols removed)
-    env.p <- env.p[display_names, display_names]
-  } else {
-    env.p <- NULL # Disable p-values if lookup failed or mismatch
-  }
-  
-  
-  # --- Plotting ---
-  tryCatch({
-    plot_obj <- function() {
-      corrplot::corrplot(
-        corr = env.cor,           # Use the renamed matrix
-        method = "color",
-        type = "upper",
-        order = "hclust",        # Keep clustering based on original correlations
-        p.mat = env.p,           # Use the potentially renamed p-value matrix
-        sig.level = c(.01, .05),
-        insig = "label_sig",     # Show significance labels
-        pch.cex = 1.5,
-        pch.col = "grey",
-        #addCoef.col = "black",  # Add correlation coefficients
-        #number.cex = 0.7,       # Size of coefficients
-        tl.col = "black",        # Label color
-        tl.srt = 45,             # Label rotation
-        diag = FALSE,            # Don't show diagonal
-        na.label = "NA",         # Label for NAs
-        mar = c(0, 0, 1, 0),     # Margins
-        title = "Pearson Correlation Matrix" # Add a title
-      )
-    }
-    
-    if (!is.null(save_path)) {
-      # Adjust plot size slightly based on number of variables for readability
-      plot_dim <- max(8, 4 + 0.3 * ncol(env.cor))
-      grDevices::png(filename = save_path, width = plot_dim, height = plot_dim, units = "in", res = 300)
-      plot_obj()
-      grDevices::dev.off()
-      cat("  Correlation plot saved to", save_path, "\n")
-    } else {
-      # Plot directly to the current device
-      plot_obj()
-    }
-    return(invisible(NULL)) # Return nothing as plot is generated/saved
-    
-  }, error = function(e){
-    warning("Failed to create or save correlation plot: ", e$message, call.=FALSE)
-    return(NULL)
-  })
-}
-
-
-# scripts/helpers/env_processing_helpers.R OR name_helpers.R
-
-#' Generate Scenario-Specific Variable Names from Core List
+#' Generate Scenario-Specific Variable Names from Core List (Corrected v2)
 #'
 #' Takes a list of core variable names (typically baseline/simplest form)
 #' and a target scenario name, then generates the expected technical filenames/layer names.
+#' Handles specific naming convention transformation.
 #'
 #' @param core_vars Character vector of core variable names (e.g., "thetao_baseline_depthmax_mean", "rugosity").
 #' @param scenario_name Character string of the target scenario (e.g., "current", "ssp119_2050", "ssp585_2100").
@@ -411,77 +220,241 @@ plot_correlation_results_original <- function(env_extract, save_path = NULL, dis
 #' @export
 generate_scenario_variable_list <- function(core_vars, scenario_name, config) {
   
-  scenario_vars <- character()
-  
-  # Identify terrain variables (those in core_vars that are also in terrain_variables_final)
-  terrain_vars_in_list <- intersect(core_vars, config$terrain_variables_final)
-  scenario_vars <- c(scenario_vars, terrain_vars_in_list)
-  
-  # Process non-terrain variables
-  non_terrain_vars <- setdiff(core_vars, terrain_vars_in_list)
-  
-  for (core_var in non_terrain_vars) {
+  scenario_vars <- sapply(core_vars, function(core_var) {
+    
+    # Handle terrain vars (no scenario tags)
+    if (core_var %in% config$terrain_variables_final) {
+      return(core_var)
+    }
+    
+    # Handle current scenario
     if (scenario_name == "current") {
-      # Assume core_var is already the baseline name for current
-      # Add a check to ensure it looks like a baseline name if needed
-      if (!grepl("_baseline", core_var) && !grepl("distcoast|rugosity|slope|bathymetry", core_var)) {
+      # Expect core_var is already the baseline name
+      if (!grepl("_baseline", core_var)) {
         warning("Core variable '", core_var, "' doesn't seem to have '_baseline'. Using as is for 'current'.", call. = FALSE)
       }
-      scenario_vars <- c(scenario_vars, core_var)
-      
-    } else if (grepl("ssp", scenario_name)) {
-      # Extract SSP and time tag
+      return(core_var)
+    }
+    
+    # Handle future scenarios
+    if (grepl("ssp", scenario_name)) {
       ssp_match <- stringr::str_match(scenario_name, "(ssp\\d{3})_(\\d{4})")
       if(is.na(ssp_match[1,1])) {
         warning("Could not parse SSP/Year from scenario name: ", scenario_name, call. = FALSE)
-        next # Skip this variable for this scenario
+        return(NA) # Indicate failure for this var/scenario combo
       }
       ssp_code <- ssp_match[1, 2] # e.g., "ssp119"
       year_code <- ssp_match[1, 3] # e.g., "2050"
-      time_tag <- ifelse(year_code == "2050", "_dec50_", "_dec100_")
-      time_tag_clean <- gsub("^_|_$", "", time_tag) # e.g., "dec50"
+      time_tag_clean <- ifelse(year_code == "2050", "dec50", "dec100")
       
-      # Check if this core variable is one that gets copied (special handling)
+      # Check if it's a variable that was copied/renamed (like chl, par)
       is_copied_var <- FALSE
       copied_stem <- NULL
-      # Check if the core var stem (without _mean etc.) is in the copy list
-      core_stem_match <- config$vars_to_copy_to_future[sapply(config$vars_to_copy_to_future, function(cpy_stem) startsWith(core_var, cpy_stem))]
-      if (length(core_stem_match) == 1) {
-        is_copied_var <- TRUE
-        copied_stem <- core_stem_match # The original baseline stem
+      for (cpy_stem in config$vars_to_copy_to_future) {
+        if (startsWith(core_var, cpy_stem)) {
+          is_copied_var <- TRUE
+          copied_stem <- cpy_stem # The original baseline stem
+          break
+        }
       }
       
       if (is_copied_var) {
-        # Construct the expected *renamed* file stem for copied vars
-        new_basename_step1 <- stringr::str_replace(copied_stem, "_baseline_\\d{4}_\\d{4}", "")
+        # Construct the expected *renamed* file stem
+        # e.g., "chl_baseline_depthmax_mean" -> "chl_ssp119_depthmax_dec50_mean"
+        new_basename_step1 <- stringr::str_replace(copied_stem, "_baseline_\\d{4}_\\d{4}", "") # Remove years if present
+        new_basename_step1 <- stringr::str_replace(new_basename_step1, "_baseline", "") # Remove baseline tag
         parts <- stringr::str_split(new_basename_step1, "_")[[1]]
         if (length(parts) >= 3) { # e.g., chl, depthmax, mean
           var_part <- parts[1]
-          depth_part <- parts[grepl("depth", parts)] # Find depth part
-          stat_part <- parts[length(parts)] # Assume last part is stat
+          depth_part <- parts[grepl("depth", parts)]
+          stat_part <- parts[length(parts)]
           scenario_var_name <- paste(var_part, ssp_code, depth_part, time_tag_clean, stat_part, sep = "_")
         } else {
-          warning("Unexpected filename structure for copied var '", copied_stem, "', using simpler renaming.")
+          warning("Unexpected structure for copied var '", copied_stem, "'. Simpler renaming.", call.=FALSE)
           scenario_var_name <- paste(new_basename_step1, ssp_code, time_tag_clean, sep = "_")
         }
       } else {
-        # Standard conversion: baseline -> sspXXX_decYY
-        scenario_var_name <- gsub("_baseline_\\d{4}_\\d{4}", paste0("_", ssp_code), core_var) # Replace baseline years with SSP
-        # Insert time tag before the final statistic (_mean, _range, etc.)
-        scenario_var_name <- sub("(_(mean|range|ltmax|ltmin)$)", paste0(time_tag, "\\1"), scenario_var_name)
-        # Handle cases where baseline might not have years (less likely but safer)
-        scenario_var_name <- gsub("_baseline", paste0("_", ssp_code), scenario_var_name)
-        # Re-apply time tag insertion if baseline didn't have years
-        if (!grepl(time_tag, scenario_var_name)) {
-          scenario_var_name <- sub("(_(mean|range|ltmax|ltmin)$)", paste0(time_tag, "\\1"), scenario_var_name)
+        # Standard transformation for variables with future data
+        # e.g., "thetao_baseline_depthmax_mean" -> "thetao_ssp119_depthmax_dec50_mean"
+        scenario_var_name <- gsub("_baseline_\\d{4}_\\d{4}", "", core_var) # Remove years
+        scenario_var_name <- gsub("_baseline", "", scenario_var_name) # Remove tag
+        # Split by the depth part to insert ssp and time tag correctly
+        if (grepl("_depthsurf_", scenario_var_name)) {
+          scenario_var_name <- sub("_depthsurf_", paste0("_", ssp_code, "_depthsurf_", time_tag_clean, "_"), scenario_var_name)
+        } else if (grepl("_depthmax_", scenario_var_name)) {
+          scenario_var_name <- sub("_depthmax_", paste0("_", ssp_code, "_depthmax_", time_tag_clean, "_"), scenario_var_name)
+        } else {
+          warning("Cannot determine depth part for future name generation in: ", core_var, call. = FALSE)
+          return(NA) # Failed conversion
         }
       }
-      scenario_vars <- c(scenario_vars, scenario_var_name)
+      return(scenario_var_name)
+      
     } else {
       warning("Unknown scenario type: ", scenario_name, call. = FALSE)
+      return(NA) # Indicate failure
     }
-  } # end loop over non-terrain vars
+  }, USE.NAMES = FALSE) # Ensure output is unnamed vector
   
-  return(unique(scenario_vars)) # Return unique names
+  return(na.omit(scenario_vars)) # Remove any NAs from failed conversions
 }
-#-------------------------------------------------------------------------------
+
+
+#' Plot VIF results using ggplot (Corrected Argument Handling)
+#' Uses car::vif output. Applies display name lookup via config object.
+#'
+#' @param vif_result Named numeric vector (output from car::vif).
+#' @param save_path Optional file path to save the plot.
+#' @param config The project configuration list (must contain core_var_display_names lookup and get_display_name function).
+#' @return A ggplot object, or NULL on error.
+#' @export
+plot_vif_results_original <- function(vif_result, save_path = NULL, config) {
+  if(!is.numeric(vif_result) || is.null(names(vif_result)) || length(vif_result) == 0){
+    warning("plot_vif_results_original expects a non-empty named numeric vector.", call.=FALSE); return(NULL)
+  }
+  if(is.null(config$core_var_display_names) || is.null(config$get_display_name) || !is.function(config$get_display_name)){
+    warning("Config object must contain 'core_var_display_names' lookup and 'get_display_name' function.", call.=FALSE)
+    # Proceed using technical names as fallback
+    display_lookup <- NULL
+    get_display_name_func <- function(name, ...) name # Simple fallback
+  } else {
+    display_lookup <- config$core_var_display_names
+    get_display_name_func <- config$get_display_name
+  }
+  
+  original_names <- names(vif_result)
+  display_names <- sapply(original_names, get_display_name_func, lookup = display_lookup, USE.NAMES = FALSE)
+  
+  df <- data.frame(
+    OriginalName = original_names,
+    DisplayName = display_names,
+    VIF = as.numeric(vif_result)
+  )
+  num_vars <- nrow(df); if (num_vars == 0) return(NULL)
+  df$VIF <- pmax(0, df$VIF)
+  df$DisplayName <- factor(df$DisplayName, levels = df$DisplayName[order(df$VIF)])
+  
+  p <- ggplot2::ggplot(df, aes(x = DisplayName, y = VIF)) +
+    ggplot2::geom_bar(stat = "identity", aes(fill = OriginalName), show.legend = FALSE) +
+    ggplot2::scale_fill_viridis_d(option = "plasma") +
+    ggplot2::labs(
+      title = "VIF Analysis Results (car::vif)",
+      x = "Environmental Variables",
+      y = "VIF Value"
+    ) +
+    ggplot2::scale_y_continuous(
+      limits = c(0, max(config$vif_threshold, ceiling(max(df$VIF, na.rm = TRUE)))),
+      breaks = scales::pretty_breaks(n = 5)
+    ) +
+    ggplot2::geom_hline(yintercept = config$vif_threshold, linetype = "dashed", color = "red") +
+    ggplot2::theme_minimal(base_size = 12) +
+    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  if (!is.null(save_path)) {
+    tryCatch({
+      ggplot2::ggsave(save_path, plot = p, width = max(8, 4 + 0.2 * num_vars), height = 6, limitsize = FALSE)
+      cat("  VIF plot saved to", save_path, "\n")
+    }, error = function(e) { warning("Failed to save VIF plot: ", e$message, call.=FALSE)})
+  }
+  return(p)
+}
+
+
+#' Plot Pearson Correlation using corrplot (Corrected Argument Handling)
+#' Uses Pearson correlation results. Applies display name lookup via config object.
+#'
+#' @param env_extract Data frame or matrix of environmental values.
+#' @param save_path Optional file path to save the plot.
+#' @param config The project configuration list (must contain core_var_display_names lookup and get_display_name function).
+#' @return NULL (invisibly). Plot is saved or printed.
+#' @export
+plot_correlation_results_original <- function(env_extract, save_path = NULL, config) {
+  if(!is.data.frame(env_extract) && !is.matrix(env_extract) || ncol(env_extract) < 2) {
+    warning("plot_correlation_results_original requires df/matrix with >= 2 columns.", call.=FALSE); return(invisible(NULL))
+  }
+  if(is.null(config$core_var_display_names) || is.null(config$get_display_name) || !is.function(config$get_display_name)){
+    warning("Config object must contain 'core_var_display_names' lookup and 'get_display_name' function.", call.=FALSE)
+    display_lookup <- NULL # Fallback
+    get_display_name_func <- function(name, ...) name
+  } else {
+    display_lookup <- config$core_var_display_names
+    get_display_name_func <- config$get_display_name
+  }
+  
+  env.cor <- tryCatch(stats::cor(env_extract, method = "pearson", use = "pairwise.complete.obs"),
+                      error = function(e) {warning("Correlation calculation failed: ", e$message, call.=FALSE); NULL})
+  if(is.null(env.cor)) return(invisible(NULL))
+  
+  env.p <- NULL
+  if(requireNamespace("Hmisc", quietly = TRUE)){
+    numeric_cols <- sapply(env_extract, is.numeric)
+    if(sum(numeric_cols) < 2) { warning("Need >= 2 numeric columns for Hmisc::rcorr.", call.=FALSE) }
+    else {
+      env_extract_num <- as.matrix(env_extract[, numeric_cols, drop = FALSE])
+      n_obs <- crossprod(!is.na(env_extract_num))
+      if(any(n_obs < 3)) { warning("Insufficient non-NA pairs, p-values from Hmisc may be unreliable.", call.=FALSE) }
+      hmisc_result <- tryCatch(Hmisc::rcorr(env_extract_num, type="pearson"), error=function(e){warning("Hmisc::rcorr failed: ",e$message, call.=FALSE); NULL})
+      if(!is.null(hmisc_result)) env.p <- hmisc_result$P
+    }
+  } else { warning("Hmisc package not found, p-values missing.", call.=FALSE) }
+  
+  original_names <- colnames(env.cor)
+  display_names <- sapply(original_names, get_display_name_func, lookup = display_lookup, USE.NAMES = FALSE)
+  rownames(env.cor) <- display_names
+  colnames(env.cor) <- display_names
+  
+  if (!is.null(env.p) && all(dim(env.p) == dim(env.cor))) {
+    p_original_names <- colnames(env_extract)[numeric_cols]
+    p_display_names <- sapply(p_original_names, get_display_name_func, lookup = display_lookup, USE.NAMES = FALSE)
+    rownames(env.p) <- p_display_names
+    colnames(env.p) <- p_display_names
+    # Ensure correct order/subset for p.mat if zero-var cols were removed
+    valid_display_names_for_p <- intersect(display_names, p_display_names)
+    env.p <- env.p[valid_display_names_for_p, valid_display_names_for_p]
+    env.cor_subset <- env.cor[valid_display_names_for_p, valid_display_names_for_p] # Use subset for plotting if p reduced
+  } else {
+    env.p <- NULL # Disable p-values if mismatch
+    env.cor_subset <- env.cor # Plot full matrix
+  }
+  
+  
+  # --- Plotting ---
+  tryCatch({
+    plot_obj <- function() {
+      corrplot::corrplot(
+        corr = env.cor_subset,      # Use potentially subsetted matrix
+        method = "color",
+        type = "upper",
+        order = "hclust",
+        p.mat = env.p,           # Use potentially subsetted/reordered p-matrix
+        sig.level = c(.01, .05),
+        insig = "label_sig",
+        pch.cex = 1.5,
+        pch.col = "grey",
+        #addCoef.col = "black", # Can make plot crowded
+        #number.cex = 0.7,
+        tl.col = "black",
+        tl.srt = 45,
+        diag = FALSE,
+        na.label = "NA",
+        mar = c(0, 0, 1, 0),
+        title = "Pearson Correlation Matrix"
+      )
+    }
+    
+    if (!is.null(save_path)) {
+      plot_dim <- max(8, 4 + 0.3 * ncol(env.cor_subset))
+      grDevices::png(filename = save_path, width = plot_dim, height = plot_dim, units = "in", res = 300)
+      plot_obj()
+      grDevices::dev.off()
+      cat("  Correlation plot saved to", save_path, "\n")
+    } else {
+      plot_obj()
+    }
+    return(invisible(NULL))
+    
+  }, error = function(e){
+    warning("Failed to create or save correlation plot: ", e$message, call.=FALSE)
+    return(NULL)
+  })
+}
