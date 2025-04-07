@@ -2,7 +2,7 @@
 #-------------------------------------------------------------------------------
 # Helper functions for running individual species SDMs using sdmtune
 #-------------------------------------------------------------------------------
-pacman::p_load(dplyr, sf, terra, dismo, sdmtune, readr, tools, stringr)
+pacman::p_load(dplyr, sf, terra, dismo, SDMtune, readr, tools, stringr)
 
 #' Load and Clean Individual Species Occurrence Data
 #' (Unchanged from previous version)

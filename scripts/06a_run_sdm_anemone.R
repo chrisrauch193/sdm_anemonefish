@@ -6,7 +6,7 @@ cat("--- Running Script 06a: Run Standard Anemone SDMs (sdmtune) ---\n")
 
 # --- 1. Setup ---
 if (!exists("config")) { source("scripts/config.R"); if (!exists("config")) stop("Failed load config.") }
-pacman::p_load(terra, sf, dplyr, readr, sdmtune, tools)
+pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools)
 sdm_helper_path <- file.path(config$helpers_dir, "sdm_modeling_helpers.R"); source(sdm_helper_path)
 
 # --- 2. Define Group Specifics ---
@@ -71,11 +71,11 @@ for (i in 1:nrow(species_df)) {
     
     # Run SDM Tuning (using sdmtune helper)
     sdmtune_results <- run_sdm_sdmtune_grid(occ_sf_thinned, predictor_stack, background_points, config)
-    if (is.null(sdmtune_results)) { warning("sdmtune::gridSearch failed."); total_sdms_skipped <- total_sdms_skipped + 1; next }
+    if (is.null(sdmtune_results)) { warning("SDMtune::gridSearch failed."); total_sdms_skipped <- total_sdms_skipped + 1; next }
     
     # Save Results
     tryCatch(saveRDS(sdmtune_results, file = results_file), error=function(e){warning("Failed save sdmtune results.")})
-    tryCatch(readr::write_csv(sdmtune::results(sdmtune_results), file = eval_file), error=function(e){warning("Failed save Eval table.")})
+    tryCatch(readr::write_csv(SDMtune::results(sdmtune_results), file = eval_file), error=function(e){warning("Failed save Eval table.")})
     cat("    sdmtune results saved.\n")
     
     # Predict Best Model
@@ -86,13 +86,12 @@ for (i in 1:nrow(species_df)) {
     tryCatch({ terra::writeRaster(prediction_raster, filename = pred_file, overwrite = TRUE, gdal=c("COMPRESS=LZW", "TFW=YES")); cat("    Prediction raster saved.\n"); total_sdms_run <- total_sdms_run + 1 }, error=function(e){warning("Failed save prediction."); total_sdms_skipped <- total_sdms_skipped + 1})
     # Save the best model object (sdmtune stores models differently, save the main object or extract best)
     # For simplicity, let's save the whole sdmtune result object again, or extract best model if needed later
-    # tryCatch({ best_model_obj <- sdmtune::get_best_model(sdmtune_results); saveRDS(best_model_obj, file = model_obj_file); cat("    Best model object saved.\n") }, error=function(e){warning("Failed save best model.", e$message)})
+    # tryCatch({ best_model_obj <- SDMtune::get_best_model(sdmtune_results); saveRDS(best_model_obj, file = model_obj_file); cat("    Best model object saved.\n") }, error=function(e){warning("Failed save best model.", e$message)})
     
     rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results, prediction_raster); gc()
   } # End scenario loop
   rm(occ_sf_clean); gc()
 } # End species loop
-} # End group check (only runs for 'anemone')
 
 cat("\n--- Script 06a finished. ---"); cat("Total SDMs run:", total_sdms_run, "\nSkipped:", total_sdms_skipped, "\n")
 #-------------------------------------------------------------------------------
