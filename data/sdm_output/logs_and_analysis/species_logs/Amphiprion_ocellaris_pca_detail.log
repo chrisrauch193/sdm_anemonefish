@@ -1,0 +1,18 @@
+2025-04-09 07:15:41.150476 [INFO] [Amphiprion ocellaris]  --- Starting processing --- 
+2025-04-09 07:15:41.15084 [DEBUG] [Amphiprion ocellaris]  Loading tuning predictors for scenario:current 
+2025-04-09 07:15:41.155934 [DEBUG] [Amphiprion ocellaris]  Tuning predictor stack loaded. 
+2025-04-09 07:15:41.156037 [DEBUG] [Amphiprion ocellaris]  Loading/cleaning/thinning occurrences using tuning stack. 
+2025-04-09 07:15:41.473689 [INFO] [Amphiprion ocellaris]  Occurrence count after clean/thin:1887 
+2025-04-09 07:15:41.473849 [INFO] [Amphiprion ocellaris]  Final model not found or rerun forced. Proceeding with tuning/training. 
+2025-04-09 07:15:41.473895 [DEBUG] [Amphiprion ocellaris]  Generating background points. 
+2025-04-09 07:21:44.797045 [DEBUG] [Amphiprion ocellaris]  Background points generated. 
+2025-04-09 07:21:44.797256 [INFO] [Amphiprion ocellaris]  Starting hyperparameter tuning. 
+2025-04-09 07:22:40.110369 [INFO] [Amphiprion ocellaris]  Tuning complete. Best hypers:fc lh, reg 1 
+2025-04-09 07:22:46.528615 [DEBUG] [Amphiprion ocellaris]  Tuning results saved to:sdm_tuning_Amphiprion_ocellaris_pca.rds 
+2025-04-09 07:22:46.528857 [INFO] [Amphiprion ocellaris]  Starting final model training. 
+2025-04-09 07:22:48.483637 [INFO] [Amphiprion ocellaris]  Final model training complete. 
+2025-04-09 07:22:48.515377 [DEBUG] [Amphiprion ocellaris]  Final model saved to:sdm_model_Amphiprion_ocellaris_pca.rds 
+2025-04-09 07:22:48.814362 [INFO] [Amphiprion ocellaris]  Starting predictions for 1 scenarios. 
+2025-04-09 07:22:48.814659 [DEBUG] [Amphiprion ocellaris]    Predicting scenario: current 
+2025-04-09 07:23:19.96996 [DEBUG] [Amphiprion ocellaris]    Prediction raster saved: sdm_prediction_Amphiprion_ocellaris_current_pca.tif 
+2025-04-09 07:23:20.624958 [INFO] [Amphiprion ocellaris]  [Amphiprion ocellaris] Finished. Occurrences (thin/clean): 1887. Predictions attempted: 1. Predictions made: 1. Errors/Skipped preds: 0. 

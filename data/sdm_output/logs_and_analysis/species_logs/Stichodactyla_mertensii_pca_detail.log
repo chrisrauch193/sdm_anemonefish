@@ -1,0 +1,18 @@
+2025-04-09 06:52:57.768521 [INFO] [Stichodactyla mertensii]  --- Starting processing --- 
+2025-04-09 06:52:57.769437 [DEBUG] [Stichodactyla mertensii]  Loading tuning predictors for scenario:current 
+2025-04-09 06:52:57.782162 [DEBUG] [Stichodactyla mertensii]  Tuning predictor stack loaded. 
+2025-04-09 06:52:57.78241 [DEBUG] [Stichodactyla mertensii]  Loading/cleaning/thinning occurrences using tuning stack. 
+2025-04-09 06:52:58.206484 [INFO] [Stichodactyla mertensii]  Occurrence count after clean/thin:406 
+2025-04-09 06:52:58.206999 [INFO] [Stichodactyla mertensii]  Final model not found or rerun forced. Proceeding with tuning/training. 
+2025-04-09 06:52:58.207091 [DEBUG] [Stichodactyla mertensii]  Generating background points. 
+2025-04-09 07:06:53.035619 [DEBUG] [Stichodactyla mertensii]  Background points generated. 
+2025-04-09 07:06:53.036216 [INFO] [Stichodactyla mertensii]  Starting hyperparameter tuning. 
+2025-04-09 07:07:43.452402 [INFO] [Stichodactyla mertensii]  Tuning complete. Best hypers:fc lh, reg 0.5 
+2025-04-09 07:07:49.805702 [DEBUG] [Stichodactyla mertensii]  Tuning results saved to:sdm_tuning_Stichodactyla_mertensii_pca.rds 
+2025-04-09 07:07:49.806062 [INFO] [Stichodactyla mertensii]  Starting final model training. 
+2025-04-09 07:07:52.283551 [INFO] [Stichodactyla mertensii]  Final model training complete. 
+2025-04-09 07:07:52.315705 [DEBUG] [Stichodactyla mertensii]  Final model saved to:sdm_model_Stichodactyla_mertensii_pca.rds 
+2025-04-09 07:07:52.733727 [INFO] [Stichodactyla mertensii]  Starting predictions for 1 scenarios. 
+2025-04-09 07:07:52.734121 [DEBUG] [Stichodactyla mertensii]    Predicting scenario: current 
+2025-04-09 07:08:41.225283 [DEBUG] [Stichodactyla mertensii]    Prediction raster saved: sdm_prediction_Stichodactyla_mertensii_current_pca.tif 
+2025-04-09 07:08:39.641528 [INFO] [Stichodactyla mertensii]  [Stichodactyla mertensii] Finished. Occurrences (thin/clean): 406. Predictions attempted: 1. Predictions made: 1. Errors/Skipped preds: 0. 

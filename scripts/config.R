@@ -116,6 +116,7 @@ terrain_folder <- file.path(env_data_dir, "terrain")
 # Set to TRUE to use PCA predictors (Braun et al. method, script 05b)
 # Set to FALSE to use VIF-selected raw predictors (defined below, requires 05a/c run)
 use_pca_predictors <- TRUE # <<< SET THIS TO TRUE (default) or FALSE
+n_pca_components <- 4
 
 # --- Define final VIF lists IF use_pca_predictors is FALSE ---
 # These should be the *final* lists determined after running 05a/05b/05c
@@ -163,6 +164,7 @@ final_vars_vif_anemonefish_combined_env <- c( # From 05c - ENV vars ONLY
 pca_model_save_path <- file.path(log_dir_base, "pca_model_current.rds")
 # Path for the list of saved PCA raster stack paths (output of 05b)
 pca_raster_paths_rds_path <- file.path(log_dir_base, "pca_raster_paths.rds")
+pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 
 # SDM Settings (SDMtune)
 sdm_method <- "Maxnet"
@@ -265,7 +267,7 @@ config <- list(
   species_log_dir = species_log_dir,
   results_dir = results_dir, models_dir = models_dir, scripts_dir = scripts_dir,
   helpers_dir = helpers_dir, terrain_folder = terrain_folder,
-  pca_model_save_path = pca_model_save_path, pca_raster_paths_rds_path = pca_raster_paths_rds_path,
+  pca_model_save_path = pca_model_save_path, pca_raster_paths_rds_path = pca_raster_paths_rds_path, pca_models_rds_path = pca_models_rds_path,
   
   # Processing Parameters
   force_rerun = force_rerun, occurrence_crs = occurrence_crs, env_crs = env_crs,
@@ -275,6 +277,7 @@ config <- list(
   terrain_variables_final = terrain_variables_final, vars_to_copy_to_future = vars_to_copy_to_future,
   env_scenarios = env_scenarios, scenario_folder_map = scenario_folder_map,
   use_pca_predictors = use_pca_predictors,
+  n_pca_components = n_pca_components,
   # VIF Lists (only used if use_pca_predictors = FALSE)
   final_vars_vif_anemone = final_vars_vif_anemone,
   final_vars_vif_anemonefish_env = final_vars_vif_anemonefish_env,
