@@ -201,7 +201,9 @@ for (i in 1:nrow(species_df)) {
   }
   
   # Clean up model object before next species
-  if (exists("final_model", inherits = FALSE)) rm(final_model)
+  if (exists("final_model", inherits = FALSE)) {
+    rm(final_model)
+  }
   gc()
 } # End species loop
 

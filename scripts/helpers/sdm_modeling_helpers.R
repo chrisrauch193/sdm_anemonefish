@@ -2,7 +2,7 @@
 #-------------------------------------------------------------------------------
 # Helper functions for SDM Modeling using SDMtune (Revised Workflow)
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stats) # Ensure all needed packages are loaded
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stats)
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Simplified version focusing on coordinates needed for SWD)
@@ -22,7 +22,6 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
   tryCatch({
     occ_df <- readr::read_csv(occ_file, col_types = readr::cols(.default = "c"), show_col_types = FALSE)
     
-    # Basic cleaning for coordinates
     if (!all(c("decimalLongitude", "decimalLatitude") %in% names(occ_df))) {
       warning("Missing coordinate columns in file: ", basename(occ_file), call. = FALSE)
       return(NULL)
@@ -44,7 +43,6 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
       return(NULL)
     }
     
-    # Return just the coordinate matrix
     return(as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")]))
     
   }, error = function(e) {
@@ -128,7 +126,7 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     SDMtune::randomFolds(
       data = full_swd_data,
       k = config$sdm_n_folds,
-      only_presence = FALSE,
+      only_presence = FALSE, # Maxnet uses presence-background
       seed = 123
     )
   }, error = function(e){
@@ -136,7 +134,7 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
   })
   if(is.null(folds)) return(NULL)
   
-  # 3. Train initial CV base model
+  # 3. Train an initial base model *with folds*
   cat("    Training initial CV base model for gridSearch input...\n")
   initial_cv_model <- tryCatch({
     SDMtune::train(method = config$sdm_method,
@@ -175,20 +173,21 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
       return(NULL)
     }
     
-    # *** CORRECTED METRIC COLUMN NAME IDENTIFICATION ***
-    # When gridSearch uses an SDMmodelCV object, results columns are named
-    # train_METRIC and test_METRIC (representing the mean across folds).
-    metric_base_name <- toupper(config$sdm_evaluation_metric) # e.g., "AUC", "TSS"
-    # AICc might be an exception, check both cases
+    # *** CORRECTED METRIC COLUMN NAME IDENTIFICATION (v2) ***
+    # Expected names in CV results: test_AUC, test_TSS, AICc
+    # Convert config metric to uppercase for matching AUC/TSS
+    metric_base_upper <- toupper(config$sdm_evaluation_metric)
+    
+    # Construct the expected column name based on the metric
     if (tolower(config$sdm_evaluation_metric) == "aicc") {
-      metric_cv_name <- "AICc" # AICc column doesn't have train_/test_ prefix
+      target_metric_col <- "AICc"
     } else {
-      metric_cv_name <- paste0("test_", metric_base_name) # e.g., test_AUC, test_TSS
+      target_metric_col <- paste0("test_", metric_base_upper) # e.g., test_AUC, test_TSS
     }
     
     # Check if the expected metric column exists
-    if (!metric_cv_name %in% colnames(res_df)) {
-      warning("Cannot find CV evaluation metric column '", metric_cv_name,
+    if (!target_metric_col %in% colnames(res_df)) {
+      warning("Cannot find CV evaluation metric column '", target_metric_col,
               "' in the results dataframe. Available columns: ",
               paste(colnames(res_df), collapse=", "),
               ". Cannot select best hypers.", call. = FALSE)
@@ -197,16 +196,16 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     }
     
     # Select best model (handle NAs, minimize AICc, maximize others)
-    valid_metric_indices <- which(!is.na(res_df[[metric_cv_name]]))
+    valid_metric_indices <- which(!is.na(res_df[[target_metric_col]]))
     if(length(valid_metric_indices) == 0) {
-      warning("All values for metric '", metric_cv_name, "' are NA. Cannot select best hypers.", call.=FALSE)
+      warning("All values for metric '", target_metric_col, "' are NA. Cannot select best hypers.", call.=FALSE)
       return(NULL)
     }
     
-    if (metric_col_name == "AICc") {
-      best_row_relative_index <- which.min(res_df[[metric_cv_name]][valid_metric_indices])
+    if (target_metric_col == "AICc") {
+      best_row_relative_index <- which.min(res_df[[target_metric_col]][valid_metric_indices])
     } else {
-      best_row_relative_index <- which.max(res_df[[metric_cv_name]][valid_metric_indices])
+      best_row_relative_index <- which.max(res_df[[target_metric_col]][valid_metric_indices])
     }
     
     best_row_index <- valid_metric_indices[best_row_relative_index]
@@ -219,7 +218,7 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     # Extract the best hyperparameter combination from the results df
     best_hypers_df <- res_df[best_row_index, names(hyper_grid), drop = FALSE]
     
-    cat("    Best hyperparameters found (Mean CV", metric_cv_name, "):",
+    cat("    Best hyperparameters found (Mean CV", target_metric_col, "):",
         paste(names(best_hypers_df), best_hypers_df[1,], collapse=", "), "\n")
     
     return(list(best_hypers = best_hypers_df, tuning_results = tuning_results))
@@ -229,7 +228,6 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     return(NULL)
   })
 }
-
 
 #' Train Final SDM Model
 #'
@@ -274,9 +272,7 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
   # Add hyperparameters dynamically
   for (h_name in names(best_hypers)) {
     h_value <- best_hypers[[h_name]]
-    # Ensure correct type if needed (e.g., numeric conversion if stored as char)
-    if (h_name == "reg") h_value <- as.numeric(h_value)
-    # Feature classes should remain character
+    if (h_name == "reg") h_value <- as.numeric(h_value) # Ensure reg is numeric
     train_args[[h_name]] <- h_value
   }
   cat("      Using hyperparameters:", paste(names(train_args)[-(1:2)], sapply(train_args[-(1:2)], as.character), collapse=", "), "\n")
