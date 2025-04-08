@@ -95,11 +95,11 @@ vars_to_copy_to_future <- c(
 
 # Scenarios and Time Steps (Internal logical names used in loops)
 env_scenarios <- c(
-  "current",
-  "ssp119_2050", # Represents the dec50 time step
-  "ssp119_2100", # Represents the dec100 time step
-  "ssp585_2050", # Represents the dec50 time step
-  "ssp585_2100"  # Represents the dec100 time step
+  "current"
+  # "ssp119_2050", # Represents the dec50 time step
+  # "ssp119_2100", # Represents the dec100 time step
+  # "ssp585_2050", # Represents the dec50 time step
+  # "ssp585_2100"  # Represents the dec100 time step
 )
 
 # --- !!! UPDATED scenario_folder_map !!! ---
@@ -124,13 +124,13 @@ vif_threshold <- 10
 correlation_threshold <- 0.8
 n_pca_components <- 4
 
-# SDM Settings (Updated for sdmtune)
-sdm_method <- "Maxnet" # sdmtune uses method names like "Maxnet", "RF", etc.
-sdm_partitions <- "randomkfold" # sdmtune uses this term
+# SDM Settings (Updated for SDMtune)
+sdm_method <- "Maxnet" # SDMtune uses method names like "Maxnet", "RF", etc.
+sdm_partitions <- "randomkfold" # SDMtune uses this term
 sdm_n_folds <- 5
-# sdmtune uses 'reg' for regularization multiplier and 'fc' for feature class
+# SDMtune uses 'reg' for regularization multiplier and 'fc' for feature class
 sdm_tune_grid <- list(fc = c("L", "LQ", "H", "LQH", "LQP"), reg = seq(0.5, 4, 0.5))
-sdm_evaluation_metric <- "AUC" # Common metric used by sdmtune tuning/results
+sdm_evaluation_metric <- "AUC" # Common metric used by SDMtune tuning/results
 background_points_n <- 10000
 thinning_method <- "cell" # Or your preferred method
 

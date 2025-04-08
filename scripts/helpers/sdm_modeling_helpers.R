@@ -1,6 +1,6 @@
 # scripts/helpers/sdm_modeling_helpers.R
 #-------------------------------------------------------------------------------
-# Helper functions for running individual species SDMs using sdmtune
+# Helper functions for running individual species SDMs using SDMtune
 #-------------------------------------------------------------------------------
 pacman::p_load(dplyr, sf, terra, dismo, SDMtune, readr, tools, stringr)
 
@@ -54,9 +54,9 @@ generate_sdm_background <- function(predictor_stack, n, config) {
   }, error = function(e) { warning("Error generating background points: ", e$message, call. = FALSE); return(NULL) })
 }
 
-#' Run SDM Tuning using sdmtune::gridSearch
+#' Run SDM Tuning using SDMtune::gridSearch
 #'
-#' Executes sdmtune grid search with specified settings.
+#' Executes SDMtune grid search with specified settings.
 #'
 #' @param occs_thinned_sf sf object of thinned occurrence points.
 #' @param predictor_stack SpatRaster object of predictors.
@@ -65,19 +65,19 @@ generate_sdm_background <- function(predictor_stack, n, config) {
 #'
 #' @return An SDMtune object containing tuning results, or NULL on error.
 #' @export
-run_sdm_sdmtune_grid <- function(occs_thinned_sf, predictor_stack, background_df, config) {
-  cat("  Running sdmtune::gridSearch...\n")
+run_sdm_SDMtune_grid <- function(occs_thinned_sf, predictor_stack, background_df, config) {
+  cat("  Running SDMtune::gridSearch...\n")
   
   if (is.null(occs_thinned_sf) || nrow(occs_thinned_sf) == 0 || is.null(predictor_stack) || is.null(background_df)) {
-    warning("Invalid inputs for running sdmtune.", call. = FALSE); return(NULL)
+    warning("Invalid inputs for running SDMtune.", call. = FALSE); return(NULL)
   }
   
   occs_coords <- sf::st_coordinates(occs_thinned_sf)
   
   # Prepare SWD object (Species With Data)
   swd_data <- tryCatch({
-    sdmtune::prepareSWD(
-      species = "species", # sdmtune expects a species name column
+    SDMtune::prepareSWD(
+      species = "species", # SDMtune expects a species name column
       p = occs_coords,
       a = background_df,
       env = predictor_stack
@@ -89,7 +89,7 @@ run_sdm_sdmtune_grid <- function(occs_thinned_sf, predictor_stack, background_df
   if (is.null(swd_data)) return(NULL)
   
   # Define the model type
-  model <- sdmtune::Maxnet() # Using Maxnet as specified in config
+  model <- SDMtune::Maxnet() # Using Maxnet as specified in config
   
   # Define the hyperparameter grid (using updated names from config)
   hyper_grid <- config$sdm_tune_grid
@@ -97,21 +97,21 @@ run_sdm_sdmtune_grid <- function(occs_thinned_sf, predictor_stack, background_df
   # Run grid search with cross-validation
   tuned_model <- NULL
   tryCatch({
-    # sdmtune uses 'kfold' for random k-fold
-    tuned_model <- sdmtune::gridSearch(
+    # SDMtune uses 'kfold' for random k-fold
+    tuned_model <- SDMtune::gridSearch(
       swd_data,
       hypers = hyper_grid,
       metric = config$sdm_evaluation_metric, # e.g., "AUC"
       method = config$sdm_partitions, # e.g., "kfold"
       k = config$sdm_n_folds, # Number of folds
-      # parallel = config$use_parallel, # sdmtune handles parallel differently, often internal
-      # numCores = config$num_cores # Not a direct arg here, check sdmtune docs if needed
+      # parallel = config$use_parallel, # SDMtune handles parallel differently, often internal
+      # numCores = config$num_cores # Not a direct arg here, check SDMtune docs if needed
       save_models = TRUE # Keep model objects for prediction
     )
-    cat("  sdmtune::gridSearch completed.\n")
-    # print(sdmtune::results(tuned_model)) # Print tuning results
+    cat("  SDMtune::gridSearch completed.\n")
+    # print(SDMtune::results(tuned_model)) # Print tuning results
   }, error = function(e) {
-    warning("sdmtune::gridSearch failed: ", e$message, call. = FALSE)
+    warning("SDMtune::gridSearch failed: ", e$message, call. = FALSE)
     tuned_model <- NULL
   })
   
@@ -119,74 +119,74 @@ run_sdm_sdmtune_grid <- function(occs_thinned_sf, predictor_stack, background_df
 }
 
 
-#' Select Best Model and Predict SDM using sdmtune
+#' Select Best Model and Predict SDM using SDMtune
 #'
-#' Selects the best model from sdmtune results and generates a prediction raster.
+#' Selects the best model from SDMtune results and generates a prediction raster.
 #'
-#' @param sdmtune_results The output object from sdmtune::gridSearch or train.
+#' @param SDMtune_results The output object from SDMtune::gridSearch or train.
 #' @param predictor_stack SpatRaster object used for prediction.
 #' @param config Configuration list.
 #'
 #' @return A SpatRaster object with the prediction, or NULL on error.
 #' @export
-predict_sdm_sdmtune <- function(sdmtune_results, predictor_stack, config) {
-  cat("  Selecting best model and predicting using sdmtune...\n")
+predict_sdm_SDMtune <- function(SDMtune_results, predictor_stack, config) {
+  cat("  Selecting best model and predicting using SDMtune...\n")
   
-  if (is.null(sdmtune_results) || !inherits(sdmtune_results, "SDMtune")) {
-    warning("Invalid sdmtune results object provided.", call. = FALSE); return(NULL)
+  if (is.null(SDMtune_results) || !inherits(SDMtune_results, "SDMtune")) {
+    warning("Invalid SDMtune results object provided.", call. = FALSE); return(NULL)
   }
   if (is.null(predictor_stack)) {
     warning("Predictor stack is required for prediction.", call. = FALSE); return(NULL)
   }
   
-  # sdmtune results already contain the best model info based on the metric used
+  # SDMtune results already contain the best model info based on the metric used
   # Access the best model directly if gridSearch stored it
   best_model_obj <- tryCatch({
-    # sdmtune::results(sdmtune_results) # View results table
-    # sdmtune_results@models # Access list of models if saved
+    # SDMtune::results(SDMtune_results) # View results table
+    # SDMtune_results@models # Access list of models if saved
     # The gridSearch object itself often represents the best configuration found
     # OR use optimizeModel if you ran that instead of gridSearch
     # Assuming gridSearch object holds the best config implicitly or use the first model if multiple are equal best
-    if(length(sdmtune_results@models) > 0) {
+    if(length(SDMtune_results@models) > 0) {
       # Find the row with the best metric score
-      res_df <- sdmtune::results(sdmtune_results)
+      res_df <- SDMtune::results(SDMtune_results)
       metric <- config$sdm_evaluation_metric
-      # sdmtune uses metric names like AUC_cv, TSS_cv etc. Need to check results() output
+      # SDMtune uses metric names like AUC_cv, TSS_cv etc. Need to check results() output
       metric_cv_name <- paste0(metric, "_cv") # Likely name format
       if (!metric_cv_name %in% colnames(res_df)) {
         # Fallback or alternative metrics if primary not found
         if("AUC_cv" %in% colnames(res_df)) metric_cv_name <- "AUC_cv"
         else if ("TSS_cv" %in% colnames(res_df)) metric_cv_name <- "TSS_cv"
         else {
-          warning("Cannot find metric '", metric_cv_name, "' or fallbacks in sdmtune results. Using first model.", call.=FALSE)
-          return(sdmtune_results@models[[1]])
+          warning("Cannot find metric '", metric_cv_name, "' or fallbacks in SDMtune results. Using first model.", call.=FALSE)
+          return(SDMtune_results@models[[1]])
         }
         warning("Metric '", config$sdm_evaluation_metric, "_cv' not found, using '", metric_cv_name, "' instead.", call.=FALSE)
       }
       
       best_row_index <- which.max(res_df[[metric_cv_name]])
-      if(length(best_row_index) == 0 || best_row_index > length(sdmtune_results@models)) {
+      if(length(best_row_index) == 0 || best_row_index > length(SDMtune_results@models)) {
         warning("Could not determine best model index. Using first model.", call.=FALSE)
         best_row_index <- 1
       }
-      cat("    Best model hyperparameters (from gridSearch):", paste(names(sdmtune_results@hypers), sdmtune_results@hypers[best_row_index,], collapse=", "), "\n")
-      sdmtune_results@models[[best_row_index]]
+      cat("    Best model hyperparameters (from gridSearch):", paste(names(SDMtune_results@hypers), SDMtune_results@hypers[best_row_index,], collapse=", "), "\n")
+      SDMtune_results@models[[best_row_index]]
     } else {
-      warning("No models found within the sdmtune results object.", call.=FALSE)
+      warning("No models found within the SDMtune results object.", call.=FALSE)
       NULL
     }
   }, error = function(e) {
-    warning("Error accessing best model from sdmtune results: ", e$message, call. = FALSE); NULL
+    warning("Error accessing best model from SDMtune results: ", e$message, call. = FALSE); NULL
   })
   
   if (is.null(best_model_obj)) {
     warning("Could not retrieve the best model object.", call.=FALSE); return(NULL)
   }
   
-  # Predict using sdmtune::predict
+  # Predict using SDMtune::predict
   prediction_raster <- NULL
   tryCatch({
-    prediction_raster <- sdmtune::predict(
+    prediction_raster <- SDMtune::predict(
       object = best_model_obj, # The model object itself
       data = predictor_stack,
       type = "cloglog" # Maxnet default often cloglog, check model output if needed
@@ -195,7 +195,7 @@ predict_sdm_sdmtune <- function(sdmtune_results, predictor_stack, config) {
     names(prediction_raster) <- "suitability"
     cat("    Prediction raster generated.\n")
   }, error = function(e) {
-    warning("sdmtune::predict failed: ", e$message, call. = FALSE)
+    warning("SDMtune::predict failed: ", e$message, call. = FALSE)
     prediction_raster <- NULL
   })
   

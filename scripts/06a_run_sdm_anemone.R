@@ -6,7 +6,7 @@ cat("--- Running Script 06a: Run Standard Anemone SDMs (SDMtune) ---\n")
 
 # --- 1. Setup ---
 if (!exists("config")) { source("scripts/config.R"); if (!exists("config")) stop("Failed load config.") }
-# Ensure sdmtune is loaded
+# Ensure SDMtune is loaded
 pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools, stringr)
 # Source helpers
 env_helper_path <- file.path(config$helpers_dir, "env_processing_helpers.R"); source(env_helper_path)
@@ -107,20 +107,20 @@ for (i in 1:nrow(species_df)) {
     }
     
     # Run SDM Tuning (using SDMtune helper)
-    sdmtune_results <- run_sdm_sdmtune_grid(occ_sf_thinned, predictor_stack, background_points, config)
-    if (is.null(sdmtune_results)) {
+    SDMtune_results <- run_sdm_SDMtune_grid(occ_sf_thinned, predictor_stack, background_points, config)
+    if (is.null(SDMtune_results)) {
       warning("SDMtune::gridSearch failed."); total_sdms_skipped <- total_sdms_skipped + 1; rm(predictor_stack, occ_sf_thinned, background_points); gc(); next
     }
     
     # Save Results
-    tryCatch(saveRDS(sdmtune_results, file = results_file), error=function(e){warning("Failed save sdmtune results object: ", e$message)})
-    tryCatch(readr::write_csv(SDMtune::results(sdmtune_results), file = eval_file), error=function(e){warning("Failed save Eval table: ", e$message)})
+    tryCatch(saveRDS(SDMtune_results, file = results_file), error=function(e){warning("Failed save SDMtune results object: ", e$message)})
+    tryCatch(readr::write_csv(SDMtune::results(SDMtune_results), file = eval_file), error=function(e){warning("Failed save Eval table: ", e$message)})
     cat("    SDMtune results saved.\n")
     
     # Predict Best Model
-    prediction_raster <- predict_sdm_sdmtune(sdmtune_results, predictor_stack, config)
+    prediction_raster <- predict_sdm_SDMtune(SDMtune_results, predictor_stack, config)
     if (is.null(prediction_raster)) {
-      warning("Prediction failed."); total_sdms_skipped <- total_sdms_skipped + 1; rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results); gc(); next
+      warning("Prediction failed."); total_sdms_skipped <- total_sdms_skipped + 1; rm(predictor_stack, occ_sf_thinned, background_points, SDMtune_results); gc(); next
     }
     
     # Save Prediction & Model Object (Saving the whole SDMtune result object which contains the best model)
@@ -131,11 +131,11 @@ for (i in 1:nrow(species_df)) {
     }, error=function(e){warning("Failed save prediction raster: ", e$message); total_sdms_skipped <- total_sdms_skipped + 1})
     
     # Save the full SDMtune object - it contains the best model
-    tryCatch({ saveRDS(sdmtune_results, file = model_obj_file); cat("    SDMtune object (containing best model) saved to:", basename(model_obj_file), "\n")
+    tryCatch({ saveRDS(SDMtune_results, file = model_obj_file); cat("    SDMtune object (containing best model) saved to:", basename(model_obj_file), "\n")
     }, error=function(e){warning("Failed save SDMtune object: ", e$message)})
     
     
-    rm(predictor_stack, occ_sf_thinned, background_points, sdmtune_results, prediction_raster); gc()
+    rm(predictor_stack, occ_sf_thinned, background_points, SDMtune_results, prediction_raster); gc()
   } # End scenario loop
   rm(occ_sf_clean); gc()
 } # End species loop
