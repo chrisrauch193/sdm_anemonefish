@@ -1,72 +1,23 @@
 # scripts/helpers/sdm_modeling_helpers.R
-#-------------------------------------------------------------------------------
-# Helper functions for running individual species SDMs using SDMtune
-#-------------------------------------------------------------------------------
-pacman::p_load(dplyr, sf, terra, dismo, SDMtune, readr, tools, stringr)
 
-#' Load and Clean Individual Species Occurrence Data
-#' (Unchanged from previous version)
-load_clean_individual_occ <- function(species_aphia_id, occurrence_folder, config) {
-  occurrence_file <- file.path(occurrence_folder, paste0(species_aphia_id, ".csv"))
-  if (!file.exists(occurrence_file)) {
-    warning("Occurrence file not found for AphiaID ", species_aphia_id, " in ", occurrence_folder, call. = FALSE); return(NULL)
-  }
-  tryCatch({ occurrences <- readr::read_csv(occurrence_file, col_types = readr::cols(.default = "c"), show_col_types = FALSE)
-  }, error = function(e){ warning("Error reading occurrence file ", occurrence_file, ": ", e$message, call.=FALSE); return(NULL) })
-  if (!all(c("decimalLongitude", "decimalLatitude") %in% names(occurrences))) {
-    warning("Required columns 'decimalLongitude'/'decimalLatitude' not found in ", occurrence_file, call.=FALSE); return(NULL)
-  }
-  occ_clean <- occurrences %>% mutate(decimalLongitude = suppressWarnings(as.numeric(decimalLongitude)), decimalLatitude = suppressWarnings(as.numeric(decimalLatitude))) %>% filter(!is.na(decimalLongitude), !is.na(decimalLatitude), decimalLongitude >= -180, decimalLongitude <= 180, decimalLatitude >= -90, decimalLatitude <= 90)
-  if (nrow(occ_clean) == 0) return(NULL)
-  tryCatch({ occ_sf <- sf::st_as_sf(occ_clean, coords = c("decimalLongitude", "decimalLatitude"), crs = config$occurrence_crs); return(occ_sf)
-  }, error = function(e){ warning("Error converting occurrences to sf for AphiaID ", species_aphia_id, ": ", e$message, call.=FALSE); return(NULL) })
-}
+# ... (keep other helper functions like load_clean_individual_occ, thin_individual_occ, generate_sdm_background) ...
 
-#' Thin Individual Species Occurrence Data (Cell-based)
-#' (Unchanged from previous version)
-thin_individual_occ <- function(occurrences_sf, predictor_stack, config) {
-  if (is.null(occurrences_sf) || nrow(occurrences_sf) == 0 || is.null(predictor_stack)) return(NULL)
-  target_crs_obj <- terra::crs(predictor_stack)
-  if (sf::st_crs(occurrences_sf) != target_crs_obj) {
-    tryCatch({ occurrences_sf <- sf::st_transform(occurrences_sf, crs = target_crs_obj)
-    }, error = function(e){ warning("Thinning Error: Failed to transform CRS: ", e$message, call.=FALSE); return(NULL) })
-  }
-  tryCatch({
-    occs_spatvector <- terra::vect(occurrences_sf); occs_cells <- terra::extract(predictor_stack[[1]], occs_spatvector, cells = TRUE)
-    valid_cells_indices <- which(!is.na(occs_cells$cell)); if(length(valid_cells_indices) == 0) return(NULL)
-    unique_cell_indices_in_valid <- which(!duplicated(occs_cells$cell[valid_cells_indices]))
-    original_indices_to_keep <- valid_cells_indices[unique_cell_indices_in_valid]
-    occs_thinned <- occurrences_sf[original_indices_to_keep, ]; if(nrow(occs_thinned) == 0) return(NULL)
-    return(occs_thinned)
-  }, error = function(e){ warning("Error during individual cell-based thinning: ", e$message, call.=FALSE); return(NULL) })
-}
-
-#' Generate Background Points
-#' (Unchanged from previous version)
-generate_sdm_background <- function(predictor_stack, n, config) {
-  cat("  Generating", n, "background points...\n")
-  if (is.null(predictor_stack)) return(NULL)
-  tryCatch({
-    mask_rast <- !is.na(predictor_stack[[1]]); bg_points_terra <- terra::spatSample(mask_rast, size = n, method = "random", na.rm = TRUE, xy = TRUE, warn=FALSE)
-    if(nrow(bg_points_terra) < n) warning("Only generated ", nrow(bg_points_terra), " background points (less than requested ", n, ").", call.=FALSE)
-    if(nrow(bg_points_terra) == 0) { warning("Failed to generate any background points.", call.=FALSE); return(NULL) }
-    bg_df <- as.data.frame(bg_points_terra[, c("x", "y")]); return(bg_df)
-  }, error = function(e) { warning("Error generating background points: ", e$message, call. = FALSE); return(NULL) })
-}
-
-#' Run SDM Tuning using SDMtune::gridSearch
+#' Run SDM Tuning using SDMtune::gridSearch with Train/Test Split
 #'
-#' Executes SDMtune grid search with specified settings.
+#' Prepares data, splits into training and testing sets, trains a base model,
+#' and executes SDMtune grid search evaluating hyperparameters on the test set.
+#' NOTE: This uses a single train/test split, not k-fold CV for tuning,
+#' as creating SDMmodelCV with Maxnet seems problematic based on errors.
 #'
 #' @param occs_thinned_sf sf object of thinned occurrence points.
 #' @param predictor_stack SpatRaster object of predictors.
 #' @param background_df Data frame with 'x', 'y' columns for background points.
-#' @param config Configuration list (for SDM settings).
+#' @param config Configuration list (for SDM settings, test proportion).
 #'
 #' @return An SDMtune object containing tuning results, or NULL on error.
 #' @export
 run_sdm_SDMtune_grid <- function(occs_thinned_sf, predictor_stack, background_df, config) {
-  cat("  Running SDMtune::gridSearch...\n")
+  cat("    Preparing data and running SDMtune::gridSearch with Train/Test split...\n") # Updated message
   
   if (is.null(occs_thinned_sf) || nrow(occs_thinned_sf) == 0 || is.null(predictor_stack) || is.null(background_df)) {
     warning("Invalid inputs for running SDMtune.", call. = FALSE); return(NULL)
@@ -74,10 +25,10 @@ run_sdm_SDMtune_grid <- function(occs_thinned_sf, predictor_stack, background_df
   
   occs_coords <- sf::st_coordinates(occs_thinned_sf)
   
-  # Prepare SWD object (Species With Data)
+  # 1. Prepare SWD object
   swd_data <- tryCatch({
     SDMtune::prepareSWD(
-      species = "species", # SDMtune expects a species name column
+      species = "species",
       p = occs_coords,
       a = background_df,
       env = predictor_stack
@@ -88,114 +39,163 @@ run_sdm_SDMtune_grid <- function(occs_thinned_sf, predictor_stack, background_df
   
   if (is.null(swd_data)) return(NULL)
   
-  # Define the model type
-  model <- SDMtune::Maxnet() # Using Maxnet as specified in config
-  
-  # Define the hyperparameter grid (using updated names from config)
-  hyper_grid <- config$sdm_tune_grid
-  
-  # Run grid search with cross-validation
-  tuned_model <- NULL
-  tryCatch({
-    # SDMtune uses 'kfold' for random k-fold
-    tuned_model <- SDMtune::gridSearch(
-      swd_data,
-      hypers = hyper_grid,
-      metric = config$sdm_evaluation_metric, # e.g., "AUC"
-      method = config$sdm_partitions, # e.g., "kfold"
-      k = config$sdm_n_folds, # Number of folds
-      # parallel = config$use_parallel, # SDMtune handles parallel differently, often internal
-      # numCores = config$num_cores # Not a direct arg here, check SDMtune docs if needed
-      save_models = TRUE # Keep model objects for prediction
-    )
-    cat("  SDMtune::gridSearch completed.\n")
-    # print(SDMtune::results(tuned_model)) # Print tuning results
+  # 2. *** SPLIT Data into Training and Testing ***
+  # Use a specified proportion for testing (e.g., 20% = 0.2)
+  test_proportion <- 1 / config$sdm_n_folds # Use k from config to define test proportion
+  cat("    Splitting data: ", (1-test_proportion)*100, "% Train,", test_proportion*100, "% Test (presence only).\n")
+  datasets <- tryCatch({
+    SDMtune::trainValTest(swd_data, test = test_proportion, only_presence = TRUE, seed = 123) # Added seed for reproducibility
   }, error = function(e) {
-    warning("SDMtune::gridSearch failed: ", e$message, call. = FALSE)
-    tuned_model <- NULL
+    warning("Failed to split data using trainValTest: ", e$message, call. = FALSE); return(NULL)
   })
   
-  return(tuned_model)
+  if (is.null(datasets)) return(NULL)
+  train_swd <- datasets[[1]]
+  test_swd <- datasets[[2]]
+  
+  # 3. Train an initial base model on the TRAINING data
+  cat("    Training initial base model on training data...\n")
+  initial_model <- tryCatch({
+    SDMtune::train(method = config$sdm_method, # e.g., "Maxnet"
+                   data = train_swd
+                   # Use default hyperparameters for the initial model
+    )
+  }, error = function(e) {
+    warning("Failed to train initial base model: ", e$message, call. = FALSE); return(NULL)
+  })
+  
+  if (is.null(initial_model) || !inherits(initial_model, "SDMmodel")) {
+    warning("Failed to create a valid SDMmodel object.", call. = FALSE); return(NULL)
+  }
+  
+  # 4. Define the hyperparameter grid
+  hyper_grid <- config$sdm_tune_grid
+  
+  # 5. Run gridSearch using the initial model and the TEST dataset
+  tuned_results <- NULL
+  tryCatch({
+    cat("    Running gridSearch, evaluating on the test set...\n")
+    tuned_results <- SDMtune::gridSearch(
+      model = initial_model, # Pass the base SDMmodel trained on train_swd
+      hypers = hyper_grid,
+      metric = config$sdm_evaluation_metric, # Metric to evaluate on the test set
+      test = test_swd,        # Provide the test SWD object
+      save_models = TRUE      # Save models trained on training data with different hypers
+    )
+    cat("    SDMtune::gridSearch with train/test split completed.\n")
+    # print(SDMtune::results(tuned_results)) # Optional: view results table
+  }, error = function(e) {
+    warning("SDMtune::gridSearch failed: ", e$message, call. = FALSE)
+    tuned_results <- NULL
+  })
+  
+  return(tuned_results)
 }
 
 
-#' Select Best Model and Predict SDM using SDMtune
+#' Select Best Model and Predict SDM using SDMtune (Train/Test Version)
 #'
-#' Selects the best model from SDMtune results and generates a prediction raster.
+#' Selects the best model based on test set performance from gridSearch results
+#' and generates a prediction raster using a model retrained on ALL data
+#' with the best hyperparameters.
 #'
-#' @param SDMtune_results The output object from SDMtune::gridSearch or train.
+#' @param SDMtune_results The output object from SDMtune::gridSearch (train/test version).
 #' @param predictor_stack SpatRaster object used for prediction.
 #' @param config Configuration list.
 #'
 #' @return A SpatRaster object with the prediction, or NULL on error.
 #' @export
 predict_sdm_SDMtune <- function(SDMtune_results, predictor_stack, config) {
-  cat("  Selecting best model and predicting using SDMtune...\n")
+  cat("    Selecting best hyperparameters and predicting (retraining on full dataset)...\n")
   
   if (is.null(SDMtune_results) || !inherits(SDMtune_results, "SDMtune")) {
-    warning("Invalid SDMtune results object provided.", call. = FALSE); return(NULL)
+    warning("Invalid SDMtune results object provided for prediction.", call. = FALSE); return(NULL)
   }
   if (is.null(predictor_stack)) {
     warning("Predictor stack is required for prediction.", call. = FALSE); return(NULL)
   }
   
-  # SDMtune results already contain the best model info based on the metric used
-  # Access the best model directly if gridSearch stored it
-  best_model_obj <- tryCatch({
-    # SDMtune::results(SDMtune_results) # View results table
-    # SDMtune_results@models # Access list of models if saved
-    # The gridSearch object itself often represents the best configuration found
-    # OR use optimizeModel if you ran that instead of gridSearch
-    # Assuming gridSearch object holds the best config implicitly or use the first model if multiple are equal best
-    if(length(SDMtune_results@models) > 0) {
-      # Find the row with the best metric score
-      res_df <- SDMtune::results(SDMtune_results)
+  best_hypers <- NULL
+  best_model_from_tuning <- NULL
+  tryCatch({
+    res_df <- SDMtune::results(SDMtune_results)
+    if(nrow(res_df) > 0 && length(SDMtune_results@models) > 0) {
+      # Identify best hyperparameters based on the test metric (e.g., 'test_AUC')
       metric <- config$sdm_evaluation_metric
-      # SDMtune uses metric names like AUC_cv, TSS_cv etc. Need to check results() output
-      metric_cv_name <- paste0(metric, "_cv") # Likely name format
-      if (!metric_cv_name %in% colnames(res_df)) {
-        # Fallback or alternative metrics if primary not found
-        if("AUC_cv" %in% colnames(res_df)) metric_cv_name <- "AUC_cv"
-        else if ("TSS_cv" %in% colnames(res_df)) metric_cv_name <- "TSS_cv"
-        else {
-          warning("Cannot find metric '", metric_cv_name, "' or fallbacks in SDMtune results. Using first model.", call.=FALSE)
-          return(SDMtune_results@models[[1]])
+      metric_test_name <- paste0("test_", metric) # Name used in results() output
+      
+      if (!metric_test_name %in% colnames(res_df)) {
+        # Fallback if exact name isn't present
+        if ("test_AUC" %in% colnames(res_df)) metric_test_name <- "test_AUC"
+        else if ("test_TSS" %in% colnames(res_df)) metric_test_name <- "test_TSS"
+        else { metric_test_name <- NA }
+        
+        if(is.na(metric_test_name)){
+          warning("Cannot find test metric '", paste0("test_", metric), "' or fallbacks in results. Using first hyperparameter set.", call.=FALSE)
+          best_row_index <- 1
+        } else {
+          warning("Test metric '", paste0("test_", metric), "' not found, using '", metric_test_name, "' instead for selection.", call.=FALSE)
+          best_row_index <- which.max(res_df[[metric_test_name]])
         }
-        warning("Metric '", config$sdm_evaluation_metric, "_cv' not found, using '", metric_cv_name, "' instead.", call.=FALSE)
+      } else {
+        best_row_index <- which.max(res_df[[metric_test_name]])
       }
       
-      best_row_index <- which.max(res_df[[metric_cv_name]])
-      if(length(best_row_index) == 0 || best_row_index > length(SDMtune_results@models)) {
-        warning("Could not determine best model index. Using first model.", call.=FALSE)
+      if(length(best_row_index) == 0 || best_row_index > nrow(res_df)) {
+        warning("Could not determine best model index from results. Using first hyperparameter set.", call.=FALSE)
         best_row_index <- 1
       }
-      cat("    Best model hyperparameters (from gridSearch):", paste(names(SDMtune_results@hypers), SDMtune_results@hypers[best_row_index,], collapse=", "), "\n")
-      SDMtune_results@models[[best_row_index]]
+      
+      # Extract the best hyperparameter combination
+      best_hypers <- SDMtune_results@hypers[best_row_index, , drop = FALSE] # Keep as data frame row
+      cat("    Best hyperparameters found (via", metric_test_name, "):", paste(names(best_hypers), best_hypers[1,], collapse=", "), "\n")
+      # Get the corresponding model trained during gridSearch (it was trained on the training set)
+      best_model_from_tuning <- SDMtune_results@models[[best_row_index]]
+      
     } else {
-      warning("No models found within the SDMtune results object.", call.=FALSE)
-      NULL
+      warning("No models or results found within the SDMtune results object.", call.=FALSE)
+      return(NULL) # Cannot proceed without results
     }
   }, error = function(e) {
-    warning("Error accessing best model from SDMtune results: ", e$message, call. = FALSE); NULL
+    warning("Error identifying best model hyperparameters: ", e$message, call. = FALSE)
+    return(NULL) # Cannot proceed
   })
   
-  if (is.null(best_model_obj)) {
-    warning("Could not retrieve the best model object.", call.=FALSE); return(NULL)
+  if (is.null(best_hypers) || is.null(best_model_from_tuning)) {
+    warning("Failed to retrieve best hyperparameters or model from tuning.", call.=FALSE)
+    return(NULL)
   }
   
-  # Predict using SDMtune::predict
+  # *** RETRAIN the model on the FULL dataset using the best hyperparameters ***
+  # This is standard practice after tuning on a subset
+  cat("    Retraining model on full dataset with best hyperparameters...\n")
+  full_data <- SDMtune_results@data # Access the original full SWD object stored by gridSearch
+  final_model <- tryCatch({
+    SDMtune::train(method = config$sdm_method,
+                   data = full_data,
+                   # Apply the best hyperparameters found - need to pass them as named args
+                   fc = best_hypers$fc, # Example, adjust if names differ
+                   reg = best_hypers$reg   # Example, adjust if names differ
+                   # Add other hypers as needed, extracting from best_hypers
+    )
+  }, error = function(e) {
+    warning("Failed to retrain final model on full dataset: ", e$message, call.=FALSE); return(NULL)
+  })
+  
+  if (is.null(final_model)) return(NULL)
+  
+  # Predict using the final model trained on all data
   prediction_raster <- NULL
   tryCatch({
     prediction_raster <- SDMtune::predict(
-      object = best_model_obj, # The model object itself
+      object = final_model,    # Use the model retrained on full data
       data = predictor_stack,
-      type = "cloglog" # Maxnet default often cloglog, check model output if needed
+      type = "cloglog"        # Or other relevant type
     )
-    # Rename the layer for consistency
     names(prediction_raster) <- "suitability"
-    cat("    Prediction raster generated.\n")
+    cat("    Prediction raster generated from final model.\n")
   }, error = function(e) {
-    warning("SDMtune::predict failed: ", e$message, call. = FALSE)
+    warning("SDMtune::predict failed on final model: ", e$message, call. = FALSE)
     prediction_raster <- NULL
   })
   
