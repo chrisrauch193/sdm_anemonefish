@@ -2,7 +2,7 @@
 #-------------------------------------------------------------------------------
 # Helper functions for SDM Modeling using SDMtune (Revised Workflow)
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stats) # Added stats
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stats) # Ensure all needed packages are loaded
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Simplified version focusing on coordinates needed for SWD)
@@ -69,14 +69,12 @@ generate_sdm_background <- function(predictor_stack, n_background, config, seed 
   if (!is.null(seed)) set.seed(seed)
   
   tryCatch({
-    # Sample points randomly within the extent of the *first layer*
-    # na.rm = TRUE ensures points fall on non-NA cells in that layer
     bg_points <- terra::spatSample(predictor_stack[[1]],
                                    size = n_background,
                                    method = "random",
                                    na.rm = TRUE, # Essential
                                    xy = TRUE,
-                                   warn = FALSE) # Suppress warnings if fewer points are sampled
+                                   warn = FALSE)
     
     if (nrow(bg_points) < n_background) {
       warning("Could only sample ", nrow(bg_points), " background points (fewer than requested ", n_background, "). Check raster extent and NA values.", call. = FALSE)
@@ -85,7 +83,6 @@ generate_sdm_background <- function(predictor_stack, n_background, config, seed 
       warning("Failed to generate any background points.", call. = FALSE); return(NULL)
     }
     
-    # Return data frame with x, y columns
     return(as.data.frame(bg_points[, c("x", "y")]))
     
   }, error = function(e) {
@@ -112,26 +109,26 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     warning("Invalid inputs for running SDM tuning.", call. = FALSE); return(NULL)
   }
   
-  # 1. Prepare SWD object for the full dataset (used for fold creation)
+  # 1. Prepare SWD object
   full_swd_data <- tryCatch({
     SDMtune::prepareSWD(
       species = species_name,
       p = occs_coords,
       a = background_df,
-      env = predictor_stack, # Use the stack for the tuning scenario (e.g., current)
-      verbose = FALSE # Reduce console output
+      env = predictor_stack,
+      verbose = FALSE
     )
   }, error = function(e) {
     warning("Failed to prepare SWD object for tuning: ", e$message, call. = FALSE); return(NULL)
   })
   if (is.null(full_swd_data)) return(NULL)
   
-  # 2. Create k-folds (Presence-Background)
+  # 2. Create k-folds
   folds <- tryCatch({
     SDMtune::randomFolds(
       data = full_swd_data,
       k = config$sdm_n_folds,
-      only_presence = FALSE, # Maxnet uses presence-background
+      only_presence = FALSE,
       seed = 123
     )
   }, error = function(e){
@@ -139,7 +136,7 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
   })
   if(is.null(folds)) return(NULL)
   
-  # 3. Train an initial base model *with folds*
+  # 3. Train initial CV base model
   cat("    Training initial CV base model for gridSearch input...\n")
   initial_cv_model <- tryCatch({
     SDMtune::train(method = config$sdm_method,
@@ -153,55 +150,73 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     warning("Failed to create a valid SDMmodelCV object.", call. = FALSE); return(NULL)
   }
   
-  # 4. Define the hyperparameter grid
+  # 4. Define hyperparameter grid
   hyper_grid <- config$sdm_tune_grid
   
-  # 5. Run gridSearch using the CV model object
+  # 5. Run gridSearch
   tuning_results <- NULL
   tryCatch({
     cat("    Running SDMtune::gridSearch with k-fold CV...\n")
     tuning_results <- SDMtune::gridSearch(
       model = initial_cv_model,
       hypers = hyper_grid,
-      metric = config$sdm_evaluation_metric,
+      metric = config$sdm_evaluation_metric, # Metric for CV evaluation
       save_models = TRUE,
-      progress = FALSE
+      progress = FALSE,
+      interactive = FALSE
     )
     cat("    SDMtune::gridSearch with k-fold CV completed.\n")
     
-    # *** CORRECTED: Access results using the @results slot ***
+    # Access results using the @results slot
     res_df <- tuning_results@results
-    # *********************************************************
     
     if(is.null(res_df) || nrow(res_df) == 0) {
       warning("No results found in the SDMtune object after gridSearch.", call.=FALSE)
       return(NULL)
     }
     
-    metric_cv_name <- paste0("test_", config$sdm_evaluation_metric) # e.g., test_auc
-    
-    if (!metric_cv_name %in% colnames(res_df)) {
-      warning("Cannot find CV test metric '", metric_cv_name, "' in results. Trying fallbacks.", call. = FALSE)
-      if ("test_AUC" %in% colnames(res_df)) metric_cv_name <- "test_AUC"
-      else if ("test_TSS" %in% colnames(res_df)) metric_cv_name <- "test_TSS"
-      else { warning("No suitable test metric found in results dataframe. Cannot select best hypers.", call.=FALSE); print(head(res_df)); return(NULL) }
+    # *** CORRECTED METRIC COLUMN NAME IDENTIFICATION ***
+    # When gridSearch uses an SDMmodelCV object, results columns are named
+    # train_METRIC and test_METRIC (representing the mean across folds).
+    metric_base_name <- toupper(config$sdm_evaluation_metric) # e.g., "AUC", "TSS"
+    # AICc might be an exception, check both cases
+    if (tolower(config$sdm_evaluation_metric) == "aicc") {
+      metric_cv_name <- "AICc" # AICc column doesn't have train_/test_ prefix
+    } else {
+      metric_cv_name <- paste0("test_", metric_base_name) # e.g., test_AUC, test_TSS
     }
     
-    # Handle potential NA values in the metric column before finding the max
+    # Check if the expected metric column exists
+    if (!metric_cv_name %in% colnames(res_df)) {
+      warning("Cannot find CV evaluation metric column '", metric_cv_name,
+              "' in the results dataframe. Available columns: ",
+              paste(colnames(res_df), collapse=", "),
+              ". Cannot select best hypers.", call. = FALSE)
+      print(head(res_df))
+      return(NULL)
+    }
+    
+    # Select best model (handle NAs, minimize AICc, maximize others)
     valid_metric_indices <- which(!is.na(res_df[[metric_cv_name]]))
     if(length(valid_metric_indices) == 0) {
       warning("All values for metric '", metric_cv_name, "' are NA. Cannot select best hypers.", call.=FALSE)
       return(NULL)
     }
-    best_row_relative_index <- which.max(res_df[[metric_cv_name]][valid_metric_indices])
-    best_row_index <- valid_metric_indices[best_row_relative_index]
     
+    if (metric_col_name == "AICc") {
+      best_row_relative_index <- which.min(res_df[[metric_cv_name]][valid_metric_indices])
+    } else {
+      best_row_relative_index <- which.max(res_df[[metric_cv_name]][valid_metric_indices])
+    }
+    
+    best_row_index <- valid_metric_indices[best_row_relative_index]
     
     if(length(best_row_index) == 0 || best_row_index > nrow(res_df)) {
       warning("Could not determine best model index from CV results. Using first row as fallback.", call.=FALSE)
-      best_row_index <- 1 # Fallback to first result if something went wrong
+      best_row_index <- 1 # Fallback
     }
     
+    # Extract the best hyperparameter combination from the results df
     best_hypers_df <- res_df[best_row_index, names(hyper_grid), drop = FALSE]
     
     cat("    Best hyperparameters found (Mean CV", metric_cv_name, "):",
@@ -224,7 +239,7 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
 #' @param occs_coords Matrix or data frame of ALL occurrence coordinates (x, y).
 #' @param predictor_stack SpatRaster object of predictors for the training scenario (usually 'current').
 #' @param background_df Data frame with ALL 'x', 'y' columns for background points.
-#' @param best_hypers A data frame or list containing the best hyperparameter values (e.g., output from `run_sdm_tuning_kfold`).
+#' @param best_hypers A data frame or list containing the best hyperparameter values.
 #' @param config Configuration list.
 #' @param species_name Character string for the species being modeled.
 #' @return An SDMmodel object or NULL on error.
@@ -256,12 +271,12 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
     progress = FALSE
   )
   
-  # Add hyperparameters dynamically from the best_hypers data frame/list
+  # Add hyperparameters dynamically
   for (h_name in names(best_hypers)) {
-    # Ensure the value passed is the actual value, not a list/data frame element
     h_value <- best_hypers[[h_name]]
-    if(is.data.frame(h_value) && ncol(h_value) == 1) h_value <- h_value[[1]] # Extract if it's a single column df
-    if(is.list(h_value) && length(h_value) == 1) h_value <- h_value[[1]]     # Extract if it's a single element list
+    # Ensure correct type if needed (e.g., numeric conversion if stored as char)
+    if (h_name == "reg") h_value <- as.numeric(h_value)
+    # Feature classes should remain character
     train_args[[h_name]] <- h_value
   }
   cat("      Using hyperparameters:", paste(names(train_args)[-(1:2)], sapply(train_args[-(1:2)], as.character), collapse=", "), "\n")

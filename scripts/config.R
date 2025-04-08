@@ -188,7 +188,12 @@ core_var_display_names <- c(
   # Add other CORE variable stems as needed
 )
 
-final_vars_anemone <- c(
+# --- Predictor Selection Switch ---
+# Set to TRUE to use PCA predictors (Braun et al. method)
+# Set to FALSE to use VIF-selected raw predictors defined below
+use_pca_predictors <- TRUE # <<< SET THIS TO TRUE (default) or FALSE
+
+final_vars_vif_anemone <- c(
   "par_baseline_depthsurf_mean",
   "sws_baseline_depthsurf_mean",
   "thetao_baseline_depthmax_mean",
@@ -201,6 +206,10 @@ final_vars_anemone <- c(
   # Terrain Vars
   "bathymetry_mean", "distcoast", "rugosity"
 )
+
+final_vars_vif_anemonefish_env <- final_vars_vif_anemone
+
+final_vars_vif_anemonefish_combined_env <- final_vars_vif_anemone
 
 # Function to get display name from a potentially scenario-specific technical name
 get_display_name <- function(technical_name, lookup = core_var_display_names) {
@@ -279,7 +288,10 @@ config <- list(
   selected_variables_for_pca = selected_variables_for_pca, num_cores = num_cores,
   use_parallel = use_parallel,
   get_display_name = get_display_name,
-  final_vars_anemone = final_vars_anemone
+  use_pca_predictors = use_pca_predictors,
+  final_vars_vif_anemone = final_vars_vif_anemone,
+  final_vars_vif_anemonefish_env = final_vars_vif_anemonefish_env,
+  final_vars_vif_anemonefish_combined_env = final_vars_vif_anemonefish_combined_env
 )
 
 cat("Configuration loaded and bundled into 'config' list.\n")
