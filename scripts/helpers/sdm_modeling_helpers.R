@@ -115,6 +115,8 @@ predict_sdm_SDMtune <- function(SDMtune_results, predictor_stack, config) {
     warning("Predictor stack is required for prediction.", call. = FALSE); return(NULL)
   }
   
+  print("here")
+  
   best_hypers <- NULL
   best_model_from_tuning <- NULL
   tryCatch({

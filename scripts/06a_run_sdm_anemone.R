@@ -96,7 +96,10 @@ for (i in 1:nrow(species_df)) {
     # Thin occurrences
     occ_sf_thinned <- thin_individual_occ(occ_sf_clean, predictor_stack, config)
     if(is.null(occ_sf_thinned) || nrow(occ_sf_thinned) < config$min_occurrences_sdm) {
-      warning("Skipping: Not enough occs after thinning."); total_sdms_skipped <- total_sdms_skipped + 1; rm(predictor_stack); gc(); next
+      warning("Skipping: Not enough occs after thinning."); total_sdms_skipped <- total_sdms_skipped + 1;
+      # rm(predictor_stack);
+      # gc();
+      next
     }
     cat("    Thinned occurrences:", nrow(occ_sf_thinned), "points.\n")
     
@@ -120,7 +123,10 @@ for (i in 1:nrow(species_df)) {
     # Predict Best Model
     prediction_raster <- predict_sdm_SDMtune(SDMtune_results, predictor_stack, config)
     if (is.null(prediction_raster)) {
-      warning("Prediction failed."); total_sdms_skipped <- total_sdms_skipped + 1; rm(predictor_stack, occ_sf_thinned, background_points, SDMtune_results); gc(); next
+      warning("Prediction failed."); total_sdms_skipped <- total_sdms_skipped + 1;
+      # rm(predictor_stack, occ_sf_thinned, background_points, SDMtune_results);
+      # gc();
+      next
     }
     
     # Save Prediction & Model Object (Saving the whole SDMtune result object which contains the best model)
@@ -135,9 +141,10 @@ for (i in 1:nrow(species_df)) {
     }, error=function(e){warning("Failed save SDMtune object: ", e$message)})
     
     
-    rm(predictor_stack, occ_sf_thinned, background_points, SDMtune_results, prediction_raster); gc()
+    # rm(predictor_stack, occ_sf_thinned, background_points, SDMtune_results, prediction_raster); gc()
   } # End scenario loop
-  rm(occ_sf_clean); gc()
+  # rm(occ_sf_clean);
+  # gc()
 } # End species loop
 
 cat("\n--- Script 06a finished. ---"); cat("Total Anemone SDMs run:", total_sdms_run, "\nSkipped:", total_sdms_skipped, "\n")

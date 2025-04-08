@@ -129,7 +129,7 @@ sdm_method <- "Maxnet" # SDMtune uses method names like "Maxnet", "RF", etc.
 sdm_partitions <- "randomkfold" # SDMtune uses this term
 sdm_n_folds <- 5
 # SDMtune uses 'reg' for regularization multiplier and 'fc' for feature class
-sdm_tune_grid <- list(fc = c("L", "LQ", "H", "LQH", "LQP"), reg = seq(0.5, 4, 0.5))
+sdm_tune_grid <- list(fc = c("l", "lq", "lh", "lp", "lqp"), reg = seq(0.5, 4, 0.5))
 sdm_evaluation_metric <- "auc" # Common metric used by SDMtune tuning/results
 background_points_n <- 10000
 thinning_method <- "cell" # Or your preferred method
