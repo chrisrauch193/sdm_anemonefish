@@ -216,6 +216,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   } # End if !load_existing_model
   
   # --- Prediction Loop ---
+  # --- Prediction Loop ---
   predictions_made = 0; prediction_errors = 0
   scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
   slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
@@ -244,35 +245,49 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
           slog("WARN", paste("  No VIF variables generated for scenario:", pred_scenario))
           prediction_errors <- prediction_errors + 1; next
         }
-        pred_predictor_stack <- load_selected_env_data(pred_scenario, scenario_vif_vars, config) # Assumes this function handles its errors/warnings internally
+        pred_predictor_stack <- load_selected_env_data(pred_scenario, scenario_vif_vars, config)
       }
       if(is.null(pred_predictor_stack)) {
         slog("WARN", paste("  Failed to load predictor stack for scenario:", pred_scenario))
         prediction_errors <- prediction_errors + 1; next
       }
       
-      # Pass NULL for logger
-      prediction_raster <- predict_sdm_suitability(final_model, pred_predictor_stack, config, logger = NULL)
-      if (!is.null(prediction_raster)) {
-        save_success <- tryCatch({
-          terra::writeRaster(prediction_raster, filename = pred_file, overwrite = TRUE, gdal=c("COMPRESS=LZW", "TFW=YES"))
-          slog("DEBUG", paste("  Prediction raster saved:", basename(pred_file)))
-          TRUE # Return TRUE on success
-        }, error = function(e) {
-          slog("ERROR", paste("  Failed to save prediction raster:", e$message))
-          FALSE # Return FALSE on error
-        })
-        
-        if(save_success) {
-          predictions_made <- predictions_made + 1
+      # Call prediction helper (Pass NULL logger)
+      prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack, config, logger = NULL)
+      
+      # *** MORE ROBUST CHECKING ***
+      if (inherits(prediction_output, "SpatRaster")) { # Check if it's a SpatRaster
+        # Double-check it's not NULL or empty before writing
+        if (!is.null(prediction_output) && terra::nlyr(prediction_output) > 0) {
+          save_success <- tryCatch({
+            terra::writeRaster(prediction_output, filename = pred_file, overwrite = TRUE, gdal=c("COMPRESS=LZW", "TFW=YES"))
+            slog("DEBUG", paste("  Prediction raster saved:", basename(pred_file)))
+            TRUE
+          }, error = function(e) {
+            slog("ERROR", paste("  Failed to save prediction raster:", e$message))
+            FALSE
+          })
+          
+          if(save_success) {
+            predictions_made <- predictions_made + 1
+          } else {
+            prediction_errors <- prediction_errors + 1
+          }
         } else {
+          slog("WARN", paste("  Prediction output was SpatRaster but NULL or empty for scenario:", pred_scenario))
           prediction_errors <- prediction_errors + 1
         }
-      } else {
-        slog("WARN", paste("  Prediction failed for scenario:", pred_scenario))
+        # Clean up the raster object if it existed
+        rm(prediction_output); gc()
+        
+      } else if (is.character(prediction_output)) { # Check if it's an error message string
+        slog("WARN", paste("  Prediction failed for scenario:", pred_scenario, "Reason:", prediction_output)) # Log the specific error message returned
+        prediction_errors <- prediction_errors + 1
+      } else { # Unexpected output type
+        slog("ERROR", paste("  Unexpected output type from predict_sdm_suitability for scenario:", pred_scenario, "- Class:", class(prediction_output)))
         prediction_errors <- prediction_errors + 1
       }
-      rm(pred_predictor_stack, prediction_raster); gc()
+      rm(pred_predictor_stack); gc() # Clean up predictor stack for this scenario
     } # End prediction scenario loop
   } else {
     # If model loading failed earlier or model doesn't exist, mark all predictions as errors/skipped

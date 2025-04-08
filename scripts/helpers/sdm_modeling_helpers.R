@@ -258,86 +258,63 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 }
 
 
-#' Predict SDM Suitability
+#' Predict SDM Suitability (Reverted to SDMtune::predict with error handling)
+#' Returns raster on success, or the error message string on failure.
+#'
+#' @param final_sdm_model An SDMmodel object (output from `train_final_sdm`).
+#' @param predictor_stack SpatRaster object for the prediction scenario.
+#' @param config Configuration list.
+#' @param logger A log4r logger object (can be NULL).
+#' @param output_type Character string for prediction type (e.g., "cloglog", "logistic"). Defaults to "cloglog".
+#' @return A SpatRaster object with the prediction, or a character string with the error message on failure.
 predict_sdm_suitability <- function(final_sdm_model, predictor_stack, config, logger, output_type = "cloglog") {
   # Use logger safely
   log_debug <- function(...) if(!is.null(logger)) log4r::debug(logger, ...)
   log_error <- function(...) if(!is.null(logger)) log4r::error(logger, ...)
   log_warn <- function(...) if(!is.null(logger)) log4r::warn(logger, ...)
   
-  log_debug(paste("Predicting suitability (type:", output_type, ")..."))
+  log_debug(paste("Attempting prediction using SDMtune::predict (type:", output_type, ")..."))
   
-  if (is.null(final_sdm_model) || !inherits(final_sdm_model, "SDMmodel")) { log_error("Invalid final_sdm_model object provided."); return(NULL) }
-  if (is.null(predictor_stack)) { log_error("Predictor stack required for prediction."); return(NULL) }
+  if (is.null(final_sdm_model) || !inherits(final_sdm_model, "SDMmodel")) {
+    msg <- "Invalid final_sdm_model object provided for prediction."
+    # Log error if logger available, otherwise just return the message
+    if(!is.null(logger)) log_error(msg)
+    return(msg) # Return error message
+  }
+  if (is.null(predictor_stack)) {
+    msg <- "Predictor stack required for prediction."
+    if(!is.null(logger)) log_error(msg)
+    return(msg) # Return error message
+  }
   
-  prediction_raster <- NULL
+  prediction_result <- NULL # Use a different name to avoid confusion
   tryCatch({
-    # Determine if progress should be shown safely for predict
-    show_progress_predict <- FALSE
-    if (!is.null(logger)) {
-      current_log_level_num <- tryCatch(log4r::log_level(config$log_level), error = function(e) log4r::INFO)
-      debug_level_num <- tryCatch(log4r::log_level("DEBUG"), error = function(e) log4r::DEBUG)
-      show_progress_predict <- current_log_level_num <= debug_level_num
-    }
-    
-    prediction_raster <- SDMtune::predict(
+    # Call the original SDMtune::predict function - NO progress argument
+    prediction_result <- SDMtune::predict(
       object = final_sdm_model,
       data = predictor_stack,
       type = output_type,
-      clamp = TRUE,
-      progress = show_progress_predict # Use the safe value
+      clamp = TRUE # Keep clamp argument
     )
-    names(prediction_raster) <- "suitability"
-    log_debug("  Prediction raster generated.")
-  }, error = function(e) { log_error(paste("SDMtune::predict failed:", e$message)); prediction_raster <- NULL })
-  
-  return(prediction_raster)
-}
-
-#-------------------------------------------------------------------------------
-# Plotting helpers (Unchanged from previous version - rely on config for display names)
-#-------------------------------------------------------------------------------
-#' Plot VIF results using ggplot (Corrected Argument Handling v2)
-plot_vif_results_original <- function(vif_result, save_path = NULL, config, display_lookup = NULL) {
-  if(!is.numeric(vif_result) || is.null(names(vif_result)) || length(vif_result) == 0){
-    warning("plot_vif_results_original expects non-empty named numeric vector.", call.=FALSE); return(NULL)
-  }
-  
-  # Use provided lookup first, then fallback to config lookup
-  lookup_to_use <- if (!is.null(display_lookup)) display_lookup else config$core_var_display_names
-  get_display_name_func <- if (!is.null(display_lookup)) config$get_display_name else config$get_display_name
-  
-  if(is.null(lookup_to_use) || is.null(get_display_name_func) || !is.function(get_display_name_func)){
-    warning("Display name lookup or function missing/invalid for VIF plot.", call.=FALSE)
-    get_display_name_func <- function(name, ...) name # Fallback
-    lookup_to_use <- NULL
-  }
-  
-  original_names <- names(vif_result)
-  display_names <- sapply(original_names, get_display_name_func, lookup = lookup_to_use, USE.NAMES = FALSE)
-  
-  df <- data.frame(OriginalName = original_names, DisplayName = display_names, VIF = as.numeric(vif_result))
-  num_vars <- nrow(df); if (num_vars == 0) return(NULL)
-  df$VIF <- pmax(0, df$VIF)
-  df$DisplayName <- factor(df$DisplayName, levels = df$DisplayName[order(df$VIF)])
-  
-  p <- ggplot2::ggplot(df, aes(x = DisplayName, y = VIF)) +
-    ggplot2::geom_bar(stat = "identity", aes(fill = OriginalName), show.legend = FALSE) +
-    ggplot2::scale_fill_viridis_d(option = "plasma") +
-    ggplot2::labs(title = "VIF Analysis Results (car::vif)", x = "Environmental Variables", y = "VIF Value") +
-    ggplot2::scale_y_continuous(limits = c(0, max(config$vif_threshold, ceiling(max(df$VIF, na.rm = TRUE)))), breaks = scales::pretty_breaks(n = 5)) +
-    ggplot2::geom_hline(yintercept = config$vif_threshold, linetype = "dashed", color = "red") +
-    ggplot2::theme_minimal(base_size = 10) +
-    ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
-  if (!is.null(save_path)) {
-    tryCatch({
-      ggplot2::ggsave(save_path, plot = p, width = max(8, 4 + 0.2 * num_vars), height = 6, limitsize = FALSE)
-      # Use cat for simple messages outside logger context or if logger is NULL
-      cat("  VIF plot saved to", save_path, "\n")
-    }, error = function(e) { warning("Failed to save VIF plot: ", e$message, call.=FALSE)})
-  }
-  return(p)
+    
+    # Validate the result before returning
+    if (is.null(prediction_result) || !inherits(prediction_result, "SpatRaster") || terra::nlyr(prediction_result) == 0) {
+      msg <- "SDMtune::predict returned NULL or empty SpatRaster."
+      if(!is.null(logger)) log_warn(msg)
+      return(msg) # Return message indicating issue
+    }
+    
+    names(prediction_result) <- "suitability"
+    log_debug("  SDMtune::predict prediction raster generated successfully.")
+    return(prediction_result) # Return the raster on success
+    
+  }, error = function(e) {
+    # Capture and return the error message string on failure
+    err_msg <- paste("SDMtune::predict failed:", e$message)
+    # Log error if logger available
+    if(!is.null(logger)) log_error(err_msg)
+    return(err_msg) # Return the error message itself
+  })
 }
 
 
