@@ -3,5 +3,9 @@
 .RData
 .Ruserdata
 *.zip
-data/
 *.DS_Store
+
+data/env/
+data/old_env/
+data/occurrence/
+data/shapefiles/
