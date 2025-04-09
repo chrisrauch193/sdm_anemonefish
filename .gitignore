@@ -5,6 +5,8 @@
 *.zip
 *.DS_Store
 
+data/
+
 data/env/
 data/old_env/
 data/occurrence/
