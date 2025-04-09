@@ -1,0 +1,18 @@
+2025-04-09 06:52:45.096141 [INFO] [Radianthus magnifica]  --- Starting processing --- 
+2025-04-09 06:52:45.096507 [DEBUG] [Radianthus magnifica]  Loading tuning predictors for scenario:current 
+2025-04-09 06:52:45.120674 [DEBUG] [Radianthus magnifica]  Tuning predictor stack loaded. 
+2025-04-09 06:52:45.120811 [DEBUG] [Radianthus magnifica]  Loading/cleaning/thinning occurrences using tuning stack. 
+2025-04-09 06:52:45.487116 [INFO] [Radianthus magnifica]  Occurrence count after clean/thin:1629 
+2025-04-09 06:52:45.487278 [INFO] [Radianthus magnifica]  Final model not found or rerun forced. Proceeding with tuning/training. 
+2025-04-09 06:52:45.487324 [DEBUG] [Radianthus magnifica]  Generating background points. 
+2025-04-09 07:06:54.583104 [DEBUG] [Radianthus magnifica]  Background points generated. 
+2025-04-09 07:06:54.583682 [INFO] [Radianthus magnifica]  Starting hyperparameter tuning. 
+2025-04-09 07:07:56.394872 [INFO] [Radianthus magnifica]  Tuning complete. Best hypers:fc lh, reg 0.5 
+2025-04-09 07:08:03.067136 [DEBUG] [Radianthus magnifica]  Tuning results saved to:sdm_tuning_Radianthus_magnifica_pca.rds 
+2025-04-09 07:08:03.067464 [INFO] [Radianthus magnifica]  Starting final model training. 
+2025-04-09 07:08:07.345677 [INFO] [Radianthus magnifica]  Final model training complete. 
+2025-04-09 07:08:07.37996 [DEBUG] [Radianthus magnifica]  Final model saved to:sdm_model_Radianthus_magnifica_pca.rds 
+2025-04-09 07:08:07.859934 [INFO] [Radianthus magnifica]  Starting predictions for 1 scenarios. 
+2025-04-09 07:08:07.860797 [DEBUG] [Radianthus magnifica]    Predicting scenario: current 
+2025-04-09 07:08:57.112278 [DEBUG] [Radianthus magnifica]    Prediction raster saved: sdm_prediction_Radianthus_magnifica_current_pca.tif 
+2025-04-09 07:08:57.894794 [INFO] [Radianthus magnifica]  [Radianthus magnifica] Finished. Occurrences (thin/clean): 1629. Predictions attempted: 1. Predictions made: 1. Errors/Skipped preds: 0. 

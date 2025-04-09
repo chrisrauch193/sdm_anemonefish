@@ -1,0 +1,10 @@
+INFO  [2025-04-09 08:53:16] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_085312.log
+INFO  [2025-04-09 08:53:16] Logging to console with minimum level: INFO
+INFO  [2025-04-09 08:53:16] --- Starting Script 06c: Run Anemonefish Biotic Only SDMs ---
+INFO  [2025-04-09 08:53:16] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 08:53:16] --- Using Predictors: Summed Host Suitability (from _pca anemone models) ---
+INFO  [2025-04-09 08:53:16] Loading host predictions from: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/predictions/anemone_pca
+INFO  [2025-04-09 08:53:16] Loaded 1 species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 08:53:16] Loaded 21 host associations.
+INFO  [2025-04-09 08:53:16] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 08:53:17] Starting Biotic Only SDM processing for 1 anemonefish...

@@ -1,0 +1,20 @@
+2025-04-09 19:52:54.263565 [INFO] [Amphiprion ocellaris]  --- Starting TRUE Biotic-Only processing --- 
+2025-04-09 19:52:54.272411 [DEBUG] [Amphiprion ocellaris]  Associated hosts: Stichodactyla_gigantea, Radianthus_magnifica, Stichodactyla_mertensii 
+2025-04-09 19:52:54.272577 [DEBUG] [Amphiprion ocellaris]  Preparing BIOTIC predictor stack for tuning scenario:current 
+2025-04-09 19:52:55.702016 [INFO] [Amphiprion ocellaris]  TRUE Biotic-Only tuning stack created with layer: host_suitability_max 
+2025-04-09 19:52:55.702297 [DEBUG] [Amphiprion ocellaris]  Loading/cleaning/thinning occurrences using biotic tuning stack. 
+2025-04-09 19:52:55.804094 [INFO] [Amphiprion ocellaris]  Occurrence count after clean/thin:1887 
+2025-04-09 19:52:55.804248 [INFO] [Amphiprion ocellaris]  Final biotic-only model not found or rerun forced. Tuning/training... 
+2025-04-09 19:53:03.516992 [INFO] [Amphiprion ocellaris]  Starting hyperparameter tuning (using biotic predictor). 
+2025-04-09 19:53:03.708027 [ERROR] [Amphiprion ocellaris]  [Amphiprion ocellaris] Skipping: Tuning failed. 
+2025-04-09 19:59:56.007843 [INFO] [Amphiprion ocellaris]  --- Starting Biotic-Only (FAKE - Running Combined 06d Logic) processing --- 
+2025-04-09 19:59:56.019885 [DEBUG] [Amphiprion ocellaris]  Associated hosts: Stichodactyla_gigantea, Radianthus_magnifica, Stichodactyla_mertensii 
+2025-04-09 19:59:56.020061 [DEBUG] [Amphiprion ocellaris]  Preparing predictor stack for tuning scenario:current 
+2025-04-09 19:59:56.020177 [DEBUG] [Amphiprion ocellaris]  (Preparing Combined Env+Host stack for underlying logic) 
+2025-04-09 19:59:57.602187 [DEBUG] [Amphiprion ocellaris]  Max host suitability layer created for tuning. 
+2025-04-09 19:59:57.602465 [DEBUG] [Amphiprion ocellaris]  FAKE BIOTIC: Actual tuning stack created with layers: host_suitability_max 
+2025-04-09 19:59:57.602594 [DEBUG] [Amphiprion ocellaris]  Loading/cleaning/thinning occurrences using combined tuning stack. 
+2025-04-09 19:59:57.741 [INFO] [Amphiprion ocellaris]  Occurrence count after clean/thin:1887 
+2025-04-09 19:59:57.741158 [INFO] [Amphiprion ocellaris]  Final biotic-only model not found or rerun forced. Tuning/training... 
+2025-04-09 20:00:02.576427 [INFO] [Amphiprion ocellaris]  Starting hyperparameter tuning (using combined predictors for biotic-only model). 
+2025-04-09 20:00:02.778531 [ERROR] [Amphiprion ocellaris]  [Amphiprion ocellaris] Skipping: Tuning failed. 

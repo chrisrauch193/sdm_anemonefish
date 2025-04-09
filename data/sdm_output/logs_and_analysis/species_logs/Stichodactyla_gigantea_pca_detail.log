@@ -1,0 +1,18 @@
+2025-04-09 06:52:49.319263 [INFO] [Stichodactyla gigantea]  --- Starting processing --- 
+2025-04-09 06:52:49.319754 [DEBUG] [Stichodactyla gigantea]  Loading tuning predictors for scenario:current 
+2025-04-09 06:52:49.331489 [DEBUG] [Stichodactyla gigantea]  Tuning predictor stack loaded. 
+2025-04-09 06:52:49.331774 [DEBUG] [Stichodactyla gigantea]  Loading/cleaning/thinning occurrences using tuning stack. 
+2025-04-09 06:52:49.678752 [INFO] [Stichodactyla gigantea]  Occurrence count after clean/thin:415 
+2025-04-09 06:52:49.679003 [INFO] [Stichodactyla gigantea]  Final model not found or rerun forced. Proceeding with tuning/training. 
+2025-04-09 06:52:49.67905 [DEBUG] [Stichodactyla gigantea]  Generating background points. 
+2025-04-09 07:07:01.272024 [DEBUG] [Stichodactyla gigantea]  Background points generated. 
+2025-04-09 07:07:01.27231 [INFO] [Stichodactyla gigantea]  Starting hyperparameter tuning. 
+2025-04-09 07:08:08.436983 [INFO] [Stichodactyla gigantea]  Tuning complete. Best hypers:fc lh, reg 0.5 
+2025-04-09 07:08:11.856715 [DEBUG] [Stichodactyla gigantea]  Tuning results saved to:sdm_tuning_Stichodactyla_gigantea_pca.rds 
+2025-04-09 07:08:11.857422 [INFO] [Stichodactyla gigantea]  Starting final model training. 
+2025-04-09 07:08:15.394119 [INFO] [Stichodactyla gigantea]  Final model training complete. 
+2025-04-09 07:08:15.42558 [DEBUG] [Stichodactyla gigantea]  Final model saved to:sdm_model_Stichodactyla_gigantea_pca.rds 
+2025-04-09 07:08:15.904748 [INFO] [Stichodactyla gigantea]  Starting predictions for 1 scenarios. 
+2025-04-09 07:08:15.906306 [DEBUG] [Stichodactyla gigantea]    Predicting scenario: current 
+2025-04-09 07:09:00.214459 [DEBUG] [Stichodactyla gigantea]    Prediction raster saved: sdm_prediction_Stichodactyla_gigantea_current_pca.tif 
+2025-04-09 07:09:00.929068 [INFO] [Stichodactyla gigantea]  [Stichodactyla gigantea] Finished. Occurrences (thin/clean): 415. Predictions attempted: 1. Predictions made: 1. Errors/Skipped preds: 0. 

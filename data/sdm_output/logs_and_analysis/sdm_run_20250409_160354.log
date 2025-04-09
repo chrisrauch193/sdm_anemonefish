@@ -1,0 +1,82 @@
+INFO  [2025-04-09 16:04:00] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_160354.log
+INFO  [2025-04-09 16:04:00] Logging to console with minimum level: INFO
+INFO  [2025-04-09 16:04:00] --- Starting Script 06c: Run Anemonefish Biotic Only SDMs ---
+INFO  [2025-04-09 16:04:00] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 16:04:00] --- Using Predictors: Stacked Host Anemone Suitability ---
+INFO  [2025-04-09 16:04:00] Loaded 1 anemonefish species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 16:04:00] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 16:04:01] Starting BIOTIC ONLY SDM processing for 1 anemonefish...
+INFO  [2025-04-09 16:14:41] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_160354.log
+INFO  [2025-04-09 16:14:41] Logging to console with minimum level: INFO
+INFO  [2025-04-09 16:14:41] --- Starting Script 06c: Run Anemonefish Biotic Only SDMs ---
+INFO  [2025-04-09 16:14:41] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 16:14:41] --- Using Predictors: Stacked Host Anemone Suitability (from _pca run) ---
+INFO  [2025-04-09 16:14:41] Loaded 1 anemonefish species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 16:14:41] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 16:14:42] Starting Biotic-Only SDM processing for 1 anemonefish...
+INFO  [2025-04-09 16:17:20] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_160354.log
+INFO  [2025-04-09 16:17:20] Logging to console with minimum level: INFO
+INFO  [2025-04-09 16:17:20] --- Starting Script 06c: Run Anemonefish Biotic Only SDMs ---
+INFO  [2025-04-09 16:17:21] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 16:17:21] --- Using Predictors: Stacked Host Anemone Suitability (from _pca run) ---
+INFO  [2025-04-09 16:17:21] Loaded 21 fish-host associations.
+INFO  [2025-04-09 16:17:21] Loading CURRENT prediction rasters for ALL potential host anemone species...
+INFO  [2025-04-09 16:17:21] Successfully loaded 3 host prediction rasters.
+INFO  [2025-04-09 16:17:21] Loaded 1 anemonefish species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 16:17:21] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 16:17:22] Starting Biotic-Only SDM processing for 1 anemonefish...
+INFO  [2025-04-09 16:17:27] Parallel/sequential processing complete.
+INFO  [2025-04-09 16:17:27] --- Processing Results Summary (Biotic Only Models) ---
+ERROR [2025-04-09 16:17:28] [Amphiprion ocellaris] Skipping: Failed to load required hyperparameters from env-only run.
+INFO  [2025-04-09 16:17:28] --- Overall Summary (Biotic Only Models) ---
+INFO  [2025-04-09 16:17:28] Total Species Targets: 1
+INFO  [2025-04-09 16:17:28] Fully Successful Runs (Train + All Preds): 0
+INFO  [2025-04-09 16:17:28] Partially Successful Runs (Train + Some Pred Errors): 0
+INFO  [2025-04-09 16:17:28] Skipped (Occurrences/No Hosts/Hypers): 0
+INFO  [2025-04-09 16:17:28] Errors during processing: 1
+INFO  [2025-04-09 16:17:28] Occurrence counts saved to: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/occurrence_counts_anemonefish_biotic_only.csv
+INFO  [2025-04-09 16:17:28] --- Script 06c finished. ---
+INFO  [2025-04-09 16:20:15] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_160354.log
+INFO  [2025-04-09 16:20:15] Logging to console with minimum level: INFO
+INFO  [2025-04-09 16:20:15] --- Starting Script 06c: Run Anemonefish Biotic Only SDMs ---
+INFO  [2025-04-09 16:20:15] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 16:20:15] --- Using Predictors: Stacked Host Anemone Suitability (from _pca run) ---
+INFO  [2025-04-09 16:20:15] Loaded 21 fish-host associations.
+INFO  [2025-04-09 16:20:15] Loading CURRENT prediction rasters for ALL potential host anemone species...
+INFO  [2025-04-09 16:20:15] Successfully loaded 3 host prediction rasters.
+INFO  [2025-04-09 16:20:15] Loaded 1 anemonefish species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 16:20:15] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 16:20:16] Starting Biotic-Only SDM processing for 1 anemonefish...
+INFO  [2025-04-09 16:20:33] Parallel/sequential processing complete.
+INFO  [2025-04-09 16:20:33] --- Processing Results Summary (Biotic Only Models) ---
+ERROR [2025-04-09 16:20:33] [Amphiprion ocellaris] Skipping: Final model training failed.
+INFO  [2025-04-09 16:20:33] --- Overall Summary (Biotic Only Models) ---
+INFO  [2025-04-09 16:20:33] Total Species Targets: 1
+INFO  [2025-04-09 16:20:33] Fully Successful Runs (Train + All Preds): 0
+INFO  [2025-04-09 16:20:33] Partially Successful Runs (Train + Some Pred Errors): 0
+INFO  [2025-04-09 16:20:33] Skipped (Occurrences/No Hosts/Hypers): 0
+INFO  [2025-04-09 16:20:33] Errors during processing: 1
+INFO  [2025-04-09 16:20:33] Occurrence counts saved to: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/occurrence_counts_anemonefish_biotic_only.csv
+INFO  [2025-04-09 16:20:33] --- Script 06c finished. ---
+INFO  [2025-04-09 16:25:41] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_160354.log
+INFO  [2025-04-09 16:25:41] Logging to console with minimum level: INFO
+INFO  [2025-04-09 16:25:41] --- Starting Script 06c: Run Anemonefish Biotic Only SDMs ---
+INFO  [2025-04-09 16:25:41] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 16:25:41] --- Using Predictors: Stacked Host Anemone Suitability (from _pca run) ---
+INFO  [2025-04-09 16:25:41] Loaded 21 fish-host associations.
+INFO  [2025-04-09 16:25:41] Loading CURRENT prediction rasters for ALL potential host anemone species...
+INFO  [2025-04-09 16:25:41] Successfully loaded 3 host prediction rasters.
+INFO  [2025-04-09 16:25:41] Loaded 1 anemonefish species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 16:25:41] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 16:25:42] Starting Biotic-Only SDM processing for 1 anemonefish...
+INFO  [2025-04-09 16:25:59] Parallel/sequential processing complete.
+INFO  [2025-04-09 16:25:59] --- Processing Results Summary (Biotic Only Models) ---
+ERROR [2025-04-09 16:25:59] [Amphiprion ocellaris] Skipping: Final model training failed.
+INFO  [2025-04-09 16:25:59] --- Overall Summary (Biotic Only Models) ---
+INFO  [2025-04-09 16:25:59] Total Species Targets: 1
+INFO  [2025-04-09 16:25:59] Fully Successful Runs (Train + All Preds): 0
+INFO  [2025-04-09 16:25:59] Partially Successful Runs (Train + Some Pred Errors): 0
+INFO  [2025-04-09 16:25:59] Skipped (Occurrences/No Hosts/Hypers): 0
+INFO  [2025-04-09 16:25:59] Errors during processing: 1
+INFO  [2025-04-09 16:25:59] Occurrence counts saved to: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/occurrence_counts_anemonefish_biotic_only.csv
+INFO  [2025-04-09 16:25:59] --- Script 06c finished. ---
