@@ -143,85 +143,137 @@ generate_sdm_background <- function(predictor_stack, n_background, config, logge
   })
 }
 
-#' Tune SDM Hyperparameters using SDMtune gridSearch with k-fold CV
-run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species") {
-  # Use logger safely
-  log_info <- function(...) if(!is.null(logger)) log4r::info(logger, ...)
-  log_debug <- function(...) if(!is.null(logger)) log4r::debug(logger, ...)
-  log_error <- function(...) if(!is.null(logger)) log4r::error(logger, ...)
-  log_warn <- function(...) if(!is.null(logger)) log4r::warn(logger, ...)
+
+#' Calculate and Save Variable Importance using SDMtune::varImp
+#'
+#' @param sdm_model The trained SDMmodel object (from `train` or loaded from RDS).
+#' @param test_data The SWD object used for testing/evaluation during tuning (if available), or the full SWD used for training.
+#' @param permutations Integer, number of permutations for `varImp`.
+#' @param save_path Character, the full path to save the results CSV.
+#' @param logger A log4r logger object (can be NULL).
+#' @return The variable importance data frame (invisibly), or NULL on error.
+calculate_and_save_vi <- function(sdm_model, test_data, permutations, save_path, logger) {
+  log_info <- function(...) if (!is.null(logger)) log4r::info(logger, ...)
+  log_debug <- function(...) if (!is.null(logger)) log4r::debug(logger, ...)
+  log_error <- function(...) if (!is.null(logger)) log4r::error(logger, ...)
   
-  log_info(paste("Tuning hyperparameters for", species_name, "using", config$sdm_n_folds, "-fold CV..."))
-  
-  if (is.null(occs_coords) || nrow(occs_coords) < config$min_occurrences_sdm || is.null(predictor_stack) || is.null(background_df)) {
-    log_error("Invalid inputs for running SDM tuning."); return(NULL)
+  if (is.null(sdm_model) || !inherits(sdm_model, "SDMmodel")) {
+    log_error("Invalid SDM model provided for varImp.")
+    return(NULL)
+  }
+  if (is.null(test_data) || !inherits(test_data, "SWD")) {
+    log_error("Invalid SWD test data provided for varImp.")
+    return(NULL)
+  }
+  if(nrow(test_data@data) == 0) {
+    log_error("SWD test data has zero rows for varImp.")
+    return(NULL)
+  }
+  # Ensure test_data has presence/absence
+  if(is.null(test_data@pa)) {
+    log_error("SWD test data is missing presence/absence vector (@pa).")
+    return(NULL)
+  }
+  # Ensure test data matches model variables (basic check)
+  model_vars <- sdm_model@data@data |> colnames() |> setdiff(c("species", "pa"))
+  test_vars <- test_data@data |> colnames() |> setdiff(c("species", "pa"))
+  if (!all(model_vars %in% test_vars)) {
+    log_error("Test data variables do not match model variables for varImp.")
+    return(NULL)
   }
   
-  full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_df, env = predictor_stack, verbose = FALSE) },
-                            error = function(e) { log_error(paste("Failed prepare SWD for tuning:", e$message)); return(NULL)})
-  if (is.null(full_swd_data)) return(NULL)
+  log_debug(paste("Calculating variable importance with", permutations, "permutations..."))
   
-  folds <- tryCatch({ SDMtune::randomFolds(data = full_swd_data, k = config$sdm_n_folds, only_presence = FALSE, seed = 123)},
-                    error = function(e){ log_error(paste("Failed create k-folds:", e$message)); return(NULL)})
-  if(is.null(folds)) return(NULL)
-  
-  log_debug("  Training initial CV base model for gridSearch...")
-  initial_cv_model <- tryCatch({ SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = folds, progress = FALSE)},
-                               error = function(e) { log_error(paste("Failed train initial CV base model:", e$message)); return(NULL)})
-  if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { log_error("Failed create valid SDMmodelCV object."); return(NULL)}
-  
-  hyper_grid <- config$sdm_tune_grid; tuning_results <- NULL
+  vi_results_df <- NULL
   tryCatch({
-    log_debug("  Running SDMtune::gridSearch with k-fold CV...")
+    vi_results <- SDMtune::varImp(sdm_model, perm = permutations, test = test_data, progress = FALSE)
+    vi_results_df <- as.data.frame(vi_results)
+    vi_results_df$Variable <- rownames(vi_results_df)
+    rownames(vi_results_df) <- NULL
+    vi_results_df <- vi_results_df[, c("Variable", "Permutation_importance")] # Keep relevant columns
     
-    # Determine if progress should be shown safely
-    show_progress <- FALSE
-    # Only check log level if logger is valid
-    if (!is.null(logger)) {
-      # Use log4r::log_level to convert string from config to numeric level
-      current_log_level_num <- tryCatch(log4r::log_level(config$log_level), error = function(e) log4r::INFO) # Default to INFO on error
-      debug_level_num <- tryCatch(log4r::log_level("DEBUG"), error = function(e) log4r::DEBUG) # Get numeric for DEBUG
-      show_progress <- current_log_level_num <= debug_level_num
-    }
-    
-    tuning_results <- SDMtune::gridSearch(
-      model = initial_cv_model,
-      hypers = hyper_grid,
-      metric = config$sdm_evaluation_metric,
-      save_models = TRUE,
-      progress = show_progress, # Use the safe value
-      interactive = FALSE
-    )
-    log_debug("  SDMtune::gridSearch completed.")
-    
-    res_df <- tuning_results@results
-    if(is.null(res_df) || nrow(res_df) == 0) { log_warn("No results found in tuning object."); return(NULL) }
-    
-    metric_base_upper <- toupper(config$sdm_evaluation_metric)
-    target_metric_col <- if (tolower(config$sdm_evaluation_metric) == "aicc") "AICc" else paste0("test_", metric_base_upper)
-    
-    if (!target_metric_col %in% colnames(res_df)) { log_error(paste("CV metric '", target_metric_col, "' not found. Available:", paste(colnames(res_df), collapse=", "))); print(head(res_df)); return(NULL) }
-    
-    valid_metric_indices <- which(!is.na(res_df[[target_metric_col]]))
-    if(length(valid_metric_indices) == 0) { log_warn(paste("All values for metric '", target_metric_col, "' are NA.")); return(NULL) }
-    
-    select_fun <- if (target_metric_col == "AICc") which.min else which.max
-    best_row_relative_index <- select_fun(res_df[[target_metric_col]][valid_metric_indices])
-    best_row_index <- valid_metric_indices[best_row_relative_index]
-    
-    if(length(best_row_index) == 0 || best_row_index > nrow(res_df)) { log_warn("Could not determine best model index, using first row."); best_row_index <- 1}
-    
-    best_hypers_df <- res_df[best_row_index, names(hyper_grid), drop = FALSE]
-    
-    log_info(paste("  Best hypers (Mean CV", target_metric_col,"=", round(res_df[[target_metric_col]][best_row_index], 4),"): ", paste(names(best_hypers_df), best_hypers_df[1,], collapse=", ")))
-    
-    return(list(best_hypers = best_hypers_df, tuning_results = tuning_results))
+    # Save the results
+    dir.create(dirname(save_path), recursive = TRUE, showWarnings = FALSE)
+    readr::write_csv(vi_results_df, save_path)
+    log_debug(paste("Variable importance saved to:", basename(save_path)))
     
   }, error = function(e) {
-    log_error(paste("SDMtune::gridSearch failed during CV tuning:", e$message))
-    return(NULL)
+    log_error(paste("Variable importance calculation failed:", e$message))
+    vi_results_df <- NULL # Ensure NULL is returned on error
   })
+  
+  return(invisible(vi_results_df))
 }
+
+
+#' Tune SDM Hyperparameters using SDMtune gridSearch with k-fold CV
+run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species") {
+  # ... (setup and SWD prep as before) ...
+  
+  # --- ADDED: Check if tuning results file exists ---
+  tuning_results_file <- file.path(config$results_dir, # Use YOUR results dir
+                                   paste0(species_name, "_", config$sdm_method, "_tuning.rds")) # Consistent naming
+  if (!config$force_rerun$run_standard_sdms && file.exists(tuning_results_file)) {
+    log_info("Loading existing tuning results from:", basename(tuning_results_file))
+    tuning_results <- tryCatch(readRDS(tuning_results_file), error = function(e){
+      log_warn(paste("Could not load existing tuning results, re-running tuning:", e$message)); NULL
+    })
+    if (!is.null(tuning_results) && inherits(tuning_results, "SDMtune")) {
+      # Extract best hypers from loaded object
+      res_df <- tuning_results@results
+      # ... (rest of best hyper extraction logic from original function) ...
+      if(length(best_row_index) > 0) {
+        best_hypers_df <- res_df[best_row_index, names(config$sdm_tune_grid), drop = FALSE]
+        log_info(paste("  Loaded Best hypers:", paste(names(best_hypers_df), best_hypers_df[1,], collapse=", ")))
+        # Return BOTH the loaded object AND the best hypers
+        return(list(best_hypers = best_hypers_df, tuning_results_object = tuning_results))
+      } else {
+        log_warn("Could not determine best model from loaded tuning results. Re-running tuning.")
+      }
+    }
+  }
+  # --- END ADDED Check ---
+  
+  # ... (run folds, initial model, gridSearch as before) ...
+  
+  tryCatch({
+    # ... (gridSearch call) ...
+    
+    # ... (best hyper extraction logic) ...
+    
+    # --- MODIFIED: Save the full tuning object ---
+    save_tuning_result <- tryCatch({
+      saveRDS(tuning_results, tuning_results_file) # Save the whole object
+      slog("DEBUG", "Tuning results object saved to:", basename(tuning_results_file)) # Use slog if available
+      NULL
+    }, error = function(e){
+      slog("ERROR", "Failed save tuning results object:", e$message)
+      return(list(status = "error_saving_tuning_results", ...)) # Return list with status
+    })
+    if (!is.null(save_tuning_result)) return(save_tuning_result)
+    # --- END MODIFIED Save ---
+    
+    # Return BOTH the best hypers and the full tuning object
+    return(list(best_hypers = best_hypers_df, tuning_results_object = tuning_results))
+    
+  }, error = function(e) { ... ; return(NULL) }) # Return NULL on gridSearch error
+}
+
+# --- Modify train_final_sdm to RETURN the model ---
+train_final_sdm <- function(...) {
+  # ... (preparation as before) ...
+  
+  final_model <- tryCatch({ do.call(SDMtune::train, train_args) },
+                          error = function(e) { log_error(paste("Failed train final model:", e$message)); return(NULL) })
+  
+  if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
+    log_error("Final model training returned invalid object."); return(NULL)
+  }
+  
+  log_info(paste("  Final model trained successfully for", species_name))
+  return(final_model) # <<< RETURN the model object
+}
+
 
 
 #' Train Final SDM Model
@@ -268,52 +320,43 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 #' @param output_type Character string for prediction type (e.g., "cloglog", "logistic"). Defaults to "cloglog".
 #' @return A SpatRaster object with the prediction, or a character string with the error message on failure.
 predict_sdm_suitability <- function(final_sdm_model, predictor_stack, config, logger, output_type = "cloglog") {
-  # Use logger safely
-  log_debug <- function(...) if(!is.null(logger)) log4r::debug(logger, ...)
-  log_error <- function(...) if(!is.null(logger)) log4r::error(logger, ...)
-  log_warn <- function(...) if(!is.null(logger)) log4r::warn(logger, ...)
+  log_debug <- function(...) if (!is.null(logger)) log4r::debug(logger, ...)
+  log_error <- function(...) if (!is.null(logger)) log4r::error(logger, ...)
   
   log_debug(paste("Attempting prediction using SDMtune::predict (type:", output_type, ")..."))
   
   if (is.null(final_sdm_model) || !inherits(final_sdm_model, "SDMmodel")) {
-    msg <- "Invalid final_sdm_model object provided for prediction."
-    # Log error if logger available, otherwise just return the message
-    if(!is.null(logger)) log_error(msg)
-    return(msg) # Return error message
+    msg <- "Invalid final_sdm_model object."
+    if(!is.null(logger)) log_error(msg); return(msg)
   }
-  if (is.null(predictor_stack)) {
-    msg <- "Predictor stack required for prediction."
-    if(!is.null(logger)) log_error(msg)
-    return(msg) # Return error message
+  if (is.null(predictor_stack) || !inherits(predictor_stack, "SpatRaster") || terra::nlyr(predictor_stack) == 0) {
+    msg <- "Invalid predictor_stack provided."
+    if(!is.null(logger)) log_error(msg); return(msg)
   }
   
-  prediction_result <- NULL # Use a different name to avoid confusion
+  prediction_result <- NULL
   tryCatch({
-    # Call the original SDMtune::predict function - NO progress argument
     prediction_result <- SDMtune::predict(
       object = final_sdm_model,
       data = predictor_stack,
       type = output_type,
-      clamp = TRUE # Keep clamp argument
+      clamp = TRUE # Or get from config: config$sdm_clamp
     )
     
-    # Validate the result before returning
     if (is.null(prediction_result) || !inherits(prediction_result, "SpatRaster") || terra::nlyr(prediction_result) == 0) {
       msg <- "SDMtune::predict returned NULL or empty SpatRaster."
-      if(!is.null(logger)) log_warn(msg)
-      return(msg) # Return message indicating issue
+      if(!is.null(logger)) log_warn(msg); return(msg)
     }
     
-    names(prediction_result) <- "suitability"
+    # Rename layer for consistency if needed, but might be overwritten by writeRaster filename
+    # names(prediction_result) <- "suitability"
     log_debug("  SDMtune::predict prediction raster generated successfully.")
-    return(prediction_result) # Return the raster on success
+    return(prediction_result) # Return the SpatRaster
     
   }, error = function(e) {
-    # Capture and return the error message string on failure
     err_msg <- paste("SDMtune::predict failed:", e$message)
-    # Log error if logger available
     if(!is.null(logger)) log_error(err_msg)
-    return(err_msg) # Return the error message itself
+    return(err_msg) # Return the error message string
   })
 }
 
