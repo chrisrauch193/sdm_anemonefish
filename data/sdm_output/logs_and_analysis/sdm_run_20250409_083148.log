@@ -1,0 +1,42 @@
+INFO  [2025-04-09 08:31:58] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_083148.log
+INFO  [2025-04-09 08:31:58] Logging to console with minimum level: INFO
+INFO  [2025-04-09 08:31:58] --- Starting Script 06c: Run Anemonefish SDMs (Biotic Only) ---
+INFO  [2025-04-09 08:31:58] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 08:31:58] --- Using Predictors: Max Host Suitability (Biotic Only) ---
+INFO  [2025-04-09 08:31:58] --- Sourcing host predictions from: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/predictions/anemone_pca ---
+INFO  [2025-04-09 08:31:59] Loaded and processed 3 valid host associations with AphiaIDs.
+INFO  [2025-04-09 08:31:59] Will model 1 anemonefish species with known/matched host associations.
+INFO  [2025-04-09 08:31:59] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 08:32:00] Starting Biotic-Only SDM processing for 1 anemonefish...
+INFO  [2025-04-09 08:32:06] Parallel/sequential processing complete.
+INFO  [2025-04-09 08:32:06] --- Processing Results Summary (Anemonefish Biotic Only Models) ---
+ERROR [2025-04-09 08:32:06] [Amphiprion ocellaris] Skipping: Failed background point generation.
+INFO  [2025-04-09 08:32:06] --- Overall Summary (Anemonefish Biotic Only Models) ---
+INFO  [2025-04-09 08:32:06] Total Species Targets: 1
+INFO  [2025-04-09 08:32:06] Fully Successful Runs: 0
+INFO  [2025-04-09 08:32:06] Partially Successful Runs: 0
+INFO  [2025-04-09 08:32:06] Skipped: 0
+INFO  [2025-04-09 08:32:06] Errors: 1
+INFO  [2025-04-09 08:32:06] Occ counts saved: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/occurrence_counts_anemonefish_biotic_only.csv
+INFO  [2025-04-09 08:32:06] --- Script 06c finished. ---
+INFO  [2025-04-09 08:33:53] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_083148.log
+INFO  [2025-04-09 08:33:53] Logging to console with minimum level: INFO
+INFO  [2025-04-09 08:33:53] --- Starting Script 06c: Run Anemonefish SDMs (Biotic Only) ---
+INFO  [2025-04-09 08:33:53] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 08:33:53] --- Using Predictors: Max Host Suitability (Biotic Only) ---
+INFO  [2025-04-09 08:33:53] --- Sourcing host predictions from: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/predictions/anemone_pca ---
+INFO  [2025-04-09 08:33:54] Loaded and processed 3 valid host associations with AphiaIDs.
+INFO  [2025-04-09 08:33:54] Will model 1 anemonefish species with known/matched host associations.
+INFO  [2025-04-09 08:33:54] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 08:33:55] Starting Biotic-Only SDM processing for 1 anemonefish...
+INFO  [2025-04-09 08:40:06] Parallel/sequential processing complete.
+INFO  [2025-04-09 08:40:06] --- Processing Results Summary (Anemonefish Biotic Only Models) ---
+ERROR [2025-04-09 08:40:06] [Amphiprion ocellaris] Skipping: Hyperparameter tuning failed.
+INFO  [2025-04-09 08:40:06] --- Overall Summary (Anemonefish Biotic Only Models) ---
+INFO  [2025-04-09 08:40:06] Total Species Targets: 1
+INFO  [2025-04-09 08:40:06] Fully Successful Runs: 0
+INFO  [2025-04-09 08:40:06] Partially Successful Runs: 0
+INFO  [2025-04-09 08:40:06] Skipped: 0
+INFO  [2025-04-09 08:40:06] Errors: 1
+INFO  [2025-04-09 08:40:06] Occ counts saved: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/occurrence_counts_anemonefish_biotic_only.csv
+INFO  [2025-04-09 08:40:06] --- Script 06c finished. ---

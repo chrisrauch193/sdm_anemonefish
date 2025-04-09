@@ -1,0 +1,8 @@
+2025-04-09 17:54:28.430545 [INFO] [Amphiprion ocellaris]  --- Starting BIOTIC_ONLY processing --- 
+2025-04-09 17:54:28.431415 [INFO] [Amphiprion ocellaris]  Using pre-defined simple hyperparameters: fc='l', reg=1.0 
+2025-04-09 17:54:28.431551 [DEBUG] [Amphiprion ocellaris]  Loading template raster for current scenario... 
+2025-04-09 17:54:28.490301 [DEBUG] [Amphiprion ocellaris]  Loading/cleaning/thinning occurrences using template stack. 
+2025-04-09 17:54:29.090289 [INFO] [Amphiprion ocellaris]  Occurrence count after clean/thin:1887 
+2025-04-09 17:54:29.090487 [INFO] [Amphiprion ocellaris]  Final model not found or rerun forced. Proceeding with training. 
+2025-04-09 17:54:29.090555 [DEBUG] [Amphiprion ocellaris]  Creating stacked host predictor for CURRENT scenario (using pre-loaded rasters). 
+2025-04-09 17:54:29.130071 [ERROR] [Amphiprion ocellaris]  [Amphiprion ocellaris] Skipping: Failed to create stacked host predictor for current scenario. 

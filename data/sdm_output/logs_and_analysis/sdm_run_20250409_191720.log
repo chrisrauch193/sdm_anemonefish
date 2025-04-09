@@ -1,0 +1,23 @@
+INFO  [2025-04-09 19:17:28] Logger initialized. Logging to file: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/sdm_run_20250409_191720.log
+INFO  [2025-04-09 19:17:28] Logging to console with minimum level: INFO
+INFO  [2025-04-09 19:17:28] --- Starting Script 06d: Run Anemonefish Combined (Env PCA + Biotic) SDMs (v2) ---
+INFO  [2025-04-09 19:17:28] --- Processing Group: anemonefish ---
+INFO  [2025-04-09 19:17:28] --- Using Predictors: Env PCA Components + Max Host Suitability _pca ---
+INFO  [2025-04-09 19:17:28] Loaded Environmental (PCA) raster paths for scenarios: current
+INFO  [2025-04-09 19:17:28] Loaded 21 fish-host associations from processed_anemonefish_host_associations.csv
+INFO  [2025-04-09 19:17:28] Gathering file paths for ALL potential host anemone predictions across ALL required scenarios...
+INFO  [2025-04-09 19:17:28] Found all 3 expected host prediction files for scenario: current
+INFO  [2025-04-09 19:17:28] Loaded 1 anemonefish species from final_anemonefish_species_list.csv
+INFO  [2025-04-09 19:17:28] Setting up parallel backend with 31 cores (multisession).
+INFO  [2025-04-09 19:17:30] Starting Combined SDM processing for 1 anemonefish...
+INFO  [2025-04-09 19:26:02] Parallel/sequential processing complete.
+INFO  [2025-04-09 19:26:02] --- Processing Results Summary (Anemonefish Combined Models v2) ---
+INFO  [2025-04-09 19:26:02] [Amphiprion ocellaris] Finished Combined. Occs:1887. Preds attempted:1. Made:1. Errors/Skipped:0.
+INFO  [2025-04-09 19:26:02] --- Overall Summary (Anemonefish Combined Models v2) ---
+INFO  [2025-04-09 19:26:02] Total Species Targets: 1
+INFO  [2025-04-09 19:26:02] Fully Successful Runs (Train + All Preds): 1
+INFO  [2025-04-09 19:26:02] Partially Successful Runs (Train + Some Pred Errors): 0
+INFO  [2025-04-09 19:26:02] Skipped (Occurrences/No Hosts/Setup): 0
+INFO  [2025-04-09 19:26:02] Errors during processing (Train/Tune/Stacking/Save): 0
+INFO  [2025-04-09 19:26:02] Occurrence counts saved to: /home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output/logs_and_analysis/occurrence_counts_anemonefish_combined_pca.csv
+INFO  [2025-04-09 19:26:03] --- Script 06d (v2) finished. ---
