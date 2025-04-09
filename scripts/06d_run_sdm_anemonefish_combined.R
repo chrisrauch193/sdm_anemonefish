@@ -1,12 +1,14 @@
 # scripts/06d_run_sdm_anemonefish_combined.R
 #-------------------------------------------------------------------------------
 # Run Combined SDMs for Anemonefish Species using Environmental Predictors (PCA)
-# and a Biotic Predictor (Max Host Suitability) (SDMtune Workflow).
+# and a Biotic Predictor (Max Host Suitability) (SDMtune Workflow with ENSEMBLE).
+# Tuning is based on Maxnet, but final training includes Maxnet, RF, BRT.
+# Prediction is the ensemble mean. VI is based on the Maxnet component.
 # Includes Parallel Processing, Logging, Progress, and Species-Specific Logs.
-# Saves outputs to target structure defined in config.R (v11 - Matching 06a/b).
+# Saves outputs to target structure defined in config.R (v12 - Ensemble Implementation).
 # Assumes 06a produced host predictions (_pca suffix) for ALL scenarios.
 #-------------------------------------------------------------------------------
-cat("--- Running Script 06d: Run Anemonefish Combined (Env PCA + Biotic) SDMs (v11) ---\n")
+cat("--- Running Script 06d: Run Anemonefish Combined (Env PCA + Biotic) Ensemble SDMs (v12) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
 if (file.exists("scripts/config.R")) {
@@ -25,7 +27,7 @@ pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools, stringr, log4r, future, 
 # --- 3. Source Helper Functions ---
 source(file.path(config$helpers_dir, "logging_setup.R"))
 source(file.path(config$helpers_dir, "env_processing_helpers.R"))
-source(file.path(config$helpers_dir, "sdm_modeling_helpers.R")) # Needs v8 of calculate_and_save_vi
+source(file.path(config$helpers_dir, "sdm_modeling_helpers.R")) # Needs v3 ensemble helpers
 
 # --- 4. Setup Logging ---
 logger <- setup_logger(log_file = config$log_file_path,
@@ -34,7 +36,7 @@ logger <- setup_logger(log_file = config$log_file_path,
                        log_to_console = config$log_to_console,
                        console_level = config$log_console_level)
 
-log4r::info(logger, "--- Starting Script 06d: Run Anemonefish Combined (Env PCA + Biotic) SDMs (v11) ---")
+log4r::info(logger, "--- Starting Script 06d: Run Anemonefish Combined (Env PCA + Biotic) Ensemble SDMs (v12) ---")
 
 # --- 5. Define Group Specifics & Predictor Type ---
 group_name <- "anemonefish"
@@ -48,6 +50,7 @@ host_predictor_type_suffix <- "_pca" # Suffix of host predictions to load (from 
 
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
 log4r::info(logger, paste("--- Using Predictors: Env PCA Components + Max Host Suitability", host_predictor_type_suffix ,"---"))
+log4r::info(logger, "--- Ensemble Approach: Training Maxnet, RF, BRT; Predicting Mean ---")
 
 # --- 6. Load Environmental Predictor Paths (PCA) ---
 pca_paths_rds <- config$pca_raster_paths_rds_path
@@ -78,7 +81,6 @@ for (scenario in scenarios_to_process) {
   for (i in 1:nrow(host_species_df)) {
     host_sci_name <- host_species_df$scientificName[i]
     host_sci_name_sanitized <- gsub(" ", "_", host_sci_name)
-    # Construct the path using the *target* structure and naming convention from 06a
     host_pred_file_path <- construct_prediction_filename(host_sci_name_sanitized, scenario, host_predictor_type_suffix, config) # Use helper with _pca suffix
     if (!is.null(host_pred_file_path) && file.exists(host_pred_file_path)) {
       all_host_prediction_paths[[scenario]][[host_sci_name_sanitized]] <- host_pred_file_path
@@ -88,12 +90,12 @@ for (scenario in scenarios_to_process) {
     }
   }
   if(length(all_host_prediction_paths[[scenario]]) == 0 && missing_files_scenario > 0){
-    log4r::error(logger, paste("FATAL: No host predictions found for ANY species in target location for scenario:", scenario, ". Ensure 06a ran successfully and saved predictions to the target structure."))
-    missing_host_preds_overall <- TRUE # Flag error but continue check
+    log4r::error(logger, paste("FATAL: No host predictions found for ANY species in target location for scenario:", scenario, ". Ensure 06a ran successfully."))
+    missing_host_preds_overall <- TRUE
   } else if (missing_files_scenario > 0) { log4r::warn(logger, paste("Found", length(all_host_prediction_paths[[scenario]]), "host files, but", missing_files_scenario, "missing for scenario:", scenario))
   } else { log4r::info(logger, paste("Found all", length(all_host_prediction_paths[[scenario]]), "host files for scenario:", scenario)) }
 }
-if(missing_host_preds_overall) stop("Halting script because required host prediction files are missing for one or more scenarios. Check logs and ensure 06a completed successfully.")
+if(missing_host_preds_overall) stop("Halting script: required host prediction files missing for one or more scenarios. Check logs/06a output.")
 
 # --- 9. Create Intermediate Output Dirs ---
 base_intermediate_model_path <- config$models_dir_intermediate
@@ -108,7 +110,7 @@ tryCatch({dir.create(intermediate_models_dir, recursive=T, showW=F);dir.create(i
 tryCatch({ species_df <- readr::read_csv(species_list_file, show_col_types = FALSE) }, error = function(e) { log4r::fatal(logger, paste("Failed load species list:", e$message)); stop("Species list failed.") })
 log4r::info(logger, paste("Loaded", nrow(species_df), "species from", basename(species_list_file)))
 
-# --- 11. Define Function to Process Single Species (Combined Model v11) ---
+# --- 11. Define Function to Process Single Species (Combined Model Ensemble v12) ---
 process_species_sdm_combined <- function(species_row, config, env_predictor_paths_list, all_host_prediction_paths, associations_df,
                                          group_name, predictor_type_suffix, occurrence_dir,
                                          tuning_scenario = "current") {
@@ -119,11 +121,12 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
   
   species_log_file <- file.path(config$species_log_dir, paste0(species_name_sanitized, predictor_type_suffix, "_detail.log"))
   slog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), paste0("[", species_name, "]"), paste0(..., collapse = " ")); cat(msg, "\n", file = species_log_file, append = TRUE) }
-  slog("INFO", "--- Starting Combined processing (Script 06d v11) ---")
+  slog("INFO", "--- Starting Combined ENSEMBLE processing (Script 06d v12) ---")
   
+  # Define intermediate paths
   intermediate_models_dir <- file.path(config$models_dir_intermediate, paste0(group_name, predictor_type_suffix))
   intermediate_results_dir <- file.path(config$results_dir_intermediate, paste0(group_name, predictor_type_suffix))
-  final_model_file <- file.path(intermediate_models_dir, paste0("sdm_model_", species_name_sanitized, predictor_type_suffix, ".rds"))
+  final_model_list_file <- file.path(intermediate_models_dir, paste0("sdm_model_", species_name_sanitized, predictor_type_suffix, ".rds")) # Expects a list
   tuning_rds_file <- file.path(intermediate_results_dir, paste0("sdm_tuning_", species_name_sanitized, predictor_type_suffix, "_object.rds"))
   
   # --- Get Associated Hosts ---
@@ -134,18 +137,12 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
   
   # --- Prepare Combined Predictor Stack for Tuning Scenario (ALWAYS NEEDED) ---
   slog("DEBUG", "Preparing COMBINED predictor stack for tuning/base scenario:", tuning_scenario)
-  tuning_combined_stack <- NULL
+  tuning_combined_stack <- NULL # Initialize
   tryCatch({
     tuning_env_path <- env_predictor_paths_list[[tuning_scenario]]
     if (is.null(tuning_env_path) || !file.exists(tuning_env_path)) stop(paste("Env (PCA) stack path missing for tuning:", tuning_env_path %||% "NULL"))
     tuning_env_stack <- terra::rast(tuning_env_path)
     reference_geom_tuning <- tuning_env_stack[[1]]
-    
-    print("FUCK")
-    print(tuning_scenario)
-    print(all_host_prediction_paths)
-    print(associated_hosts_sanitized)
-    print("MY LIFE")
     
     host_paths_for_tuning <- all_host_prediction_paths[[tuning_scenario]][names(all_host_prediction_paths[[tuning_scenario]]) %in% associated_hosts_sanitized]
     if (length(host_paths_for_tuning) == 0) stop("No host prediction paths found for associated hosts in tuning scenario.")
@@ -172,10 +169,11 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
     
   }, error = function(e) {
     msg <- paste0("Skipping: Failed to prepare combined tuning stack: ", e$message); slog("ERROR", msg)
+    # Ensure cleanup if error occurred during stack prep
     if (exists("tuning_env_stack")) rm(tuning_env_stack); if (exists("host_stack_tuning")) rm(host_stack_tuning); if (exists("max_host_suitability_tuning")) rm(max_host_suitability_tuning); if (exists("host_rasters_tuning_list")) rm(host_rasters_tuning_list); gc()
     return(list(status = "error_tuning_predictors", species = species_name, occurrence_count = NA, message = msg))
   })
-  if (is.null(tuning_combined_stack)) { return(list(status = "error_tuning_predictors", species = species_name, occurrence_count = NA, message = paste0("log_prefix", "Failed to create tuning_combined_stack."))) }
+  if (is.null(tuning_combined_stack)) { return(list(status = "error_tuning_predictors", species = species_name, occurrence_count = NA, message = paste0("Failed to create tuning_combined_stack."))) }
   # --- End Stack Prep ---
   
   # --- Load/Clean Occurrences ---
@@ -187,75 +185,70 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
   slog("INFO", "Occurrence count after clean/thin:", occurrence_count_after_thinning)
   
   # --- Tuning & Training ---
-  final_model <- NULL; tuning_output <- NULL; load_existing_model <- FALSE; full_swd_data <- NULL
+  final_model_list <- NULL; tuning_output <- NULL; load_existing_models <- FALSE; full_swd_data <- NULL
   
-  if (!config$force_rerun$run_biotic_sdms && file.exists(final_model_file)) { # Check biotic flag
-    slog("INFO", "Final model file exists. Attempting to load...")
-    final_model <- tryCatch(readRDS(final_model_file), error=function(e) { slog("ERROR", "Failed to load existing model:", e$message); NULL})
-    if(!is.null(final_model) && inherits(final_model, "SDMmodel")){
-      slog("INFO", "Successfully loaded existing final model. Skipping tuning/training.")
-      load_existing_model <- TRUE
-      if(file.exists(tuning_rds_file)) { tuning_output <- tryCatch(readRDS(tuning_rds_file), error=function(e){slog("WARN","Could not load tuning RDS for VI."); NULL}) }
-      if(is.null(tuning_output)) { slog("WARN", "Tuning RDS file not found/loaded, VI will use final model object."); tuning_output <- final_model }
+  if (!config$force_rerun$run_biotic_sdms && file.exists(final_model_list_file)) { # Check biotic flag
+    slog("INFO", "Final model LIST file exists. Attempting to load...")
+    final_model_list <- tryCatch(readRDS(final_model_list_file), error=function(e) { slog("ERROR", "Failed to load existing model list:", e$message); NULL})
+    # Validate loaded object
+    if(!is.null(final_model_list) && is.list(final_model_list) && length(final_model_list) > 0 && all(sapply(final_model_list, inherits, "SDMmodel")) && !is.null(names(final_model_list))) {
+      slog("INFO", "Successfully loaded existing final model list. Skipping tuning/training.")
+      load_existing_models <- TRUE
+      # Prepare SWD needed for VI
       background_points_for_vi <- generate_sdm_background(tuning_combined_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
-      if(!is.null(background_points_for_vi)){ full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_for_vi, env = tuning_combined_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI on loaded model:", e$message); NULL }) } else { slog("WARN", "Failed background gen for VI on loaded model.") }
+      if(!is.null(background_points_for_vi)){ full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_for_vi, env = tuning_combined_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI on loaded model list:", e$message); NULL }) } else { slog("WARN", "Failed background gen for VI on loaded model list.") }
       rm(background_points_for_vi); gc()
-    } else { msg <- paste0("Existing final model file invalid/failed load. Will re-run."); slog("WARN", msg); load_existing_model <- FALSE }
+      # Load tuning object if exists
+      if(file.exists(tuning_rds_file)) { tuning_output <- tryCatch(readRDS(tuning_rds_file), error=function(e){slog("WARN","Could not load tuning RDS."); NULL}) }
+    } else { msg <- paste0("Existing final model list file invalid/failed load. Will re-run."); slog("WARN", msg); load_existing_models <- FALSE; final_model_list <- NULL }
   }
   
-  if (!load_existing_model) {
-    slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
+  if (!load_existing_models) {
+    slog("INFO", "Final model list not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points.")
     background_points <- generate_sdm_background(tuning_combined_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
     if (is.null(background_points)) { msg <- paste0("Skipping: Failed background point generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     slog("DEBUG", "Background points generated.")
     
     full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points, env = tuning_combined_stack, verbose = FALSE) }, error = function(e) { slog("ERROR", paste("Failed prepareSWD:", e$message)); NULL })
-    if (is.null(full_swd_data)) { rm(background_points); gc(); return(list(status = "error_swd_preparation", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("log_prefix", "SWD prep failed."))) }
+    if (is.null(full_swd_data)) { rm(background_points); gc(); return(list(status = "error_swd_preparation", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("SWD prep failed."))) }
     slog("DEBUG", "SWD object prepared.")
     
-    slog("INFO", "Starting hyperparameter tuning.")
+    slog("INFO", "Starting hyperparameter tuning (based on Maxnet)...")
     tuning_output <- run_sdm_tuning_kfold(occs_coords, tuning_combined_stack, background_points, config, logger=NULL, species_name, species_log_file=species_log_file)
     if (is.null(tuning_output) || is.null(attr(tuning_output, "best_hypers"))) { msg <- paste0("Skipping: Tuning failed."); slog("ERROR", msg); rm(background_points, full_swd_data); gc(); return(list(status = "error_tuning", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     best_hypers <- attr(tuning_output, "best_hypers")
-    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { rm(background_points, full_swd_data); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results."))) }
+    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { slog("WARN", "Failed to save tuning results.") }
     
-    slog("INFO", "Starting final model training.")
-    final_model <- train_final_sdm(occs_coords, tuning_combined_stack, background_points, best_hypers, config, logger=NULL, species_name, species_log_file=species_log_file)
-    if(is.null(final_model)){ msg <- paste0("Skipping: Training failed."); slog("ERROR", msg); rm(background_points, full_swd_data); gc(); return(list(status = "error_training", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
-    slog("INFO", "Final model training complete.")
-    if(!save_final_model(final_model, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { rm(background_points, full_swd_data); gc(); return(list(status = "error_saving_model", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save final model."))) }
+    slog("INFO", "Starting final ENSEMBLE model training...")
+    final_model_list <- train_final_sdm(occs_coords, tuning_combined_stack, background_points, best_hypers, config, logger=NULL, species_name, species_log_file=species_log_file)
+    if(is.null(final_model_list)){ msg <- paste0("Skipping: Ensemble training failed."); slog("ERROR", msg); rm(background_points, full_swd_data); gc(); return(list(status = "error_training", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
+    slog("INFO", "Final ensemble models training complete.")
+    if(!save_final_model(final_model_list, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { slog("WARN", "Failed to save final model list.") }
     
     rm(background_points); gc()
-  } # End if !load_existing_model
+  } # End if !load_existing_models
   
-  # --- Variable Importance (Using v8 helper) ---
-  if (!is.null(final_model)) {
-    if(!is.null(full_swd_data)){ # Check SWD data
-      slog("INFO", "Calculating and saving variable importance...")
+  # --- Variable Importance ---
+  if (!is.null(final_model_list)) {
+    if(!is.null(full_swd_data)){
+      slog("INFO", "Calculating and saving variable importance (based on Maxnet)...")
       vi_success <- calculate_and_save_vi(
-        final_model = final_model, # Pass the final SDMmodel
-        training_swd = full_swd_data, # Pass the full training SWD data
-        species_name_sanitized = species_name_sanitized,
-        group_name = group_name,
-        predictor_type_suffix = predictor_type_suffix, # Uses _combined_pca
-        config = config,
-        logger = NULL,
-        species_log_file = species_log_file)
+        final_model_list = final_model_list, training_swd = full_swd_data,
+        species_name_sanitized = species_name_sanitized, group_name = group_name,
+        predictor_type_suffix = predictor_type_suffix, config = config,
+        logger = NULL, species_log_file = species_log_file
+      )
       if(!vi_success) slog("WARN", "Variable importance calculation/saving failed.")
-    } else {
-      slog("WARN", "Skipping variable importance: required training SWD data is missing.")
-    }
-  } else {
-    slog("WARN", "Skipping variable importance: final model object is unavailable.")
-  }
+    } else { slog("WARN", "Skipping variable importance: training SWD data is missing.") }
+  } else { slog("WARN", "Skipping variable importance: final model list unavailable.") }
   
   # --- Prediction Loop ---
   predictions_made = 0; prediction_errors = 0
   scenarios_to_predict <- names(env_predictor_paths_list)
-  slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
+  slog("INFO", paste("Starting ENSEMBLE predictions for", length(scenarios_to_predict), "scenarios."))
   
-  if (!is.null(final_model)) {
+  if (!is.null(final_model_list)) {
     for (pred_scenario in scenarios_to_predict) {
       slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
       target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
@@ -292,41 +285,37 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
         
       }, error = function(e) {
         slog("ERROR", paste("  Failed preparing combined stack for prediction:", pred_scenario, "Error:", e$message))
-        # Ensure cleanup if error occurred during stack prep
-        if (exists("pred_env_stack")) rm(pred_env_stack)
-        if (exists("host_stack_scenario")) rm(host_stack_scenario)
-        if (exists("max_host_suitability_scenario")) rm(max_host_suitability_scenario)
-        if (exists("host_rasters_pred_list")) rm(host_rasters_pred_list)
-        gc()
+        # Cleanup partial objects
+        if (exists("pred_env_stack")) rm(pred_env_stack); if (exists("host_stack_scenario")) rm(host_stack_scenario); if (exists("max_host_suitability_scenario")) rm(max_host_suitability_scenario); if (exists("host_rasters_pred_list")) rm(host_rasters_pred_list); gc()
         prediction_combined_stack <- NULL # Ensure it's NULL on error
       })
       # --- End Stack Prep ---
       
       if(is.null(prediction_combined_stack)) { prediction_errors <- prediction_errors + 1; next } # Skip prediction if stack failed
       
-      # Predict & Save
-      prediction_output <- predict_sdm_suitability(final_model, prediction_combined_stack, config, logger=NULL, species_log_file=species_log_file)
+      # Predict & Save (using the ENSEMBLE prediction helper)
+      prediction_output <- predict_sdm_suitability(final_model_list, prediction_combined_stack, config, logger=NULL, species_log_file=species_log_file)
       if (inherits(prediction_output, "SpatRaster")) {
         save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
         if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
         rm(prediction_output); gc()
-      } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
+      } else { slog("WARN", paste("  Ensemble prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
       rm(prediction_combined_stack); gc()
     } # End prediction scenario loop
   } else {
-    prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping predictions: Final model unavailable."); slog("ERROR", msg)
-    status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+    prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping predictions: Final model list unavailable."); slog("ERROR", msg)
+    status <- if(load_existing_models) "error_loading_model_list" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
   }
   
   # --- Prepare return status ---
-  final_status <- "success"; status_message <- paste0("Finished Combined SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
+  final_status <- "success"; status_message <- paste0("Finished Combined Ensemble SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
   if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) } else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) } else { slog("INFO", status_message) }
   
   # --- Clean up ---
   if (!is.null(tuning_combined_stack)) rm(tuning_combined_stack)
   if (!is.null(occs_coords)) rm(occs_coords)
   if (!is.null(full_swd_data)) rm(full_swd_data)
-  if (!load_existing_model && !is.null(tuning_output) && !identical(tuning_output, final_model)) rm(tuning_output)
+  if (!load_existing_models && !is.null(tuning_output) && inherits(tuning_output, "SDMtune")) rm(tuning_output)
   gc()
   
   return(list(status = final_status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = status_message))
@@ -337,7 +326,7 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
 if (config$use_parallel && config$num_cores > 1) { log4r::info(logger, paste("Setting up parallel backend with", config$num_cores, "cores.")); gc(full=TRUE); future::plan(future::multisession, workers = config$num_cores, gc = TRUE) } else { log4r::info(logger, "Running sequentially."); future::plan(future::sequential) }
 progressr::handlers(global = TRUE); progressr::handlers("txtprogressbar")
 
-log4r::info(logger, paste("Starting Combined SDM processing for", nrow(species_df), group_name, "species..."))
+log4r::info(logger, paste("Starting Combined Ensemble SDM processing for", nrow(species_df), group_name, "species..."))
 
 results_list <- progressr::with_progress({
   furrr::future_map(1:nrow(species_df), ~{
@@ -349,9 +338,9 @@ results_list <- progressr::with_progress({
 log4r::info(logger, "Parallel/sequential processing complete.")
 
 # --- 13. Process Results ---
-# (Identical summary logic as 06a/06b/06c)
+# (Identical summary logic as 06a/b/c)
 occurrence_counts <- list(); success_count <- 0; error_count <- 0; skipped_count <- 0; partial_success_count <- 0
-log4r::info(logger, paste("--- Processing Results Summary (", group_name, predictor_type_suffix, "Models) ---"))
+log4r::info(logger, paste("--- Processing Results Summary (", group_name, predictor_type_suffix, "Ensemble Models) ---"))
 for (res in results_list) {
   if (is.null(res)) { error_count <- error_count + 1; log4r::error(logger, "Received NULL result."); next }
   log_level_func <- switch(res$status, success=log4r::info, success_with_pred_errors=log4r::warn, skipped_occurrences=log4r::warn, skipped_no_hosts=log4r::warn, log4r::error)
@@ -362,7 +351,7 @@ for (res in results_list) {
   else if (grepl("skipped", res$status)) skipped_count <- skipped_count + 1
   else error_count <- error_count + 1
 }
-log4r::info(logger, paste("--- Overall Summary (", group_name, predictor_type_suffix, "Models) ---"))
+log4r::info(logger, paste("--- Overall Summary (", group_name, predictor_type_suffix, "Ensemble Models) ---"))
 log4r::info(logger, paste("Total Species Targets:", length(results_list)))
 log4r::info(logger, paste("Fully Successful Runs:", success_count))
 log4r::info(logger, paste("Partially Successful Runs:", partial_success_count))
@@ -377,5 +366,5 @@ if (length(occurrence_counts) > 0) {
 } else { log4r::warn(logger, "No occurrence counts were recorded.") }
 
 future::plan(future::sequential); gc(full=TRUE)
-log4r::info(logger, "--- Script 06d (v11) finished. ---")
+log4r::info(logger, "--- Script 06d (v12 - Ensemble Implementation) finished. ---")
 #-------------------------------------------------------------------------------

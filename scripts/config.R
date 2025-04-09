@@ -73,8 +73,8 @@ force_rerun <- list(
   download_occurrences = FALSE,
   download_env = FALSE,
   preprocess_env_occurrence = FALSE,
-  run_standard_sdms = FALSE, # Set to TRUE to force rerun of SDMs
-  run_biotic_sdms = FALSE
+  run_standard_sdms = TRUE, # Set to TRUE to force rerun of SDMs
+  run_biotic_sdms = TRUE
 )
 
 occurrence_crs  <- "EPSG:4326"
@@ -115,7 +115,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 # SDM Settings
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
-sdm_evaluation_metric <- "auc"; background_points_n <- 10000; thinning_method <- "cell"
+sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
 apply_coral_mask <- TRUE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
@@ -170,8 +170,7 @@ config <- list(
   # SDM Settings
   sdm_method = sdm_method, sdm_partitions = sdm_partitions, sdm_n_folds = sdm_n_folds,
   sdm_tune_grid = sdm_tune_grid, sdm_evaluation_metric = sdm_evaluation_metric,
-  background_points_n = background_points_n, thinning_method = thinning_method,
-  apply_coral_mask = apply_coral_mask, apply_depth_filter = apply_depth_filter,
+  pca_background_points_n = pca_background_points_n, background_points_n = background_points_n, thinning_method = thinning_method,  apply_coral_mask = apply_coral_mask, apply_depth_filter = apply_depth_filter,
   depth_min = depth_min, depth_max = depth_max, min_occurrences_sdm = min_occurrences_sdm,
   # Parallel & Logging
   num_cores = num_cores, use_parallel = use_parallel,
