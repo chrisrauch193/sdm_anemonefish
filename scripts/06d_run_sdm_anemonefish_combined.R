@@ -215,7 +215,7 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
     slog("DEBUG", "SWD object prepared.")
     
     slog("INFO", "Starting hyperparameter tuning.")
-    tuning_output <- run_sdm_tuning_kfold(occs_coords, tuning_combined_stack, background_points, config, logger=NULL, species_name, species_log_file=species_log_file)
+    tuning_output <- run_sdm_tuning_scv(occs_coords, tuning_combined_stack, background_points, config, logger=NULL, species_name, species_log_file=species_log_file)
     if (is.null(tuning_output) || is.null(attr(tuning_output, "best_hypers"))) { msg <- paste0("Skipping: Tuning failed."); slog("ERROR", msg); rm(background_points, full_swd_data); gc(); return(list(status = "error_tuning", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     best_hypers <- attr(tuning_output, "best_hypers")
     if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { rm(background_points, full_swd_data); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results."))) }
