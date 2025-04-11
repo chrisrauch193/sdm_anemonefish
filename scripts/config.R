@@ -39,6 +39,12 @@ anemone_fish_association_file <- file.path(data_dir, "processed_anemonefish_host
 
 coral_shapefile <- file.path(shapefile_dir, "WCMC008_CoralReef2018_Py_v4_1.shp")
 
+# --- Cropping and Masking Settings ---
+apply_indo_pacific_crop <- TRUE # Set to TRUE to crop all rasters to the defined bbox
+indo_pacific_bbox <- c(xmin=30, xmax=180, ymin=-50, ymax=50) # Define Lon/Lat bounding box
+
+mask_background_points_to_coral <- TRUE # Set to TRUE to sample BG points ONLY from coral areas
+
 # --- Intermediate Output Paths (for temp files, RDS models/tuning) ---
 # Define these *before* the final config list is created
 sdm_output_dir_intermediate   <- file.path(data_dir, "sdm_output_intermediate") # Base for intermediates
@@ -73,8 +79,8 @@ force_rerun <- list(
   download_occurrences = FALSE,
   download_env = FALSE,
   preprocess_env_occurrence = FALSE,
-  run_standard_sdms = FALSE, # Set to TRUE to force rerun of SDMs
-  run_biotic_sdms = FALSE
+  run_standard_sdms = TRUE, # Set to TRUE to force rerun of SDMs
+  run_biotic_sdms = TRUE
 )
 
 occurrence_crs  <- "EPSG:4326"
@@ -115,7 +121,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 # SDM Settings
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
-sdm_evaluation_metric <- "auc"; background_points_n <- 10000; thinning_method <- "cell"
+sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
 apply_coral_mask <- TRUE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
@@ -170,9 +176,11 @@ config <- list(
   # SDM Settings
   sdm_method = sdm_method, sdm_partitions = sdm_partitions, sdm_n_folds = sdm_n_folds,
   sdm_tune_grid = sdm_tune_grid, sdm_evaluation_metric = sdm_evaluation_metric,
-  background_points_n = background_points_n, thinning_method = thinning_method,
-  apply_coral_mask = apply_coral_mask, apply_depth_filter = apply_depth_filter,
-  depth_min = depth_min, depth_max = depth_max, min_occurrences_sdm = min_occurrences_sdm,
+  pca_background_points_n = pca_background_points_n, background_points_n = background_points_n, thinning_method = thinning_method,
+  apply_coral_mask = apply_coral_mask, apply_indo_pacific_crop = apply_indo_pacific_crop,
+  indo_pacific_bbox = indo_pacific_bbox, mask_background_points_to_coral = mask_background_points_to_coral,
+  apply_depth_filter = apply_depth_filter, depth_min = depth_min, depth_max = depth_max,
+  min_occurrences_sdm = min_occurrences_sdm,
   # Parallel & Logging
   num_cores = num_cores, use_parallel = use_parallel,
   log_file_path = log_file_path, log_level = log_level, log_append = log_append,
@@ -180,6 +188,7 @@ config <- list(
   # Display Names
   get_display_name = get_display_name, core_var_display_names = core_var_display_names
 )
+
 
 # --- Final Check and Print Key Paths ---
 cat("Configuration loaded and bundled into 'config' list.\n")
