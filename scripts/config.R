@@ -133,6 +133,8 @@ log_level <- "INFO"; log_append <- TRUE; log_to_console <- TRUE; log_console_lev
 core_var_display_names <- c(par_baseline_depthsurf_mean="Surface PAR", sws_baseline_depthsurf_mean="Surface Wind Stress", thetao_baseline_depthsurf_mean="Surface Temp.", thetao_baseline_depthmax_mean="Bottom Temp. Mean", thetao_baseline_depthmax_range="Bottom Temp. Range", thetao_baseline_depthmax_ltmin="Bottom Temp. LT Min", thetao_baseline_depthmax_ltmax="Bottom Temp. LT Max", so_baseline_depthmax_mean="Bottom Salinity", no3_baseline_depthmax_mean="Bottom Nitrate Mean", no3_baseline_depthmax_range="Bottom Nitrate Range", no3_baseline_depthmax_ltmin="Bottom Nitrate LT Min", no3_baseline_depthmax_ltmax="Bottom Nitrate LT Max", chl_baseline_depthmax_mean="Bottom Chlorophyll", phyc_baseline_depthmax_mean="Bottom Phytoplankton", o2_baseline_depthmax_mean="Bottom Oxygen Mean", o2_baseline_depthmax_range="Bottom Oxygen Range", o2_baseline_depthmax_ltmin="Bottom Oxygen LT Min", o2_baseline_depthmax_ltmax="Bottom Oxygen LT Max", ph_baseline_depthmax_mean="Bottom pH", bathymetry_mean="Bathymetry", distcoast="Distance to Coast", rugosity="Rugosity", slope="Slope", PC1="PC1", PC2="PC2", PC3="PC3", PC4="PC4", host_suitability_max="Max Host Suitability")
 get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup)) lookup <- config$core_var_display_names; if (technical_name %in% names(lookup)) return(lookup[technical_name]); core_name_cleaned <- gsub("_ssp\\d{3}_depth(surf|max)_dec\\d{3,3}", "_depth\\1", technical_name); core_name_cleaned <- gsub("_baseline(_\\d{4}_\\d{4})?", "", core_name_cleaned); if (core_name_cleaned %in% names(lookup)) return(lookup[core_name_cleaned]); core_name_alt <- gsub("(_mean|_range|_ltmin|_ltmax)$", "", core_name_cleaned); if (core_name_alt %in% names(lookup)) return(lookup[core_name_alt]); return(technical_name) }
 
+blockcv_min_block_deg <- 0.2  # Minimum block size in approx degrees
+blockcv_max_block_deg <- 20   # Maximum block size in approx degrees
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -186,7 +188,10 @@ config <- list(
   log_file_path = log_file_path, log_level = log_level, log_append = log_append,
   log_to_console = log_to_console, log_console_level = log_console_level,
   # Display Names
-  get_display_name = get_display_name, core_var_display_names = core_var_display_names
+  get_display_name = get_display_name, core_var_display_names = core_var_display_names,
+  
+  blockcv_min_block_deg = blockcv_min_block_deg,  # Minimum block size in approx degrees
+  blockcv_max_block_deg = blockcv_max_block_deg   # Maximum block size in approx degrees
 )
 
 

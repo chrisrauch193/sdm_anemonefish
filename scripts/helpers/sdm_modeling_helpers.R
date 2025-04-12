@@ -5,7 +5,7 @@
 # - Path construction uses new config structure for target output.
 # - Added Variable Importance helper.
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr) # Added readr
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, ENMeval, blockCV)
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count)
@@ -172,31 +172,117 @@ generate_sdm_background <- function(predictor_stack, n_background, config, logge
 }
 
 
+# Inside sdm_modeling_helpers.R
 
-#' Tune SDM Hyperparameters using SDMtune gridSearch with k-fold CV
+# Ensure blockCV is loaded
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV)
+
+#' Tune SDM Hyperparameters using SDMtune gridSearch with SPATIAL k-fold CV (blockCV - Corrected)
 #' Returns the tuning object containing results and models.
+#' @param occs_coords Matrix or data frame of presence coordinates (lon, lat).
+#' @param predictor_stack SpatRaster stack for tuning.
+#' @param background_df Data frame of background coordinates (x, y).
+#' @param config Project configuration list.
 #' @param logger A log4r logger object (can be NULL).
-#' @param species_log_file Optional path to a species-specific log file.
+#' @param species_name Character string for the species name.
+#' @param species_log_file Optional path for detailed species logs.
 #' @return An `SDMtune` object containing tuning results, or NULL on error.
 run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species", species_log_file = NULL) {
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[TuningHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}# cat(msg, "\n")} }
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[TuningHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
   
-  hlog("INFO", paste("Tuning hyperparameters for", species_name, "using", config$sdm_n_folds, "-fold CV..."))
+  # k_folds_used <- config$sdm_n_folds # Use k from config
+  k_folds_used <- 5
+  hlog("INFO", paste("Tuning hyperparameters for", species_name, "using SPATIAL", k_folds_used, "-fold CV (blockCV)..."))
+  
   if (is.null(occs_coords) || nrow(occs_coords) < config$min_occurrences_sdm || is.null(predictor_stack) || is.null(background_df)) { hlog("ERROR", "Invalid inputs."); return(NULL) }
   
-  full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_df, env = predictor_stack, verbose = FALSE) }, error = function(e) { hlog("ERROR", paste("Failed prepareSWD:", e$message)); return(NULL)})
+  # --- 1. Prepare SWD object FIRST (handles NA removal) ---
+  full_swd_data <- tryCatch({
+    SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_df, env = predictor_stack, verbose = FALSE)
+  }, error = function(e) {
+    hlog("ERROR", paste("Failed prepareSWD:", e$message)); return(NULL)
+  })
   if (is.null(full_swd_data)) return(NULL)
+  hlog("DEBUG", paste("SWD object prepared. Rows:", nrow(full_swd_data@coords)))
   
-  folds <- tryCatch({ SDMtune::randomFolds(data = full_swd_data, k = config$sdm_n_folds, only_presence = FALSE, seed = 123)}, error = function(e){ hlog("ERROR", paste("Failed create k-folds:", e$message)); return(NULL)})
-  if(is.null(folds)) return(NULL)
+  # --- 2. Create sf object FROM the SWD data ---
+  swd_coords_df <- as.data.frame(full_swd_data@coords) # Extract coordinates from SWD
+  colnames(swd_coords_df) <- c("X", "Y")               # Ensure standard names
+  swd_coords_df$pa <- full_swd_data@pa                 # Extract pa status from SWD
   
-  hlog("DEBUG", "Training initial CV base model for gridSearch...")
-  initial_cv_model <- tryCatch({ SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = folds, progress = FALSE)}, error = function(e) { hlog("ERROR", paste("Failed train CV base model:", e$message)); return(NULL)})
-  if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
+  target_crs_str <- terra::crs(predictor_stack, proj=TRUE)
+  if (is.null(target_crs_str) || target_crs_str == "") {
+    hlog("WARN", "Could not reliably get CRS string from predictor stack. Assuming EPSG:4326 for sf object.")
+    target_crs_str <- "EPSG:4326"
+  }
   
+  swd_sf <- tryCatch({
+    sf::st_as_sf(swd_coords_df, coords = c("X", "Y"), crs = target_crs_str)
+  }, error = function(e){
+    hlog("ERROR", paste("Failed to create sf object from SWD data:", e$message)); NULL
+  })
+  if(is.null(swd_sf)) return(NULL)
+  hlog("DEBUG", paste("Created sf object for blockCV with", nrow(swd_sf), "rows (matching SWD)."))
+  
+  set.seed(123)
+  sac <- cv_spatial_autocor(r = predictor_stack,
+                            x = swd_sf,
+                            column = "pa")
+  hlog("INFO", paste("RANGE: ", sac$range))
+  
+  # --- 3. Create Spatial Folds using blockCV on the SWD-derived sf object ---
+  spatial_folds_blockcv <- tryCatch({
+    # blockCV::cv_spatial(x = swd_sf,             # Use sf object derived from SWD data
+    #                     column = "pa",
+    #                     rows_cols = c(8, 8),    # Adjust as needed
+    #                     k = k_folds_used,
+    #                     hexagon = TRUE,
+    #                     selection = "systematic",
+    #                     seed = 123,             # Added seed for reproducibility if selection="random"
+    #                     iteration = 1
+    # )
+    blockCV::cv_spatial(r = predictor_stack,
+                        x = swd_sf,             # Use sf object derived from SWD data
+                        column = "pa",
+                        size = sac$range,    # Adjust as needed
+                        k = k_folds_used,
+                        hexagon = TRUE,
+                        selection = "systematic",
+                        seed = 100,             # Added seed for reproducibility if selection="random"
+                        iteration = 100
+    )
+  }, error = function(e) {
+    hlog("ERROR", paste("Failed to create spatial folds using blockCV:", e$message)); NULL
+  })
+  
+  if(is.null(spatial_folds_blockcv)) {
+    hlog("ERROR", "blockCV::cv_spatial returned NULL.")
+    return(NULL)
+  }
+  # Optional: Check for points outside blocks again
+  if(!is.null(spatial_folds_blockcv$biomodTable)) {
+    excluded_points <- sum(is.na(spatial_folds_blockcv$biomodTable[,1]))
+    if(excluded_points > 0) {
+      hlog("WARN", paste(excluded_points, "points were not assigned to any spatial block by blockCV."))
+    }
+  }
+  hlog("DEBUG", paste("Spatial folds created using blockCV (k=", k_folds_used, ")."))
+  
+  # --- 4. Train initial CV model using the spatial folds ---
+  hlog("DEBUG", "Training initial CV base model for gridSearch (using spatial folds)...")
+  initial_cv_model <- tryCatch({
+    # Pass the SAME SWD object used to create the sf object
+    SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
+  }, error = function(e) {
+    hlog("ERROR", paste("Failed train CV base model with blockCV spatial folds:", e$message)); NULL
+  })
+  if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object with blockCV spatial folds."); return(NULL)}
+  
+  # --- 5. Hyperparameter Tuning (rest of the function is the same) ---
   hyper_grid <- config$sdm_tune_grid; tuning_results <- NULL
   tryCatch({
-    hlog("DEBUG", "Running SDMtune::gridSearch with k-fold CV...")
+    hlog("DEBUG", "Running SDMtune::gridSearch with blockCV spatial k-fold CV...")
+    # ... (rest of gridSearch, result processing, attribute setting - NO CHANGE NEEDED HERE) ...
     show_progress <- FALSE; if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE})}
     
     tuning_results <- SDMtune::gridSearch(model = initial_cv_model, hypers = hyper_grid, metric = config$sdm_evaluation_metric, save_models = TRUE, progress = show_progress, interactive = FALSE)
@@ -227,6 +313,7 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
   }, error = function(e) { hlog("ERROR", paste("SDMtune::gridSearch failed:", e$message)); return(NULL) })
 }
 
+# --- END OF MODIFIED HELPER ---
 
 #' Train Final SDM Model
 #' Returns the trained model object.
