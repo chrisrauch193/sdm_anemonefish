@@ -5,7 +5,7 @@
 # - Path construction uses new config structure for target output.
 # - Added Variable Importance helper.
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV) # Added readr
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2) # Added readr
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count)
@@ -174,182 +174,130 @@ generate_sdm_background <- function(predictor_stack, n_background, config, logge
 
 
 
-
-#' Calculate Spatial Autocorrelation Range and Suggest rows_cols (Adapted v2)
-#' Uses blockCV::cv_spatial_autocor to estimate range based on presence points
-#' and environmental data. Converts range to approx. degrees, clamps it,
-#' and suggests rows/cols based on the data extent and calculated size.
+#' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
 #'
-#' @param occs_coords Presence coordinates (matrix or df with lon, lat).
-#' @param predictor_stack SpatRaster stack used for extracting env data and extent.
-#' @param config Project configuration list (needs blockcv_min_block_deg, blockcv_max_block_deg).
-#' @param logger log4r logger object.
-#' @param species_log_file Path to species-specific log file.
-#' @return A list containing `block_size_deg` (final clamped size in degrees) and `suggested_rows_cols` (vector c(rows, cols)), or NULL on error.
-calculate_block_size_and_rows_cols <- function(occs_coords, predictor_stack, config, logger, species_log_file) { # Renamed function
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BlockSizeHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
-
-  hlog("DEBUG", "Calculating block size based on spatial autocorrelation...")
-
-  # --- Prepare presence data ---
-  # ... (Identical to previous version up to n_complete_pres check) ...
-   pres_coords_df <- as.data.frame(occs_coords); colnames(pres_coords_df) <- c("X", "Y")
-   target_crs_str <- terra::crs(predictor_stack, proj=TRUE); if (is.null(target_crs_str) || target_crs_str == "") target_crs_str <- "EPSG:4326"
-   pres_sf <- tryCatch({ sf::st_as_sf(pres_coords_df, coords = c("X", "Y"), crs = target_crs_str) }, error=function(e){hlog("ERROR", paste("Failed create presence sf:", e$message)); NULL}); if(is.null(pres_sf)) return(NULL)
-   pres_env_values <- tryCatch({ terra::extract(predictor_stack, pres_coords_df[,c("X","Y")], ID = FALSE) }, error=function(e){hlog("ERROR", paste("Failed extract pres env vals:", e$message)); NULL}); if(is.null(pres_env_values) || nrow(pres_env_values)!=nrow(pres_sf)) {hlog("ERROR", "Mismatch/fail extract pres env vals."); return(NULL)}
-   pres_sf_env <- cbind(pres_sf, pres_env_values); pres_sf_env_complete <- na.omit(pres_sf_env); n_complete_pres <- nrow(pres_sf_env_complete)
-   if (n_complete_pres < 10) {hlog("ERROR", paste("Too few presence points (", n_complete_pres, ") with complete env data for autocorrelation.")); return(NULL)}
-   hlog("DEBUG", paste("Using", n_complete_pres, "presence points for range estimation."))
-   max_points_autocor <- config$blockcv_autocor_maxpts %||% 5000
-   if (n_complete_pres > max_points_autocor) { hlog("DEBUG", paste("Subsampling to", max_points_autocor)); pres_sf_env_complete <- pres_sf_env_complete[sample(1:n_complete_pres, max_points_autocor), ] }
-  # --- Calculate Range ---
-  block_range_info <- NULL
-  tryCatch({
-    s2_status <- sf::sf_use_s2(); sf::sf_use_s2(FALSE); on.exit(sf::sf_use_s2(s2_status))
-    vars_to_check <- names(predictor_stack)
-    hlog("DEBUG", paste("Running cv_spatial_autocor on vars:", paste(vars_to_check, collapse=", ")))
-    block_range_info <- blockCV::cv_spatial_autocor(x = pres_sf_env_complete, column = vars_to_check, plot = FALSE, progress = FALSE)
-  }, error = function(e) { hlog("ERROR", paste("cv_spatial_autocor failed:", e$message)); NULL })
-  if(is.null(block_range_info) || is.null(block_range_info$range)) { hlog("ERROR", "cv_spatial_autocor failed or returned NULL range."); return(NULL) }
-  block_range_meters <- block_range_info$range
-
-  # --- Convert Range to Degrees and Clamp (Assuming Geographic CRS) ---
-  # **Important**: This part assumes blockCV returns meters and your stack is geographic
-  is_geo <- !sf::st_is_longlat(pres_sf) == FALSE
-  if(!is_geo) { hlog("WARN", "Predictor stack does not appear to have geographic CRS (Lat/Lon). Degree calculation for block size might be inappropriate. BlockCV might handle projected size directly if needed.")}
-  
-  block_size_deg <- (block_range_meters / 1000) / 111 # Approx degrees
-  hlog("DEBUG", paste("Autocor range:", round(block_range_meters,1),"m -> Approx.", round(block_size_deg, 3), "degrees"))
-  min_block_deg <- config$blockcv_min_block_deg %||% 0.2
-  max_block_deg <- config$blockcv_max_block_deg %||% 20
-  final_block_size_deg <- pmax(min_block_deg, pmin(max_block_deg, block_size_deg)) # Clamp
-  hlog("INFO", paste("Clamped block size (degrees):", round(final_block_size_deg, 3)))
-
-  # --- Calculate Suggested rows/cols ---
-  tryCatch({
-    data_extent <- terra::ext(predictor_stack) # Use extent of the full stack
-    extent_width_deg <- data_extent[2] - data_extent[1]
-    extent_height_deg <- data_extent[4] - data_extent[3]
-    
-    # Calculate number of blocks needed, ensuring at least 1
-    cols_needed <- max(1, round(extent_width_deg / final_block_size_deg))
-    rows_needed <- max(1, round(extent_height_deg / final_block_size_deg))
-    
-    suggested_rc <- c(rows_needed, cols_needed)
-    hlog("INFO", paste("Suggested rows x cols based on block size:", paste(suggested_rc, collapse="x")))
-    
-    # Return both the size (might be useful info) and the suggested rows/cols
-    return(list(block_size_deg = final_block_size_deg, suggested_rows_cols = suggested_rc))
-    
-  }, error = function(e) {
-      hlog("ERROR", paste("Failed to calculate suggested rows/cols:", e$message))
-      return(NULL)
-  })
-}
-
-
-# --- Keep `create_spatial_blocks_rc` from the PREVIOUS response (the one using rows_cols) ---
-# We will call this function, passing the *suggested* rows_cols
-
-#' Create Spatial Folds using blockCV with rows/cols (Adapted v3 - rows_cols)
-#' Creates k spatial folds using blockCV::cv_spatial based on rows/cols.
+#' Calculates block size via autocorrelation (if requested) and generates
+#' spatial_grid folds using the 'size' argument. Optionally handles fixed range.
+#' Directly returns the blockCV folds object ready for SDMtune::train.
 #'
 #' @param full_swd_data SWD object (output from SDMtune::prepareSWD).
-#' @param target_crs_str Character string representing the target CRS (e.g., WKT or EPSG).
-#' @param rows_cols_param Vector c(rows, cols) to use for block creation. # <<< ADDED ARGUMENT
-#' @param config Project configuration list (needs sdm_n_folds).
+#' @param predictor_stack SpatRaster stack (used for CRS).
+#' @param config Project configuration list.
 #' @param logger log4r logger object.
 #' @param species_log_file Path to species-specific log file.
 #' @return A blockCV folds object suitable for SDMtune::train, or NULL on error.
-create_spatial_blocks_rc <- function(full_swd_data, target_crs_str, rows_cols_param, config, logger, species_log_file) { # <<< ADDED rows_cols_param
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateBlocksHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
-
-  k_folds_used <- config$sdm_n_folds
-  hlog("DEBUG", paste("Creating spatial folds using blockCV::cv_spatial with rows_cols =", paste(rows_cols_param, collapse="x"), "..."))
-
-  # --- Create sf object FROM the SWD data ---
+create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
+  
+  # --- Extract Config Parameters ---
+  cv_method      <- config$sdm_spatial_cv_type_to_use
+  
+  nfolds         <- config$sdm_n_folds         %||% 5
+  auto_range     <- config$blockcv_auto_range  %||% TRUE
+  range          <- config$blockcv_range_m     %||% 200000
+  use_hexagon    <- config$blockcv_hexagon     %||% FALSE
+  selection_type <- config$blockcv_selection   %||% "systematic"
+  n_iterate      <- config$blockcv_n_iterate   %||% 300
+  lat_blocks     <- config$blockcv_lat_blocks  %||% 50
+  
+  hlog("DEBUG", paste("Attempting to create", nfolds, "spatial folds (blockCV simplified logic)..."))
+  
+  # --- Prepare sf object from SWD data ---
   swd_coords_df <- as.data.frame(full_swd_data@coords); colnames(swd_coords_df) <- c("X", "Y")
   swd_coords_df$pa <- full_swd_data@pa
+  target_crs_str <- terra::crs(predictor_stack, proj=TRUE); if (is.null(target_crs_str)|target_crs_str=="") target_crs_str <- "EPSG:4326"
   swd_sf <- tryCatch({ sf::st_as_sf(swd_coords_df, coords = c("X", "Y"), crs = target_crs_str) },
-                   error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
+                     error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
   if(is.null(swd_sf)) return(NULL)
-  hlog("DEBUG", paste("Created sf object for blockCV with", nrow(swd_sf), "rows."))
-
-  # --- Create Folds using rows_cols ---
-  spatial_folds <- tryCatch({
-    blockCV::cv_spatial(x = swd_sf,
-                        column = "pa",
-                        k = k_folds_used,
-                        hexagon = TRUE,         # Use hexagons
-                        rows_cols = rows_cols_param, # <<< USE PASSED rows_cols
-                        selection = "systematic",
-                        iteration = 1,
-                        seed = 123
-                       )
-  }, error = function(e) { hlog("ERROR", paste("cv_spatial failed:", e$message)); NULL })
-
+  hlog("DEBUG", paste("Created sf object with", nrow(swd_sf), "rows."))
+  
+  if (auto_range) {
+    hlog("INFO", "Using auto range")
+    sf::sf_use_s2(FALSE)
+    auto_cor <- blockCV::cv_spatial_autocor(x = sf::st_make_valid(swd_sf), column = "pa")
+    range = auto_cor$range
+    hlog("INFO", paste("Auto range result: ", range))
+  }
+  
+  
+  if (cv_method == "spatial_grid") {
+    hlog("INFO", "Generating grid blocks.")
+    hlog("INFO", paste("Final range to use: ", range))
+    spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, size = range,
+                                  hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type)
+    blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack) + geom_sf(data = swd_sf, 
+                                                                                   alpha = .5)
+  }
+  
+  if (cv_method == "spatial_lat") {
+    hlog("INFO", "Generating latitudinal blocks.")
+    spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, rows_cols = c(lat_blocks, 1),
+                                  hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, extend = 0.5)
+    blockCV::cv_plot(cv = spatial_folds, x = swd_sf) + geom_sf(data = swd_sf, 
+                                                               alpha = .5)
+  }
+  
+  if (cv_method == "random") {
+    hlog("INFO", "Generating random samples.")
+    spatial_folds <- SDMtune::randomFolds(size = range, k = nfolds, only_presence = TRUE)
+    # spatial_folds <- blockCV::cv_spatial(swd_sf, column = "pa", iteration = n_iterate, size = range,
+    #                                   hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type)
+  }
+  
   if(is.null(spatial_folds)) { hlog("ERROR", "blockCV::cv_spatial returned NULL."); return(NULL) }
-  # Check for excluded points
-  if(!is.null(spatial_folds$biomodTable)) { excluded_points <- sum(is.na(spatial_folds$biomodTable[,1])); if(excluded_points > 0) hlog("WARN", paste(excluded_points, "points not assigned to block.")) }
-  hlog("DEBUG", paste("Spatial folds created using blockCV (k=", k_folds_used, ", rows_cols=", paste(rows_cols_param, collapse="x"), ")."))
-
-  return(spatial_folds)
+  
+  hlog("DEBUG", paste("Spatial folds object created using blockCV (k=", nfolds, ")."))
+  
+  return(spatial_folds) # Return the blockCV object directly
 }
 
 
-
-
-
-
-
-#' Tune SDM Hyperparameters using Spatial Cross-Validation (SCV)
-#'
-#' Uses blockCV::spatialBlock to create spatial folds and SDMtune::gridSearch
 #' Tune SDM Hyperparameters using SDMtune gridSearch with SPATIAL k-fold CV
-#' (blockCV with autocorrelation range following iobis/mpaeu_sdm logic)
-#' Returns the tuning object containing results and models.
-run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species", species_log_file = NULL) {
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[TuningHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
+#' (Wrapper calling simplified blockCV helper)
+run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species", species_log_file = NULL) { # Name kept as requested
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SCV_TuneHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
   
   k_folds_used <- config$sdm_n_folds
-  hlog("INFO", paste("Tuning hyperparameters for", species_name, "using SPATIAL", k_folds_used, "-fold CV (blockCV with auto-range grid)...")) # Updated log
+  hlog("INFO", paste("Tuning hyperparameters for", species_name, "using SPATIAL", k_folds_used, "-fold CV (blockCV simplified)..."))
   
   if (is.null(occs_coords) || nrow(occs_coords) < config$min_occurrences_sdm || is.null(predictor_stack) || is.null(background_df)) { hlog("ERROR", "Invalid inputs for tuning."); return(NULL) }
   
-  # --- Step 1: Create the Block Grid based on autocorrelation ---
-  manual_grid_raster <- get_block_grid_adapted(occs_coords, predictor_stack, config, logger, species_log_file)
-  if(is.null(manual_grid_raster)) { hlog("ERROR", "Failed to create block grid. Cannot proceed with tuning."); return(NULL) }
-  
-  # --- Step 2: Prepare SWD object (handles NA removal) ---
+  # --- 1. Prepare SWD object (handles NA removal) ---
   full_swd_data <- tryCatch({
     SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_df, env = predictor_stack, verbose = FALSE)
   }, error = function(e) { hlog("ERROR", paste("Failed prepareSWD:", e$message)); return(NULL) })
   if (is.null(full_swd_data)) return(NULL)
   hlog("DEBUG", paste("SWD object prepared. Rows:", nrow(full_swd_data@coords)))
   
-  # --- Step 3: Create Spatial Folds using the generated grid ---
-  spatial_folds_blockcv <- mp_prepare_blocks_adapted(full_swd_data, manual_grid_raster, config, logger, species_log_file)
-  if(is.null(spatial_folds_blockcv)) { hlog("ERROR", "Failed to create spatial folds using the generated grid."); return(NULL) }
+  # --- 2. Create Spatial Folds using the new simplified helper ---
+  spatial_folds_blockcv <- create_spatial_cv_folds_simplified(
+    full_swd_data,
+    predictor_stack, # Pass stack for CRS info
+    config,
+    logger,
+    species_log_file
+  )
+  if(is.null(spatial_folds_blockcv)) { hlog("ERROR", "Failed to create spatial folds."); return(NULL) }
   
-  # --- Step 4: Train initial CV model ---
-  hlog("DEBUG", "Training initial CV base model for gridSearch (using spatial folds)...")
+  # --- 3. Train initial CV model ---
+  hlog("DEBUG", "Training initial CV base model for gridSearch...")
   initial_cv_model <- tryCatch({
     SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
   }, error = function(e) {
-    if (grepl("glmnet failed to complete regularization path", e$message, ignore.case = TRUE)) {
+    if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
       hlog("ERROR", paste("Failed train CV base model:", e$message))
-      hlog("ERROR", "  ---> glmnet error with auto-range blocks. Data issues within folds possible. Consider checking data or adjusting min/max block size.")
+      hlog("ERROR", "  ---> glmnet error occurred. Data issues within folds possible or block size might be problematic. Check data or adjust blockcv_auto_range/blockcv_range_m.")
     } else { hlog("ERROR", paste("Failed train CV base model:", e$message)) }
     return(NULL)
   })
   if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
   
-  # --- Step 5: Hyperparameter Tuning ---
+  # --- 4. Hyperparameter Tuning ---
   # ... (Rest of the function remains the same) ...
   hyper_grid <- config$sdm_tune_grid; tuning_results <- NULL
   tryCatch({
-    hlog("DEBUG", "Running SDMtune::gridSearch with blockCV (auto-range grid) spatial k-fold CV...")
-    show_progress <- FALSE # Default
+    hlog("DEBUG", "Running SDMtune::gridSearch with spatial k-fold CV...")
+    show_progress <- FALSE
     if (!is.null(logger)) { tryCatch({ current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num }, error=function(e){}) }
     
     tuning_results <- SDMtune::gridSearch(model = initial_cv_model, hypers = hyper_grid, metric = config$sdm_evaluation_metric, save_models = TRUE, progress = show_progress, interactive = FALSE)
@@ -358,6 +306,7 @@ run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, conf
     res_df <- tuning_results@results
     if(is.null(res_df) || nrow(res_df) == 0) { hlog("WARN", "No results found in tuning object."); return(NULL) }
     
+    # Result selection logic
     metric_base_upper <- toupper(config$sdm_evaluation_metric)
     target_metric_col <- if (tolower(config$sdm_evaluation_metric) == "aicc") "AICc" else paste0("test_", metric_base_upper)
     if (!target_metric_col %in% colnames(res_df)) { hlog("ERROR", paste("CV metric '", target_metric_col, "' not found. Available:", paste(colnames(res_df), collapse=", "))); print(head(res_df)); return(NULL) }
