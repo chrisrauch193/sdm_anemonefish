@@ -124,15 +124,6 @@ sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp
 sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
 apply_coral_mask <- TRUE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
-# Parallel & Logging
-use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1
-log_file_path <- file.path(log_dir_base, paste0("sdm_run_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".log"))
-log_level <- "INFO"; log_append <- TRUE; log_to_console <- TRUE; log_console_level <- "INFO"
-
-# Display Names
-core_var_display_names <- c(par_baseline_depthsurf_mean="Surface PAR", sws_baseline_depthsurf_mean="Surface Wind Stress", thetao_baseline_depthsurf_mean="Surface Temp.", thetao_baseline_depthmax_mean="Bottom Temp. Mean", thetao_baseline_depthmax_range="Bottom Temp. Range", thetao_baseline_depthmax_ltmin="Bottom Temp. LT Min", thetao_baseline_depthmax_ltmax="Bottom Temp. LT Max", so_baseline_depthmax_mean="Bottom Salinity", no3_baseline_depthmax_mean="Bottom Nitrate Mean", no3_baseline_depthmax_range="Bottom Nitrate Range", no3_baseline_depthmax_ltmin="Bottom Nitrate LT Min", no3_baseline_depthmax_ltmax="Bottom Nitrate LT Max", chl_baseline_depthmax_mean="Bottom Chlorophyll", phyc_baseline_depthmax_mean="Bottom Phytoplankton", o2_baseline_depthmax_mean="Bottom Oxygen Mean", o2_baseline_depthmax_range="Bottom Oxygen Range", o2_baseline_depthmax_ltmin="Bottom Oxygen LT Min", o2_baseline_depthmax_ltmax="Bottom Oxygen LT Max", ph_baseline_depthmax_mean="Bottom pH", bathymetry_mean="Bathymetry", distcoast="Distance to Coast", rugosity="Rugosity", slope="Slope", PC1="PC1", PC2="PC2", PC3="PC3", PC4="PC4", host_suitability_max="Max Host Suitability")
-get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup)) lookup <- config$core_var_display_names; if (technical_name %in% names(lookup)) return(lookup[technical_name]); core_name_cleaned <- gsub("_ssp\\d{3}_depth(surf|max)_dec\\d{3,3}", "_depth\\1", technical_name); core_name_cleaned <- gsub("_baseline(_\\d{4}_\\d{4})?", "", core_name_cleaned); if (core_name_cleaned %in% names(lookup)) return(lookup[core_name_cleaned]); core_name_alt <- gsub("(_mean|_range|_ltmin|_ltmax)$", "", core_name_cleaned); if (core_name_alt %in% names(lookup)) return(lookup[core_name_alt]); return(technical_name) }
-
 # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
 # ("spatial_grid" or "spatial_lat" or "random")
 sdm_spatial_cv_type_to_use <- "spatial_grid"
@@ -143,6 +134,40 @@ blockcv_hexagon <- FALSE
 blockcv_selection <- "random"
 blockcv_n_iterate <- 300
 blockcv_lat_blocks <- 20000
+
+# --- ENMeval Specific Settings ---
+enmeval_algorithms <- c("maxnet") # Algorithm(s) to run (e.g., c("maxnet", "bioclim"))
+enmeval_partitions <- "checkerboard1" # Partitioning method ("block", "checkerboard1", "checkerboard2", "jackknife", "randomkfold", "none", "testing")
+enmeval_partition_settings <- list( # Settings specific to the chosen partition method
+  # For checkerboard1/2: Define aggregation factor(s)
+  aggregation.factor = 25 # For checkerboard1 (one value) or c(val1, val2) for checkerboard2
+  # For block: Define orientation
+  # orientation = "lat_lon" # Options: "lat_lon", "lon_lat", "lat_lat", "lon_lon"
+  # For randomkfold: Define k
+  # kfolds = 5
+)
+enmeval_tuning_settings <- list( # Define the tuning parameters grid
+  fc = c("L", "LQ", "H", "LQH", "LQHP", "LQHPT"), # Maxnet feature classes
+  rm = seq(0.5, 4, 0.5)                             # Maxnet regularization multipliers
+  # Add grids for other algorithms if enmeval_algorithms includes them
+  # e.g., bioclim.threshold = c(0, 0.1, 0.3) # for bioclim
+)
+enmeval_num_cores <- 1 # Set > 1 for internal ENMeval parallel, but often better handled by future/furrr
+enmeval_pred_type <- "cloglog" # Prediction output type ("cloglog", "raw", "logistic")
+enmeval_clamp <- TRUE # Apply clamping during prediction?
+enmeval_selection_metric <- "AICc" # Metric for selecting best model ('AICc', 'or.mtp.avg', 'auc.val.avg', 'cbi.val.avg', or define a custom sequence)
+enmeval_delta_aicc_threshold <- 2 # Threshold for considering models equivalent based on delta AICc
+enmeval_omit_na_models_from_selection <- TRUE # Remove models with NA evaluation stats before selection?
+
+# Parallel & Logging
+use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1
+log_file_path <- file.path(log_dir_base, paste0("sdm_run_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".log"))
+log_level <- "INFO"; log_append <- TRUE; log_to_console <- TRUE; log_console_level <- "INFO"
+
+# Display Names
+core_var_display_names <- c(par_baseline_depthsurf_mean="Surface PAR", sws_baseline_depthsurf_mean="Surface Wind Stress", thetao_baseline_depthsurf_mean="Surface Temp.", thetao_baseline_depthmax_mean="Bottom Temp. Mean", thetao_baseline_depthmax_range="Bottom Temp. Range", thetao_baseline_depthmax_ltmin="Bottom Temp. LT Min", thetao_baseline_depthmax_ltmax="Bottom Temp. LT Max", so_baseline_depthmax_mean="Bottom Salinity", no3_baseline_depthmax_mean="Bottom Nitrate Mean", no3_baseline_depthmax_range="Bottom Nitrate Range", no3_baseline_depthmax_ltmin="Bottom Nitrate LT Min", no3_baseline_depthmax_ltmax="Bottom Nitrate LT Max", chl_baseline_depthmax_mean="Bottom Chlorophyll", phyc_baseline_depthmax_mean="Bottom Phytoplankton", o2_baseline_depthmax_mean="Bottom Oxygen Mean", o2_baseline_depthmax_range="Bottom Oxygen Range", o2_baseline_depthmax_ltmin="Bottom Oxygen LT Min", o2_baseline_depthmax_ltmax="Bottom Oxygen LT Max", ph_baseline_depthmax_mean="Bottom pH", bathymetry_mean="Bathymetry", distcoast="Distance to Coast", rugosity="Rugosity", slope="Slope", PC1="PC1", PC2="PC2", PC3="PC3", PC4="PC4", host_suitability_max="Max Host Suitability")
+get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup)) lookup <- config$core_var_display_names; if (technical_name %in% names(lookup)) return(lookup[technical_name]); core_name_cleaned <- gsub("_ssp\\d{3}_depth(surf|max)_dec\\d{3,3}", "_depth\\1", technical_name); core_name_cleaned <- gsub("_baseline(_\\d{4}_\\d{4})?", "", core_name_cleaned); if (core_name_cleaned %in% names(lookup)) return(lookup[core_name_cleaned]); core_name_alt <- gsub("(_mean|_range|_ltmin|_ltmax)$", "", core_name_cleaned); if (core_name_alt %in% names(lookup)) return(lookup[core_name_alt]); return(technical_name) }
+
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -191,12 +216,6 @@ config <- list(
   indo_pacific_bbox = indo_pacific_bbox, mask_background_points_to_coral = mask_background_points_to_coral,
   apply_depth_filter = apply_depth_filter, depth_min = depth_min, depth_max = depth_max,
   min_occurrences_sdm = min_occurrences_sdm,
-  # Parallel & Logging
-  num_cores = num_cores, use_parallel = use_parallel,
-  log_file_path = log_file_path, log_level = log_level, log_append = log_append,
-  log_to_console = log_to_console, log_console_level = log_console_level,
-  # Display Names
-  get_display_name = get_display_name, core_var_display_names = core_var_display_names,
   
   # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
   sdm_spatial_cv_type_to_use = sdm_spatial_cv_type_to_use, # Which generated block type to use? ("spatial_grid" or "spatial_lat" or "random")
@@ -205,7 +224,25 @@ config <- list(
   blockcv_hexagon = blockcv_hexagon,          # Use hexagonal blocks for spatial_grid?
   blockcv_selection = blockcv_selection, # Fold assignment method ("systematic" or "random")
   blockcv_n_iterate = blockcv_n_iterate,          # Iterations for blockCV fold assignment (more relevant for 'random' selection)
-  blockcv_lat_blocks = blockcv_lat_blocks       # Only needed if using "spatial_lat"
+  blockcv_lat_blocks = blockcv_lat_blocks,       # Only needed if using "spatial_lat"
+  
+  # --- ENMeval Settings ---
+  enmeval_algorithms = enmeval_algorithms, enmeval_partitions = enmeval_partitions,
+  enmeval_partition_settings = enmeval_partition_settings,
+  enmeval_tuning_settings = enmeval_tuning_settings, enmeval_num_cores = enmeval_num_cores,
+  enmeval_pred_type = enmeval_pred_type, enmeval_clamp = enmeval_clamp,
+  enmeval_selection_metric = enmeval_selection_metric,
+  enmeval_delta_aicc_threshold = enmeval_delta_aicc_threshold,
+  enmeval_omit_na_models_from_selection = enmeval_omit_na_models_from_selection,
+  
+  # Parallel & Logging
+  num_cores = num_cores, use_parallel = use_parallel,
+  log_file_path = log_file_path, log_level = log_level, log_append = log_append,
+  log_to_console = log_to_console, log_console_level = log_console_level,
+  # Display Names
+  get_display_name = get_display_name, core_var_display_names = core_var_display_names
+  
+
   
 )
 
@@ -213,14 +250,16 @@ config <- list(
 # --- Final Check and Print Key Paths ---
 cat("Configuration loaded and bundled into 'config' list.\n")
 cat("Base directory:", config$base_dir, "\n")
-cat("Intermediate SDM Output Dir:", config$sdm_output_dir_intermediate, "\n") # Added intermediate
-cat("Intermediate Models Dir:", config$models_dir_intermediate, "\n")      # Added intermediate
-cat("Intermediate Results Dir:", config$results_dir_intermediate, "\n")     # Added intermediate
+cat("ENMeval scripts directory:", config$enmeval_scripts_dir, "\n") #<-- Added
+cat("Intermediate SDM Output Dir:", config$sdm_output_dir_intermediate, "\n")
+cat("Intermediate Models Dir:", config$models_dir_intermediate, "\n")
+cat("Intermediate Results Dir:", config$results_dir_intermediate, "\n")
 cat("Target Prediction Base:", config$target_predictions_current_dir, "\n")
 cat("Target Results Base:", config$target_results_base, "\n")
 cat("Logging to file:", config$log_file_path, "(Level:", config$log_level, "Append:", config$log_append, ")\n")
 cat("Logging to console:", config$log_to_console, "(Level:", config$log_console_level,")\n")
 cat("Parallel execution:", config$use_parallel, "with", config$num_cores, "cores.\n")
 cat("Using predictors:", ifelse(config$use_pca_predictors, "PCA", "VIF"), "\n")
-
+cat("ENMeval algorithm(s):", paste(config$enmeval_algorithms, collapse=", "), "\n")
+cat("ENMeval partition method:", config$enmeval_partitions, "\n")
 #-------------------------------------------------------------------------------
