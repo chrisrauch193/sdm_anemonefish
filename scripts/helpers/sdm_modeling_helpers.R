@@ -5,7 +5,7 @@
 # - Path construction uses new config structure for target output.
 # - Added Variable Importance helper.
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr) # Added readr
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2) # Added readr
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count)
@@ -116,58 +116,189 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
 }
 
 
-#' Generate Background Points within the Raster Extent
+#' Generate Background Points within the Raster Extent (v2 - with Coral Masking)
+#' Can optionally mask sampling to coral reef areas defined in config.
 #' @param predictor_stack SpatRaster stack (used for extent/masking).
 #' @param n_background Number of points to attempt generating.
-#' @param config Project configuration list.
+#' @param config Project configuration list (needs `mask_background_points_to_coral`, `apply_coral_mask`, `coral_shapefile`). #<< ADDED config
 #' @param logger A log4r logger object (can be NULL).
 #' @param species_log_file Optional path to a species-specific log file.
 #' @param seed Optional random seed for reproducibility.
 #' @return A data frame of background point coordinates (x, y), or NULL on error.
-generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = NULL) {
+generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = NULL) { #<< ADDED config
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BgGenHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
   
-  hlog("INFO", paste("Generating", n_background, "background points..."))
+  hlog("DEBUG", paste("Generating up to", n_background, "background points...")) # Changed log level
   if (is.null(predictor_stack) || !inherits(predictor_stack, "SpatRaster") || terra::nlyr(predictor_stack) == 0) { hlog("ERROR", "Predictor stack is required."); return(NULL) }
   if (!is.null(seed)) set.seed(seed)
   
+  # --- Determine the layer to sample from ---
+  sampling_layer <- predictor_stack[[1]] # Start with the first layer
+  sampling_mask <- NULL # Initialize
+  
+  # Apply Coral Mask (if configured in config)
+  if (config$mask_background_points_to_coral && config$apply_coral_mask) {
+    hlog("DEBUG", "  Attempting coral reef mask for background point sampling...")
+    if (!is.null(config$coral_shapefile) && file.exists(config$coral_shapefile)) {
+      coral_areas_sf <- tryCatch({ sf::st_read(config$coral_shapefile, quiet = TRUE) }, error = function(e) {hlog("WARN",paste("   Failed load coral shapefile:", e$message)); NULL})
+      if (!is.null(coral_areas_sf)) {
+        coral_areas_vect <- tryCatch({ terra::vect(coral_areas_sf) }, error = function(e) {hlog("WARN",paste("   Failed convert coral sf to vect:", e$message)); NULL})
+        if (!is.null(coral_areas_vect)) {
+          if(terra::crs(coral_areas_vect) != terra::crs(sampling_layer)){
+            hlog("DEBUG", "    Projecting coral shapefile CRS...")
+            coral_areas_vect <- tryCatch(terra::project(coral_areas_vect, terra::crs(sampling_layer)), error = function(e){hlog("WARN",paste("     Failed project coral shapefile:", e$message)); NULL})
+          }
+          if(!is.null(coral_areas_vect)){
+            sampling_mask <- tryCatch(terra::mask(sampling_layer, coral_areas_vect), error=function(e){hlog("WARN",paste("     Failed mask sampling layer:", e$message)); NULL})
+            if(!is.null(sampling_mask)) { hlog("DEBUG", "  Coral reef mask applied for sampling.") }
+            else { hlog("WARN", "  Failed to create mask. Sampling from unmasked layer.") }
+          } else { hlog("WARN", "  CRS projection failed. Sampling from unmasked layer.") }
+        } else { hlog("WARN", "  sf to vect conversion failed. Sampling from unmasked layer.") }
+      } else { hlog("WARN", "  Coral shapefile loading failed. Sampling from unmasked layer.") }
+    } else { hlog("WARN", "  Coral shapefile path missing/invalid. Sampling from unmasked layer.") }
+  } else { hlog("DEBUG", "  Background point sampling not masked to coral reefs.") }
+  
+  # Use the masked layer if created, otherwise the original first layer
+  layer_to_sample_from <- if(!is.null(sampling_mask)) sampling_mask else sampling_layer
+  
+  # --- Sample Points ---
   tryCatch({
-    # Use first layer as mask
-    mask_layer <- predictor_stack[[1]]
-    bg_points <- terra::spatSample(mask_layer, size = n_background, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
-    if (nrow(bg_points) < n_background) { hlog("WARN", paste("Could only sample", nrow(bg_points), "background points (requested", n_background, ").")) }
-    if (nrow(bg_points) == 0) { hlog("ERROR", "Failed to generate any background points."); return(NULL) }
-    hlog("DEBUG", paste("Generated", nrow(bg_points), "background points."))
+    bg_points <- terra::spatSample(layer_to_sample_from, size = n_background, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
+    if (nrow(bg_points) < n_background) { hlog("WARN", paste("Could only sample", nrow(bg_points), "background points (requested", n_background, ", likely due to mask/raster extent).")) }
+    if (nrow(bg_points) == 0) { hlog("ERROR", "Failed to generate ANY background points from the sampling area."); return(NULL) }
+    hlog("INFO", paste("Generated", nrow(bg_points), "background points.")) # Changed log level
     return(as.data.frame(bg_points[, c("x", "y")]))
   }, error = function(e) { hlog("ERROR", paste("Error generating background points:", e$message)); return(NULL) })
 }
 
 
-#' Tune SDM Hyperparameters using SDMtune gridSearch with k-fold CV
-#' Returns the tuning object containing results and models.
-#' @param logger A log4r logger object (can be NULL).
-#' @param species_log_file Optional path to a species-specific log file.
-#' @return An `SDMtune` object containing tuning results, or NULL on error.
-run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species", species_log_file = NULL) {
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[TuningHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}# cat(msg, "\n")} }
+
+
+#' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
+#'
+#' Calculates block size via autocorrelation (if requested) and generates
+#' spatial_grid folds using the 'size' argument. Optionally handles fixed range.
+#' Directly returns the blockCV folds object ready for SDMtune::train.
+#'
+#' @param full_swd_data SWD object (output from SDMtune::prepareSWD).
+#' @param predictor_stack SpatRaster stack (used for CRS).
+#' @param config Project configuration list.
+#' @param logger log4r logger object.
+#' @param species_log_file Path to species-specific log file.
+#' @return A blockCV folds object suitable for SDMtune::train, or NULL on error.
+create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
   
-  hlog("INFO", paste("Tuning hyperparameters for", species_name, "using", config$sdm_n_folds, "-fold CV..."))
-  if (is.null(occs_coords) || nrow(occs_coords) < config$min_occurrences_sdm || is.null(predictor_stack) || is.null(background_df)) { hlog("ERROR", "Invalid inputs."); return(NULL) }
+  # --- Extract Config Parameters ---
+  cv_method      <- config$sdm_spatial_cv_type_to_use
   
-  full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_df, env = predictor_stack, verbose = FALSE) }, error = function(e) { hlog("ERROR", paste("Failed prepareSWD:", e$message)); return(NULL)})
+  nfolds         <- config$sdm_n_folds         %||% 5
+  auto_range     <- config$blockcv_auto_range  %||% TRUE
+  range          <- config$blockcv_range_m     %||% 200000
+  use_hexagon    <- config$blockcv_hexagon     %||% FALSE
+  selection_type <- config$blockcv_selection   %||% "systematic"
+  n_iterate      <- config$blockcv_n_iterate   %||% 300
+  lat_blocks     <- config$blockcv_lat_blocks  %||% 50
+  
+  hlog("DEBUG", paste("Attempting to create", nfolds, "spatial folds (blockCV simplified logic)..."))
+  
+  # --- Prepare sf object from SWD data ---
+  swd_coords_df <- as.data.frame(full_swd_data@coords); colnames(swd_coords_df) <- c("X", "Y")
+  swd_coords_df$pa <- full_swd_data@pa
+  target_crs_str <- terra::crs(predictor_stack, proj=TRUE); if (is.null(target_crs_str)|target_crs_str=="") target_crs_str <- "EPSG:4326"
+  swd_sf <- tryCatch({ sf::st_as_sf(swd_coords_df, coords = c("X", "Y"), crs = target_crs_str) },
+                     error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
+  if(is.null(swd_sf)) return(NULL)
+  hlog("DEBUG", paste("Created sf object with", nrow(swd_sf), "rows."))
+  
+  if (auto_range) {
+    hlog("INFO", "Using auto range")
+    sf::sf_use_s2(FALSE)
+    auto_cor <- blockCV::cv_spatial_autocor(x = sf::st_make_valid(swd_sf), column = "pa")
+    range = auto_cor$range
+    hlog("INFO", paste("Auto range result: ", range))
+  }
+  
+  
+  if (cv_method == "spatial_grid") {
+    hlog("INFO", "Generating grid blocks.")
+    hlog("INFO", paste("Final range to use: ", range))
+    spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, size = range,
+                                  hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type)
+    blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack) + geom_sf(data = swd_sf, 
+                                                                                   alpha = .5)
+  }
+  
+  if (cv_method == "spatial_lat") {
+    hlog("INFO", "Generating latitudinal blocks.")
+    spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, rows_cols = c(lat_blocks, 1),
+                                  hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, extend = 0.5)
+    blockCV::cv_plot(cv = spatial_folds, x = swd_sf) + geom_sf(data = swd_sf, 
+                                                               alpha = .5)
+  }
+  
+  if (cv_method == "random") {
+    hlog("INFO", "Generating random samples.")
+    spatial_folds <- SDMtune::randomFolds(size = range, k = nfolds, only_presence = TRUE)
+    # spatial_folds <- blockCV::cv_spatial(swd_sf, column = "pa", iteration = n_iterate, size = range,
+    #                                   hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type)
+  }
+  
+  if(is.null(spatial_folds)) { hlog("ERROR", "blockCV::cv_spatial returned NULL."); return(NULL) }
+  
+  hlog("DEBUG", paste("Spatial folds object created using blockCV (k=", nfolds, ")."))
+  
+  return(spatial_folds) # Return the blockCV object directly
+}
+
+
+#' Tune SDM Hyperparameters using SDMtune gridSearch with SPATIAL k-fold CV
+#' (Wrapper calling simplified blockCV helper)
+run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, config, logger, species_name = "species", species_log_file = NULL) { # Name kept as requested
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SCV_TuneHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
+  
+  k_folds_used <- config$sdm_n_folds
+  hlog("INFO", paste("Tuning hyperparameters for", species_name, "using SPATIAL", k_folds_used, "-fold CV (blockCV simplified)..."))
+  
+  if (is.null(occs_coords) || nrow(occs_coords) < config$min_occurrences_sdm || is.null(predictor_stack) || is.null(background_df)) { hlog("ERROR", "Invalid inputs for tuning."); return(NULL) }
+  
+  # --- 1. Prepare SWD object (handles NA removal) ---
+  full_swd_data <- tryCatch({
+    SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_df, env = predictor_stack, verbose = FALSE)
+  }, error = function(e) { hlog("ERROR", paste("Failed prepareSWD:", e$message)); return(NULL) })
   if (is.null(full_swd_data)) return(NULL)
+  hlog("DEBUG", paste("SWD object prepared. Rows:", nrow(full_swd_data@coords)))
   
-  folds <- tryCatch({ SDMtune::randomFolds(data = full_swd_data, k = config$sdm_n_folds, only_presence = FALSE, seed = 123)}, error = function(e){ hlog("ERROR", paste("Failed create k-folds:", e$message)); return(NULL)})
-  if(is.null(folds)) return(NULL)
+  # --- 2. Create Spatial Folds using the new simplified helper ---
+  spatial_folds_blockcv <- create_spatial_cv_folds_simplified(
+    full_swd_data,
+    predictor_stack, # Pass stack for CRS info
+    config,
+    logger,
+    species_log_file
+  )
+  if(is.null(spatial_folds_blockcv)) { hlog("ERROR", "Failed to create spatial folds."); return(NULL) }
   
+  # --- 3. Train initial CV model ---
   hlog("DEBUG", "Training initial CV base model for gridSearch...")
-  initial_cv_model <- tryCatch({ SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = folds, progress = FALSE)}, error = function(e) { hlog("ERROR", paste("Failed train CV base model:", e$message)); return(NULL)})
+  initial_cv_model <- tryCatch({
+    SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
+  }, error = function(e) {
+    if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
+      hlog("ERROR", paste("Failed train CV base model:", e$message))
+      hlog("ERROR", "  ---> glmnet error occurred. Data issues within folds possible or block size might be problematic. Check data or adjust blockcv_auto_range/blockcv_range_m.")
+    } else { hlog("ERROR", paste("Failed train CV base model:", e$message)) }
+    return(NULL)
+  })
   if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
   
+  # --- 4. Hyperparameter Tuning ---
+  # ... (Rest of the function remains the same) ...
   hyper_grid <- config$sdm_tune_grid; tuning_results <- NULL
   tryCatch({
-    hlog("DEBUG", "Running SDMtune::gridSearch with k-fold CV...")
-    show_progress <- FALSE; if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE})}
+    hlog("DEBUG", "Running SDMtune::gridSearch with spatial k-fold CV...")
+    show_progress <- FALSE
+    if (!is.null(logger)) { tryCatch({ current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num }, error=function(e){}) }
     
     tuning_results <- SDMtune::gridSearch(model = initial_cv_model, hypers = hyper_grid, metric = config$sdm_evaluation_metric, save_models = TRUE, progress = show_progress, interactive = FALSE)
     hlog("DEBUG", "SDMtune::gridSearch completed.")
@@ -175,27 +306,25 @@ run_sdm_tuning_kfold <- function(occs_coords, predictor_stack, background_df, co
     res_df <- tuning_results@results
     if(is.null(res_df) || nrow(res_df) == 0) { hlog("WARN", "No results found in tuning object."); return(NULL) }
     
+    # Result selection logic
     metric_base_upper <- toupper(config$sdm_evaluation_metric)
     target_metric_col <- if (tolower(config$sdm_evaluation_metric) == "aicc") "AICc" else paste0("test_", metric_base_upper)
     if (!target_metric_col %in% colnames(res_df)) { hlog("ERROR", paste("CV metric '", target_metric_col, "' not found. Available:", paste(colnames(res_df), collapse=", "))); print(head(res_df)); return(NULL) }
-    
     valid_metric_indices <- which(!is.na(res_df[[target_metric_col]]))
     if(length(valid_metric_indices) == 0) { hlog("WARN", paste("All values for metric '", target_metric_col, "' are NA.")); return(NULL) }
-    
     select_fun <- if (target_metric_col == "AICc") which.min else which.max
     best_row_relative_index <- select_fun(res_df[[target_metric_col]][valid_metric_indices])
     best_row_index <- valid_metric_indices[best_row_relative_index]
     if(length(best_row_index) == 0 || best_row_index > nrow(res_df)) { hlog("WARN", "Could not determine best model index, using first valid row."); best_row_index <- valid_metric_indices[1]}
-    
     best_hypers_df <- res_df[best_row_index, names(hyper_grid), drop = FALSE]
     hlog("INFO", paste("  Best hypers (Mean CV", target_metric_col,"=", round(res_df[[target_metric_col]][best_row_index], 4),"): ", paste(names(best_hypers_df), best_hypers_df[1,], collapse=", ")))
-    
-    # Add best hypers to the object attributes for easy access
     attr(tuning_results, "best_hypers") <- best_hypers_df
-    return(tuning_results) # Return the whole tuning object
+    return(tuning_results)
     
   }, error = function(e) { hlog("ERROR", paste("SDMtune::gridSearch failed:", e$message)); return(NULL) })
 }
+
+
 
 
 #' Train Final SDM Model
@@ -420,15 +549,17 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 }
 
 
-#' Calculate and Save Variable Importance (v8 - Requires SDMmodel & SWD)
-#' Calculates permutation importance using SDMtune::varImp.
-#' REQUIRES a single trained SDMmodel object and the corresponding SWD object
-#' used for training (passed to the 'test' argument for permutation).
-#' Saves to the target structure: data/output/vi_[groupname]/vi_[species]_[suffix].csv
+# scripts/helpers/sdm_modeling_helpers.R
+
+# ... (keep other functions above) ...
+
+#' Calculate and Save Variable Importance (v9 - Handles MaxNet Directly)
+#' Calculates permutation importance. For MaxNet models, it extracts the
+#' importance calculated during training. For other models, it uses SDMtune::varImp.
+#' Saves results to the target structure.
 #'
-#' @param final_model An `SDMmodel` object (output from `train_final_sdm` or `getBestModel`).
-#' @param training_swd An `SWD` object containing the full training data (presence + background)
-#'                     used for training the `final_model`. THIS IS REQUIRED.
+#' @param final_model An `SDMmodel` object (output from `train_final_sdm`).
+#' @param training_swd An `SWD` object (potentially needed for varImp on non-MaxNet).
 #' @param species_name_sanitized Sanitized species name.
 #' @param group_name Group name ("anemone" or "anemonefish").
 #' @param predictor_type_suffix Suffix indicating model type. Used in filename.
@@ -437,7 +568,7 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
 #' @export
-calculate_and_save_vi <- function(final_model, training_swd, # Both are now required
+calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept for potential use by other methods
                                   species_name_sanitized, group_name, predictor_type_suffix,
                                   config, logger, species_log_file = NULL) {
   
@@ -448,46 +579,79 @@ calculate_and_save_vi <- function(final_model, training_swd, # Both are now requ
     hlog("ERROR", "Invalid SDMmodel object provided for VI.")
     return(FALSE)
   }
-  if (is.null(training_swd) || !inherits(training_swd, "SWD")) {
-    hlog("ERROR", "Training SWD object required for varImp calculation.")
-    return(FALSE)
-  }
-  # --- End Input Validation ---
+  # Training SWD validation might only be strictly needed if varImp is called below
+  # if (is.null(training_swd) || !inherits(training_swd, "SWD")) {
+  #   hlog("ERROR", "Training SWD object required for varImp calculation.")
+  #   return(FALSE)
+  # }
   
-  hlog("INFO", "Calculating variable importance (permutation)...")
-  vi_results <- NULL
+  hlog("INFO", "Calculating/Extracting variable importance...")
+  vi_results_df <- NULL
+  
   tryCatch({
+    model_method <- final_model@method # Get the method used (e.g., "Maxnet")
     
-    # Determine if progress should be shown
-    show_progress <- FALSE
-    if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE}) }
-    
-    # --- Call varImp on the SDMmodel, providing test data (training SWD) ---
-    hlog("DEBUG", "Calling varImp on the provided SDMmodel object...")
-    metric_vi <- config$sdm_evaluation_metric %||% "auc"
-    if(tolower(metric_vi) == "aicc") metric_vi <- "auc" # Use AUC if AICc was tuning metric
-    
-    vi_results <- SDMtune::varImp(
-      model = final_model,        # Use the single model object
-      permut = 10,                # Number of permutations
-      progress = show_progress
-    )
-    # --- End varImp call ---
-    
-    if (is.null(vi_results) || nrow(vi_results) == 0) { hlog("WARN", "Variable importance calculation returned empty results."); return(TRUE)}
+    if (model_method == "Maxnet") {
+      hlog("DEBUG", "Maxnet model detected. Extracting pre-calculated permutation importance.")
+      # Access the raw maxnet model object stored by SDMtune
+      raw_maxnet_model <- final_model@model
+      if (!is.null(raw_maxnet_model) && !is.null(raw_maxnet_model$variable.importance)) {
+        # The importance is stored as a named numeric vector
+        importance_vector <- raw_maxnet_model$variable.importance
+        # Convert to a standard data frame
+        vi_results_df <- data.frame(
+          Variable = names(importance_vector),
+          Importance = as.numeric(importance_vector),
+          stringsAsFactors = FALSE
+        )
+        vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
+        hlog("DEBUG", "Successfully extracted MaxNet variable importance.")
+      } else {
+        hlog("WARN", "Could not find pre-calculated variable importance in the MaxNet model object.")
+      }
+    } else {
+      # Fallback to SDMtune::varImp for other methods (e.g., RF, BRT) - may need testing
+      hlog("DEBUG", paste("Model method is", model_method, ". Attempting SDMtune::varImp..."))
+      if (is.null(training_swd) || !inherits(training_swd, "SWD")) {
+        hlog("ERROR", "Training SWD object required for varImp calculation with non-MaxNet models.")
+        return(FALSE)
+      }
+      show_progress <- FALSE
+      if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE}) }
+      
+      vi_results <- SDMtune::varImp(
+        model = final_model,
+        permut = 10,
+        progress = show_progress,
+        test = training_swd # Provide test data for permutation
+      )
+      if (!is.null(vi_results) && nrow(vi_results) > 0) {
+        vi_results_df <- vi_results # Already a data frame
+        hlog("DEBUG", "SDMtune::varImp successful for non-MaxNet model.")
+      } else {
+        hlog("WARN", "SDMtune::varImp returned empty results for non-MaxNet model.")
+      }
+    }
     
     # --- Saving Logic ---
+    if (is.null(vi_results_df)) {
+      hlog("ERROR", "Variable importance could not be obtained.")
+      return(FALSE)
+    }
+    
     vi_subdir_name <- paste0("vi_", group_name)
-    target_subdir <- file.path(config$target_vi_base, vi_subdir_name)
+    # Use the correct target base directory from config
+    target_subdir <- file.path(config$target_vi_base, vi_subdir_name) # Use config$target_vi_base
     dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
     vi_filename <- paste0("vi_", species_name_sanitized, predictor_type_suffix, ".csv")
     vi_file_path <- file.path(target_subdir, vi_filename)
-    readr::write_csv(vi_results, vi_file_path)
+    
+    readr::write_csv(vi_results_df, vi_file_path)
     hlog("INFO", paste("Variable importance saved to:", vi_file_path))
     return(TRUE)
     
   }, error = function(e) {
-    hlog("ERROR", paste("Variable importance calculation/saving failed:", e$message))
+    hlog("ERROR", paste("Variable importance processing/saving failed:", e$message))
     # print(rlang::trace_back()) # Uncomment for deeper debugging
     return(FALSE)
   })

@@ -39,6 +39,12 @@ anemone_fish_association_file <- file.path(data_dir, "processed_anemonefish_host
 
 coral_shapefile <- file.path(shapefile_dir, "WCMC008_CoralReef2018_Py_v4_1.shp")
 
+# --- Cropping and Masking Settings ---
+apply_indo_pacific_crop <- TRUE # Set to TRUE to crop all rasters to the defined bbox
+indo_pacific_bbox <- c(xmin=30, xmax=180, ymin=-50, ymax=50) # Define Lon/Lat bounding box
+
+mask_background_points_to_coral <- TRUE # Set to TRUE to sample BG points ONLY from coral areas
+
 # --- Intermediate Output Paths (for temp files, RDS models/tuning) ---
 # Define these *before* the final config list is created
 sdm_output_dir_intermediate   <- file.path(data_dir, "sdm_output_intermediate") # Base for intermediates
@@ -73,8 +79,8 @@ force_rerun <- list(
   download_occurrences = FALSE,
   download_env = FALSE,
   preprocess_env_occurrence = FALSE,
-  run_standard_sdms = FALSE, # Set to TRUE to force rerun of SDMs
-  run_biotic_sdms = FALSE
+  run_standard_sdms = TRUE, # Set to TRUE to force rerun of SDMs
+  run_biotic_sdms = TRUE
 )
 
 occurrence_crs  <- "EPSG:4326"
@@ -115,7 +121,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 # SDM Settings
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
-sdm_evaluation_metric <- "auc"; background_points_n <- 10000; thinning_method <- "cell"
+sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
 apply_coral_mask <- TRUE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
@@ -127,6 +133,16 @@ log_level <- "INFO"; log_append <- TRUE; log_to_console <- TRUE; log_console_lev
 core_var_display_names <- c(par_baseline_depthsurf_mean="Surface PAR", sws_baseline_depthsurf_mean="Surface Wind Stress", thetao_baseline_depthsurf_mean="Surface Temp.", thetao_baseline_depthmax_mean="Bottom Temp. Mean", thetao_baseline_depthmax_range="Bottom Temp. Range", thetao_baseline_depthmax_ltmin="Bottom Temp. LT Min", thetao_baseline_depthmax_ltmax="Bottom Temp. LT Max", so_baseline_depthmax_mean="Bottom Salinity", no3_baseline_depthmax_mean="Bottom Nitrate Mean", no3_baseline_depthmax_range="Bottom Nitrate Range", no3_baseline_depthmax_ltmin="Bottom Nitrate LT Min", no3_baseline_depthmax_ltmax="Bottom Nitrate LT Max", chl_baseline_depthmax_mean="Bottom Chlorophyll", phyc_baseline_depthmax_mean="Bottom Phytoplankton", o2_baseline_depthmax_mean="Bottom Oxygen Mean", o2_baseline_depthmax_range="Bottom Oxygen Range", o2_baseline_depthmax_ltmin="Bottom Oxygen LT Min", o2_baseline_depthmax_ltmax="Bottom Oxygen LT Max", ph_baseline_depthmax_mean="Bottom pH", bathymetry_mean="Bathymetry", distcoast="Distance to Coast", rugosity="Rugosity", slope="Slope", PC1="PC1", PC2="PC2", PC3="PC3", PC4="PC4", host_suitability_max="Max Host Suitability")
 get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup)) lookup <- config$core_var_display_names; if (technical_name %in% names(lookup)) return(lookup[technical_name]); core_name_cleaned <- gsub("_ssp\\d{3}_depth(surf|max)_dec\\d{3,3}", "_depth\\1", technical_name); core_name_cleaned <- gsub("_baseline(_\\d{4}_\\d{4})?", "", core_name_cleaned); if (core_name_cleaned %in% names(lookup)) return(lookup[core_name_cleaned]); core_name_alt <- gsub("(_mean|_range|_ltmin|_ltmax)$", "", core_name_cleaned); if (core_name_alt %in% names(lookup)) return(lookup[core_name_alt]); return(technical_name) }
 
+# --- Spatial Cross-Validation Settings (Simplified blockCV) ---
+# ("spatial_grid" or "spatial_lat" or "random")
+sdm_spatial_cv_type_to_use <- "spatial_grid"
+blockcv_auto_range <- TRUE
+blockcv_range_m <- 300000
+blockcv_hexagon <- FALSE
+# ("systematic", "random")
+blockcv_selection <- "random"
+blockcv_n_iterate <- 300
+blockcv_lat_blocks <- 20000
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -170,16 +186,29 @@ config <- list(
   # SDM Settings
   sdm_method = sdm_method, sdm_partitions = sdm_partitions, sdm_n_folds = sdm_n_folds,
   sdm_tune_grid = sdm_tune_grid, sdm_evaluation_metric = sdm_evaluation_metric,
-  background_points_n = background_points_n, thinning_method = thinning_method,
-  apply_coral_mask = apply_coral_mask, apply_depth_filter = apply_depth_filter,
-  depth_min = depth_min, depth_max = depth_max, min_occurrences_sdm = min_occurrences_sdm,
+  pca_background_points_n = pca_background_points_n, background_points_n = background_points_n, thinning_method = thinning_method,
+  apply_coral_mask = apply_coral_mask, apply_indo_pacific_crop = apply_indo_pacific_crop,
+  indo_pacific_bbox = indo_pacific_bbox, mask_background_points_to_coral = mask_background_points_to_coral,
+  apply_depth_filter = apply_depth_filter, depth_min = depth_min, depth_max = depth_max,
+  min_occurrences_sdm = min_occurrences_sdm,
   # Parallel & Logging
   num_cores = num_cores, use_parallel = use_parallel,
   log_file_path = log_file_path, log_level = log_level, log_append = log_append,
   log_to_console = log_to_console, log_console_level = log_console_level,
   # Display Names
-  get_display_name = get_display_name, core_var_display_names = core_var_display_names
+  get_display_name = get_display_name, core_var_display_names = core_var_display_names,
+  
+  # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
+  sdm_spatial_cv_type_to_use = sdm_spatial_cv_type_to_use, # Which generated block type to use? ("spatial_grid" or "spatial_lat" or "random")
+  blockcv_auto_range = blockcv_auto_range,       # TRUE: Calculate range based on autocorrelation
+  blockcv_range_m = blockcv_range_m,        # Fixed range in METERS (used only if blockcv_auto_range = FALSE)
+  blockcv_hexagon = blockcv_hexagon,          # Use hexagonal blocks for spatial_grid?
+  blockcv_selection = blockcv_selection, # Fold assignment method ("systematic" or "random")
+  blockcv_n_iterate = blockcv_n_iterate,          # Iterations for blockCV fold assignment (more relevant for 'random' selection)
+  blockcv_lat_blocks = blockcv_lat_blocks       # Only needed if using "spatial_lat"
+  
 )
+
 
 # --- Final Check and Print Key Paths ---
 cat("Configuration loaded and bundled into 'config' list.\n")
