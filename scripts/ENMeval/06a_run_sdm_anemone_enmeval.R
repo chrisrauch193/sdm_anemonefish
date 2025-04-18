@@ -99,6 +99,8 @@ log4r::info(logger, paste("Loaded", nrow(species_df), "species from", basename(s
 process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_list, group_name, predictor_type_suffix, use_pca, occurrence_dir,
                                         tuning_scenario = "current") {
   
+  print("I GOT HERE")
+  
   species_name <- species_row$scientificName
   species_name_sanitized <- gsub(" ", "_", species_name)
   species_aphia_id <- species_row$AphiaID

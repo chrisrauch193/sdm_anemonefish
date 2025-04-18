@@ -80,7 +80,8 @@ force_rerun <- list(
   download_env = FALSE,
   preprocess_env_occurrence = FALSE,
   run_standard_sdms = TRUE, # Set to TRUE to force rerun of SDMs
-  run_biotic_sdms = TRUE
+  run_biotic_sdms = TRUE,
+  run_enmeval_sdms = TRUE
 )
 
 occurrence_crs  <- "EPSG:4326"
