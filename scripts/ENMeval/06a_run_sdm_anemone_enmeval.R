@@ -4,67 +4,53 @@
 # Uses Environmental Predictors (PCA or VIF-selected).
 # Includes Parallel Processing, Logging, Progress, and Species-Specific Logs.
 # Saves outputs to target structure defined in config.R.
-# Based on ENMeval vignette methodology (v1.1 - Internal Partitions).
+# Based on ENMeval vignette methodology (v1.3 - Correct Partition Arg Passing).
 #-------------------------------------------------------------------------------
-cat("--- Running Script 06a: Run Standard Anemone SDMs (ENMeval Workflow v1.1) ---\n")
+cat("--- Running Script 06a: Run Standard Anemone SDMs (ENMeval Workflow v1.3) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
-# Assuming config.R is in the parent 'scripts' directory relative to base_dir
-if (file.exists("../config.R")) { # Relative path from within ENMeval dir
-  source("../config.R")
-  if (!exists("config") || !is.list(config)) {
-    stop("FATAL: 'config' list object not found or invalid after sourcing config.R")
-  }
-} else {
-  # Fallback if run from base_dir
-  if (file.exists("scripts/config.R")) {
-    source("scripts/config.R")
-    if (!exists("config") || !is.list(config)) {
-      stop("FATAL: 'config' list object not found or invalid after sourcing config.R")
-    }
-  } else {
-    stop("FATAL: Configuration file 'scripts/config.R' not found.")
-  }
-}
+# ... (keep as is) ...
+if (file.exists("../config.R")) { source("../config.R") } else if (file.exists("scripts/config.R")) { source("scripts/config.R") } else { stop("FATAL: Configuration file 'scripts/config.R' not found.") }
+if (!exists("config") || !is.list(config)) { stop("FATAL: 'config' list object not found or invalid after sourcing config.R") }
 
 
 # --- 2. Load Required Packages ---
+# ... (keep as is) ...
 if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
-# Ensure all necessary packages are listed in config/01_install
 pacman::p_load(terra, sf, dplyr, readr, tools, stringr, log4r, future, furrr, progressr, ENMeval, predicts)
 
+
 # --- 3. Source Helper Functions ---
-# Paths relative to the base_dir defined in config
+# ... (keep as is) ...
 source(file.path(config$helpers_dir, "logging_setup.R"))
 source(file.path(config$helpers_dir, "env_processing_helpers.R"))
-source(file.path(config$helpers_dir, "sdm_modeling_helpers.R")) # Contains occ loading, bg gen, etc.
-source(file.path(config$helpers_dir, "sdm_modeling_helpers_enmeval.R")) # Contains ENMeval specific logic
+source(file.path(config$helpers_dir, "sdm_modeling_helpers.R"))
+source(file.path(config$helpers_dir, "sdm_modeling_helpers_enmeval.R"))
+
 
 # --- 4. Setup Logging ---
-logger <- setup_logger(log_file = config$log_file_path,
-                       log_level = config$log_level,
-                       append = config$log_append,
-                       log_to_console = config$log_to_console,
-                       console_level = config$log_console_level)
+# ... (keep as is) ...
+logger <- setup_logger(log_file = config$log_file_path, log_level = config$log_level, append = config$log_append, log_to_console = config$log_to_console, console_level = config$log_console_level)
+log4r::info(logger, "--- Starting Script 06a: Run Standard Anemone SDMs (ENMeval Workflow v1.3) ---")
 
-log4r::info(logger, "--- Starting Script 06a: Run Standard Anemone SDMs (ENMeval Workflow v1.1) ---")
 
 # --- 5. Define Group Specifics & Predictor Type ---
+# ... (keep as is) ...
 group_name <- "anemone"
-config$group_name <- group_name # Add to config dynamically for helpers
+config$group_name <- group_name
 species_list_file <- config$anemone_species_list_file
 occurrence_dir <- config$anemone_occurrence_dir
 use_pca <- config$use_pca_predictors
-# Adjust suffix to clearly indicate ENMeval run
 predictor_type_suffix <- ifelse(use_pca, "_enmeval_pca", "_enmeval_vif")
-
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
 log4r::info(logger, paste("--- Using Predictors:", ifelse(use_pca, "PCA Components", "VIF-Selected Variables"), "---"))
 log4r::info(logger, paste("--- ENMeval Algorithm(s):", paste(config$enmeval_algorithms, collapse=", "), "---"))
 log4r::info(logger, paste("--- ENMeval Partition Method:", config$enmeval_partitions, "---"))
 log4r::info(logger, paste("--- ENMeval Model Selection Metric:", config$enmeval_selection_metric, "---"))
 
+
 # --- 6. Load Predictor Information ---
+# ... (Keep this section as is) ...
 predictor_paths_or_list <- NULL
 if(use_pca) {
   pca_paths_rds <- config$pca_raster_paths_rds_path
@@ -79,27 +65,23 @@ if(use_pca) {
 }
 
 # --- 7. Create Intermediate Output Dirs ---
+# ... (Keep this section as is) ...
 base_intermediate_model_path <- config$models_dir_intermediate
 base_intermediate_results_path <- config$results_dir_intermediate
 base_species_log_path <- config$species_log_dir
 intermediate_models_dir <- file.path(base_intermediate_model_path, paste0(group_name, predictor_type_suffix))
 intermediate_results_dir <- file.path(base_intermediate_results_path, paste0(group_name, predictor_type_suffix))
-tryCatch({
-  dir.create(intermediate_models_dir, recursive = TRUE, showWarnings = FALSE)
-  dir.create(intermediate_results_dir, recursive = TRUE, showWarnings = FALSE)
-  dir.create(base_species_log_path, recursive = TRUE, showWarnings = FALSE)
-  log4r::debug(logger, paste("Intermediate dirs created/checked:", group_name, predictor_type_suffix))
+tryCatch({ dir.create(intermediate_models_dir, recursive = TRUE, showWarnings = FALSE); dir.create(intermediate_results_dir, recursive = TRUE, showWarnings = FALSE); dir.create(base_species_log_path, recursive = TRUE, showWarnings = FALSE); log4r::debug(logger, paste("Intermediate dirs created/checked:", group_name, predictor_type_suffix))
 }, error = function(e) { log4r::fatal(logger, paste("Failed create intermediate dirs:", e$message)); stop("Directory creation failed.") })
 
 # --- 8. Load Species List ---
+# ... (Keep this section as is) ...
 tryCatch({ species_df <- readr::read_csv(species_list_file, show_col_types = FALSE) }, error = function(e) { log4r::fatal(logger, paste("Failed load species list:", e$message)); stop("Species list failed.") })
 log4r::info(logger, paste("Loaded", nrow(species_df), "species from", basename(species_list_file)))
 
 # --- 9. Define Function to Process Single Species using ENMeval ---
 process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_list, group_name, predictor_type_suffix, use_pca, occurrence_dir,
                                         tuning_scenario = "current") {
-  
-  print("I GOT HERE")
   
   species_name <- species_row$scientificName
   species_name_sanitized <- gsub(" ", "_", species_name)
@@ -110,12 +92,15 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
   slog("INFO", paste0("--- Starting ENMeval processing (", predictor_type_suffix, ") ---"))
   
   # --- Define File Paths ---
+  # ... (Keep as is) ...
   intermediate_models_dir <- file.path(config$models_dir_intermediate, paste0(group_name, predictor_type_suffix))
   intermediate_results_dir <- file.path(config$results_dir_intermediate, paste0(group_name, predictor_type_suffix))
   optimal_model_file <- file.path(intermediate_models_dir, paste0("sdm_model_", species_name_sanitized, predictor_type_suffix, ".rds"))
   enmeval_rds_file <- file.path(intermediate_results_dir, paste0("enmevaluation_object_", species_name_sanitized, predictor_type_suffix, ".rds"))
   
+  
   # --- Load Predictors for Tuning Scenario ---
+  # ... (Keep as is) ...
   slog("DEBUG", "Loading tuning predictors for scenario:", tuning_scenario)
   tuning_predictor_stack <- NULL
   if(use_pca){
@@ -130,7 +115,9 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
   if(terra::crs(tuning_predictor_stack) == "") { msg <- paste0("Skipping: Tuning predictor stack has no CRS assigned."); slog("ERROR", msg); return(list(status = "error_tuning_predictors_crs", species = species_name, occurrence_count = NA, message = msg)) }
   slog("DEBUG", "Tuning predictor stack loaded. Names:", paste(names(tuning_predictor_stack), collapse=", "))
   
+  
   # --- Load, Clean, and Thin Occurrences ---
+  # ... (Keep as is) ...
   config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- tuning_predictor_stack
   slog("DEBUG", "Loading/cleaning/thinning occurrences.")
   occ_data_result <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger=NULL, species_log_file=species_log_file)
@@ -139,14 +126,18 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
   occurrence_count_after_thinning <- occ_data_result$count
   slog("INFO", "Occurrence count after clean/thin:", occurrence_count_after_thinning)
   
+  
   # --- Generate Background Points ---
+  # ... (Keep as is) ...
   slog("DEBUG", "Generating background points.")
   background_points_df <- generate_sdm_background(tuning_predictor_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
   if (is.null(background_points_df)) { msg <- paste0("Skipping: Failed background point generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
   colnames(background_points_df) <- c("longitude", "latitude")
   slog("DEBUG", "Background points generated:", nrow(background_points_df))
   
+  
   # --- Check if Final Model Already Exists ---
+  # ... (Keep as is) ...
   optimal_model <- NULL; enmeval_results <- NULL; load_existing_model <- FALSE
   if (!config$force_rerun$run_enmeval_sdms && file.exists(optimal_model_file)) { # Check ENMeval specific flag
     slog("INFO", "Optimal model file exists. Attempting to load...")
@@ -167,28 +158,65 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
     }
   }
   
+  
   # --- Run ENMeval Tuning if needed ---
   if (!load_existing_model) {
     slog("INFO", "Optimal model not found/invalid or rerun forced. Proceeding with ENMeval tuning.")
     
-    # Prepare arguments for ENMevaluate
+    # *** MODIFIED: Prepare arguments for ENMevaluate ***
+    # Start with base arguments
     enmeval_args <- list(
       occs = occs_coords_df,
       envs = tuning_predictor_stack,
       bg = background_points_df,
       tune.args = config$enmeval_tuning_settings,
       algorithm = config$enmeval_algorithms, # Vector of algorithms
-      partitions = config$enmeval_partitions,
+      partitions = config$enmeval_partitions, # The method name
       other.settings = list(pred.type = config$enmeval_pred_type, abs.auc.diff = FALSE, validation.bg = "partition"),
-      partition.settings = config$enmeval_partition_settings, # List of settings like ag. factor
+      #partition.settings = list(), # Initialize empty, specific args added below
       clamp = config$enmeval_clamp,
       parallel = config$use_parallel && config$enmeval_num_cores > 1,
       numCores = if(config$use_parallel && config$enmeval_num_cores > 1) config$enmeval_num_cores else 1,
-      quiet = TRUE # Set to FALSE for more verbose output
+      quiet = TRUE
     )
     
+    # Add partition-specific arguments DIRECTLY to the list
+    partition_method <- config$enmeval_partitions
+    if (partition_method %in% c("checkerboard1", "checkerboard2")) {
+      # Check if aggregation factor is correctly specified for the method
+      if (partition_method == "checkerboard1" && length(config$enmeval_aggregation_factor) != 1) {
+        msg <- paste0("Skipping: aggregation.factor must be a single value for checkerboard1."); slog("ERROR", msg); return(list(status = "error_partition_args", species=species_name, occ=occurrence_count_after_thinning, msg=msg))
+      }
+      if (partition_method == "checkerboard2" && length(config$enmeval_aggregation_factor) != 2) {
+        msg <- paste0("Skipping: aggregation.factor must be two values (vector) for checkerboard2."); slog("ERROR", msg); return(list(status = "error_partition_args", species=species_name, occ=occurrence_count_after_thinning, msg=msg))
+      }
+      enmeval_args$aggregation.factor <- config$enmeval_aggregation_factor
+      slog("DEBUG", paste("Adding aggregation.factor =", paste(config$enmeval_aggregation_factor, collapse=","), "for", partition_method))
+    } else if (partition_method == "block") {
+      enmeval_args$orientation <- config$enmeval_orientation %||% "lat_lon" # Use default if NULL
+      slog("DEBUG", paste("Adding orientation =", enmeval_args$orientation, "for block partitions"))
+    } else if (partition_method == "randomkfold") {
+      enmeval_args$kfolds <- config$enmeval_kfolds %||% 5 # Use default if NULL
+      slog("DEBUG", paste("Adding kfolds =", enmeval_args$kfolds, "for randomkfold partitions"))
+    } else if (partition_method %in% c("jackknife", "none", "testing")) {
+      # No specific arguments needed for these beyond 'partitions' itself
+      if (partition_method == "testing") {
+        # Need to handle adding occs.testing if it exists
+        # This would typically be prepared outside this function and passed in
+        # For now, assume it's not used or handled elsewhere
+        slog("WARN", "Partition method 'testing' selected but occs.testing handling not implemented here.")
+      }
+    } else if (partition_method == "user") {
+      msg <- paste0("Skipping: Partition method 'user' requires pre-defined groups passed via 'user.grp' argument (not implemented in this script)."); slog("ERROR", msg); return(list(status = "error_partition_args", species=species_name, occ=occurrence_count_after_thinning, msg=msg))
+    } else {
+      # This case should not be reached if config validation is done, but good to have
+      msg <- paste0("Skipping: Unknown partition method specified:", partition_method); slog("ERROR", msg); return(list(status = "error_partition_args", species=species_name, occ=occurrence_count_after_thinning, msg=msg))
+    }
+    # *** End MODIFIED args list ***
+    
+    
     # Run ENMevaluate
-    slog("INFO", paste("Running ENMevaluate for algorithm(s):", paste(enmeval_args$algorithm, collapse=", ")))
+    slog("INFO", paste("Running ENMevaluate with partition method:", partition_method))
     enmeval_results <- tryCatch({
       do.call(ENMeval::ENMevaluate, enmeval_args)
     }, error = function(e) {
@@ -196,6 +224,7 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
       NULL
     })
     
+    # ... (rest of the 'if (!load_existing_model)' block remains the same: check results, save, select model, save model) ...
     if (is.null(enmeval_results) || !inherits(enmeval_results, "ENMevaluation")) {
       msg <- paste0("Skipping: ENMevaluate did not return a valid result object."); slog("ERROR", msg)
       return(list(status = "error_enmeval_run", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
@@ -207,12 +236,7 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
       slog("WARN", "Failed to save ENMeval results table (CSV) to target directory.")
     }
     
-    # Select the best model (assuming only one algorithm run for now)
-    # If multiple algorithms were run, selection logic needs adjustment
-    if(length(config$enmeval_algorithms) > 1) {
-      slog("WARN", "Multiple algorithms run, selection logic currently selects best overall based on metric. Consider algorithm-specific selection.")
-      # Might need to filter results_df by algorithm before calling select_enmeval_model
-    }
+    # Select the best model
     selected_model_name <- select_enmeval_model(enmeval_results, config, logger=NULL, species_log_file=species_log_file)
     if (is.null(selected_model_name)) {
       msg <- paste0("Skipping: Failed to select an optimal model from ENMeval results."); slog("ERROR", msg)
@@ -231,9 +255,11 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
     if (!save_final_model(optimal_model, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) {
       slog("WARN", "Proceeding without saved intermediate model file, but predictions might fail if run separately.")
     }
+    
   } # End if !load_existing_model
   
   # --- Variable Importance ---
+  # ... (Keep as is) ...
   if (!is.null(optimal_model)) {
     slog("INFO", "Calculating/Extracting and saving variable importance...")
     vi_success <- calculate_and_save_vi_enmeval( # Use the ENMeval specific VI helper
@@ -250,6 +276,7 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
   }
   
   # --- Prediction Loop ---
+  # ... (Keep as is) ...
   predictions_made = 0; prediction_errors = 0
   scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
   slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios using optimal model."))
@@ -307,7 +334,9 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
     status <- if(load_existing_model) "error_loading_model" else "error_optimal_model_null"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
   }
   
+  
   # --- Prepare return status ---
+  # ... (Keep as is) ...
   final_status <- "success"
   status_message <- paste0("Finished ENMeval SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
   if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
@@ -315,17 +344,20 @@ process_species_sdm_enmeval <- function(species_row, config, predictor_paths_or_
   else { slog("INFO", status_message) }
   
   # --- Clean up ---
+  # ... (Keep as is) ...
   if (!is.null(tuning_predictor_stack)) rm(tuning_predictor_stack)
   if (!is.null(occs_coords_df)) rm(occs_coords_df)
   if (!is.null(background_points_df)) rm(background_points_df)
   if (!load_existing_model && !is.null(enmeval_results)) rm(enmeval_results)
   gc()
   
+  
   return(list(status = final_status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = status_message))
 } # End process_species_sdm_enmeval function
 
 
 # --- 10. Setup Parallel Backend & Run ---
+# ... (Keep as is) ...
 if (config$use_parallel && config$num_cores > 1 && !(config$enmeval_num_cores > 1) ) {
   log4r::info(logger, paste("Setting up parallel backend (furrr) with", config$num_cores, "cores."))
   gc(full=TRUE); future::plan(future::multisession, workers = config$num_cores, gc = TRUE)
@@ -376,8 +408,9 @@ results_list <- progressr::with_progress({
 
 log4r::info(logger, "Processing loop complete.")
 
+
 # --- 11. Process Results ---
-# (Result processing and summary logic remains the same)
+# ... (Keep as is) ...
 occurrence_counts <- list()
 success_count <- 0; error_count <- 0; skipped_count <- 0; partial_success_count <- 0
 log4r::info(logger, paste("--- Processing Results Summary (", group_name, predictor_type_suffix, "Models - ENMeval) ---"))
@@ -412,5 +445,5 @@ if (length(occurrence_counts) > 0) {
 } else { log4r::warn(logger, "No occurrence counts were recorded.") }
 
 future::plan(future::sequential); gc(full=TRUE) # Reset parallel plan
-log4r::info(logger, "--- Script 06a (ENMeval Workflow v1.1) finished. ---")
+log4r::info(logger, "--- Script 06a (ENMeval Workflow v1.3) finished. ---")
 #-------------------------------------------------------------------------------
