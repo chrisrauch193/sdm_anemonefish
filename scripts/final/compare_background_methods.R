@@ -5,12 +5,12 @@
 # 1. Global Background Sampling (potentially masked by coral, Indo-Pacific extent)
 # 2. Species-Specific Alpha Hull Extent Background Sampling
 # 4. Species-Specific OBIS Ecoregion/Depth Extent Background Sampling (Exact Replication Attempt)
-# Generates SEPARATE plots for each method.
-# Version: v3 - Fixes rbind error and geom_sf data input.
+# Generates SEPARATE plots for each method with CONSISTENT point styling.
+# Version: v4 - Consistent Plot Styling.
 #-------------------------------------------------------------------------------
 rm(list=ls()); gc() # Clean workspace
 
-cat("--- Running SDMtune Background Comparison Script (Separate Plots v3) ---\n")
+cat("--- Running SDMtune Background Comparison Script (Separate Plots v4 - Consistent Styling) ---\n")
 
 # --- 1. Setup ---
 cat("--- Loading Config and Packages ---\n")
@@ -104,7 +104,7 @@ cat("  Occurrence count:", nrow(occs_coords_df), "\n")
 cat("\n--- Running Method 1: GLOBAL Background Sampling & SDMtune ---\n")
 bg_global_df <- generate_sdm_background(global_predictor_stack, config$background_points_n, config, logger = NULL, seed = 123)
 if (is.null(bg_global_df)) stop("Failed global background generation.")
-colnames(bg_global_df) <- c("longitude", "latitude") # Ensure consistent naming
+colnames(bg_global_df) <- c("longitude", "latitude")
 cat("  Generated", nrow(bg_global_df), "global background points.\n")
 
 cat("  Running SDMtune (Global Background)...\n")
@@ -149,29 +149,8 @@ if(is.null(bg_species_result_hull)) {
   if (is.null(tuning_output_species_hull)) warning("SDMtune failed for Species Alpha Hull Background.")
 }
 
-# --- 7. Method 3: OBIS Ecoregion/Depth Background (Simplified - COMMENTED OUT) ---
-# cat("\n--- Skipping Method 3: OBIS Ecoregion/Depth (Simplified) ---\n")
-# bg_obis_result_simple <- generate_sdm_background_obis_extent(...) # Ensure helper exists if uncommented
-# tuning_output_obis_simple <- NULL
-# predictor_stack_obis_simple <- NULL
-# obis_calibration_vect_simple <- NULL
-# bg_obis_df_simple <- NULL
-# if(is.null(bg_obis_result_simple)) {
-#    cat("WARN: Failed OBIS-Simple background generation helper.\n")
-# } else {
-#   bg_obis_df_simple <- bg_obis_result_simple$background_points
-#   predictor_stack_obis_simple <- bg_obis_result_simple$species_specific_stack
-#   obis_calibration_vect_simple <- bg_obis_result_simple$calibration_polygon
-#   colnames(bg_obis_df_simple) <- c("longitude", "latitude")
-#   cat("  Generated", nrow(bg_obis_df_simple), "OBIS-Simple background points.\n")
-#   cat("  OBIS-Simple stack created.\n")
-#   cat("  Running SDMtune (OBIS-Simple Background)...\n")
-#   tuning_output_obis_simple <- run_sdm_tuning_scv(...)
-#   if (is.null(tuning_output_obis_simple)) warning("SDMtune failed for OBIS-Simple Background.")
-# }
-
-
-# --- 8. Method 4: OBIS Ecoregion/Depth Background (Exact Replication Attempt) ---
+# --- 7. Method 4: OBIS Ecoregion/Depth Background (Exact Replication Attempt) ---
+# (Renumbered from Method 3 in previous response as Method 3 was commented out)
 cat("\n--- Running Method 4: OBIS Ecoregion/Depth (Exact) Background Sampling & SDMtune ---\n")
 bg_obis_exact_result <- generate_sdm_background_obis_exact( # Ensure this helper exists
   occs_sf = occs_sf_clean,
@@ -208,105 +187,49 @@ if(is.null(bg_obis_exact_result)) {
 }
 
 
-# --- 9. Compare Results ---
+# --- 8. Compare Results ---
+# (Keep this section exactly as in the previous version, including saving the comparison table) ...
 cat("\n--- Comparing SDMtune Results ---\n")
 comparison_list <- list()
-
-# Global
-if (!is.null(tuning_output_global) && inherits(tuning_output_global, "SDMtune")) {
-  res_g <- tuning_output_global@results
-  metric_col <- paste0("test_", toupper(config$sdm_evaluation_metric))
-  best_g_idx <- if(tolower(config$sdm_evaluation_metric) == "aicc") which.min(res_g$AICc) else which.max(res_g[[metric_col]])
-  if(length(best_g_idx) == 0 || is.na(best_g_idx)) best_g_idx <- 1 # Fallback
-  comparison_list$GlobalBG <- res_g[best_g_idx, ]
-} else { cat("WARN: Global tuning results missing or invalid.\n") }
-
-# Species Hull
-if (!is.null(tuning_output_species_hull) && inherits(tuning_output_species_hull, "SDMtune")) {
-  res_s_hull <- tuning_output_species_hull@results
-  metric_col <- paste0("test_", toupper(config$sdm_evaluation_metric))
-  best_s_hull_idx <- if(tolower(config$sdm_evaluation_metric) == "aicc") which.min(res_s_hull$AICc) else which.max(res_s_hull[[metric_col]])
-  if(length(best_s_hull_idx) == 0 || is.na(best_s_hull_idx)) best_s_hull_idx <- 1 # Fallback
-  comparison_list$SpeciesHullBG <- res_s_hull[best_s_hull_idx, ]
-} else { cat("WARN: Species-specific (Alpha Hull) tuning results missing or invalid.\n") }
-
-# OBIS Exact (Method 4)
-if (!is.null(tuning_output_obis_exact) && inherits(tuning_output_obis_exact, "SDMtune")) {
-  res_o_exact <- tuning_output_obis_exact@results
-  metric_col <- paste0("test_", toupper(config$sdm_evaluation_metric))
-  best_o_exact_idx <- if(tolower(config$sdm_evaluation_metric) == "aicc") which.min(res_o_exact$AICc) else which.max(res_o_exact[[metric_col]])
-  if(length(best_o_exact_idx) == 0 || is.na(best_o_exact_idx)) best_o_exact_idx <- 1
-  comparison_list$OBISExactBG <- res_o_exact[best_o_exact_idx, ]
-} else { cat("WARN: OBIS-Exact tuning results missing or invalid.\n") }
-
-# Combine and Print Comparison
-if (length(comparison_list) > 0) {
-  comparison_df <- dplyr::bind_rows(comparison_list, .id = "Method")
-  metrics_to_show <- intersect(c("Method", "reg", "fc", "test_AUC", "test_TSS", "AICc"), names(comparison_df))
-  cat("Comparison of Best Models (selected by", config$sdm_evaluation_metric, "):\n")
-  print(comparison_df[, metrics_to_show], row.names = FALSE, digits = 4)
-  
-  # Save Comparison Table
-  comp_save_dir <- "plots" # Save in a 'plots' subdirectory relative to script
-  dir.create(comp_save_dir, showWarnings = FALSE)
-  comp_save_filename <- file.path(comp_save_dir, paste0("bg_comparison_table_", species_name_sanitized, "_sdmtune.csv"))
-  tryCatch(write.csv(comparison_df, comp_save_filename, row.names = FALSE), error=function(e){cat("WARN: Failed to save comparison table:", e$message, "\n")})
-  cat(paste("Comparison table saved to:", comp_save_filename, "\n"))
-  
-} else { cat("Could not generate comparison table.\n") }
+if (!is.null(tuning_output_global) && inherits(tuning_output_global, "SDMtune")) { res_g <- tuning_output_global@results; metric_col <- paste0("test_", toupper(config$sdm_evaluation_metric)); best_g_idx <- if(tolower(config$sdm_evaluation_metric) == "aicc") which.min(res_g$AICc) else which.max(res_g[[metric_col]]); if(length(best_g_idx) == 0 || is.na(best_g_idx)) best_g_idx <- 1; comparison_list$GlobalBG <- res_g[best_g_idx, ] } else { cat("WARN: Global tuning results missing or invalid.\n") }
+if (!is.null(tuning_output_species_hull) && inherits(tuning_output_species_hull, "SDMtune")) { res_s_hull <- tuning_output_species_hull@results; metric_col <- paste0("test_", toupper(config$sdm_evaluation_metric)); best_s_hull_idx <- if(tolower(config$sdm_evaluation_metric) == "aicc") which.min(res_s_hull$AICc) else which.max(res_s_hull[[metric_col]]); if(length(best_s_hull_idx) == 0 || is.na(best_s_hull_idx)) best_s_hull_idx <- 1; comparison_list$SpeciesHullBG <- res_s_hull[best_s_hull_idx, ] } else { cat("WARN: Species-specific (Alpha Hull) tuning results missing or invalid.\n") }
+if (!is.null(tuning_output_obis_exact) && inherits(tuning_output_obis_exact, "SDMtune")) { res_o_exact <- tuning_output_obis_exact@results; metric_col <- paste0("test_", toupper(config$sdm_evaluation_metric)); best_o_exact_idx <- if(tolower(config$sdm_evaluation_metric) == "aicc") which.min(res_o_exact$AICc) else which.max(res_o_exact[[metric_col]]); if(length(best_o_exact_idx) == 0 || is.na(best_o_exact_idx)) best_o_exact_idx <- 1; comparison_list$OBISExactBG <- res_o_exact[best_o_exact_idx, ] } else { cat("WARN: OBIS-Exact tuning results missing or invalid.\n") }
+if (length(comparison_list) > 0) { comparison_df <- dplyr::bind_rows(comparison_list, .id = "Method"); metrics_to_show <- intersect(c("Method", "reg", "fc", "test_AUC", "test_TSS", "AICc"), names(comparison_df)); cat("Comparison of Best Models (selected by", config$sdm_evaluation_metric, "):\n"); print(comparison_df[, metrics_to_show], row.names = FALSE, digits = 4); comp_save_dir <- "plots"; dir.create(comp_save_dir, showWarnings = FALSE); comp_save_filename <- file.path(comp_save_dir, paste0("bg_comparison_table_", species_name_sanitized, "_sdmtune.csv")); tryCatch(write.csv(comparison_df, comp_save_filename, row.names = FALSE), error=function(e){cat("WARN: Failed to save comparison table:", e$message, "\n")}); cat(paste("Comparison table saved to:", comp_save_filename, "\n")) } else { cat("Could not generate comparison table.\n") }
 
 
-# --- 10. Visualization ---
+# --- 9. Visualization ---
 cat("\n--- Generating Separate Comparison Plots ---\n")
 
-# --- 10a. Common Plotting Elements ---
+# --- 9a. Common Plotting Elements ---
 world_sf <- tryCatch(ne_countries(scale = "medium", returnclass = "sf"), error = function(e) { cat("Failed load rnaturalearth map."); NULL })
 plot_crs_terra <- terra::crs(global_predictor_stack)
 plot_crs_sf <- sf::st_crs(plot_crs_terra)
 occ_sf_plot <- sf::st_as_sf(occs_coords_df, coords = c("longitude", "latitude"), crs = plot_crs_sf)
 plot_raster_global <- global_predictor_stack[[1]] # Use first layer for background color
 
-# --- 10b. Determine Overall Plot Extent ---
-# Combine extents of all generated polygons and points for consistent axis limits
-all_geoms_for_extent_list <- list(occ_sf_plot) # Start with occurrences sf object
+# --- 9b. Define Overall Plot Extent ---
+# (Keep extent calculation based on polygons and points as before)
+all_geoms_for_extent_list <- list(occ_sf_plot)
 if(!is.null(species_calibration_vect_hull)) all_geoms_for_extent_list[[length(all_geoms_for_extent_list)+1]] <- sf::st_as_sf(species_calibration_vect_hull)
 if(!is.null(obis_calibration_vect_exact)) all_geoms_for_extent_list[[length(all_geoms_for_extent_list)+1]] <- sf::st_as_sf(obis_calibration_vect_exact)
-# Add background points sf objects to the list
 if(!is.null(bg_global_df)) all_geoms_for_extent_list[[length(all_geoms_for_extent_list)+1]] <- sf::st_as_sf(bg_global_df, coords = c("longitude", "latitude"), crs = plot_crs_sf)
 if(!is.null(bg_species_df_hull)) all_geoms_for_extent_list[[length(all_geoms_for_extent_list)+1]] <- sf::st_as_sf(bg_species_df_hull, coords = c("longitude", "latitude"), crs = plot_crs_sf)
 if(!is.null(bg_obis_exact_df)) all_geoms_for_extent_list[[length(all_geoms_for_extent_list)+1]] <- sf::st_as_sf(bg_obis_exact_df, coords = c("longitude", "latitude"), crs = plot_crs_sf)
-
-# Remove any NULL elements that might have resulted from failed operations
 all_geoms_for_extent_list <- all_geoms_for_extent_list[!sapply(all_geoms_for_extent_list, is.null)]
-
-if(length(all_geoms_for_extent_list) > 0) {
-  # Extract only the geometry column (sfc) from each sf object
-  geometries_list <- lapply(all_geoms_for_extent_list, sf::st_geometry)
-  # Combine the sfc objects into a single sfc
-  combined_geometries <- do.call(c, geometries_list)
-  # Calculate the bounding box of the combined geometries
-  combined_bbox_all <- sf::st_bbox(combined_geometries)
-} else {
-  cat("WARN: No valid geometries found to calculate plot extent. Using only occurrences.\n")
-  combined_bbox_all <- sf::st_bbox(occ_sf_plot) # Fallback
-}
-
-# Add buffer to combined bbox, checking for validity first
-if(all(is.finite(combined_bbox_all))) {
-  plot_bbox_buffered_all <- sf::st_bbox(sf::st_buffer(sf::st_as_sfc(combined_bbox_all), dist=5)) # 5-degree buffer
-} else {
-  cat("WARN: Combined bounding box is invalid after geometry combination. Using occurrence bbox + buffer for plot extent.\n")
-  plot_bbox_buffered_all <- sf::st_bbox(sf::st_buffer(occ_sf_plot, dist=5)) # Fallback
-}
+if(length(all_geoms_for_extent_list) > 0) { geometries_list <- lapply(all_geoms_for_extent_list, sf::st_geometry); combined_geometries <- do.call(c, geometries_list); combined_bbox_all <- sf::st_bbox(combined_geometries) } else { combined_bbox_all <- sf::st_bbox(occ_sf_plot) }
+if(all(is.finite(combined_bbox_all))) { plot_bbox_buffered_all <- sf::st_bbox(sf::st_buffer(sf::st_as_sfc(combined_bbox_all), dist=5)) } else { cat("WARN: Combined bounding box is invalid. Using occurrence bbox + buffer for plot extent.\n"); plot_bbox_buffered_all <- sf::st_bbox(sf::st_buffer(occ_sf_plot, dist=5)) }
 xmin_plot <- plot_bbox_buffered_all$xmin; xmax_plot <- plot_bbox_buffered_all$xmax
 ymin_plot <- plot_bbox_buffered_all$ymin; ymax_plot <- plot_bbox_buffered_all$ymax
 cat("DEBUG: Plot Limits - x:", xmin_plot, xmax_plot, "y:", ymin_plot, ymax_plot, "\n")
 
+# --- 9c. Define Consistent Aesthetics ---
+occ_color <- "red"; occ_shape <- 17; occ_size <- 1.8; occ_alpha <- 0.8
+bg_color <- "black"; bg_shape <- 1; bg_size <- 0.6; bg_alpha <- 0.5
 
-# --- 10c. Base Plot Function ---
+# --- 9d. Base Plot Function ---
 create_base_map <- function(world_data, raster_data, xlims, ylims, plot_crs) {
   p <- ggplot()
-  if(!is.null(world_data)) { p <- p + geom_sf(data = world_data, fill = "grey80", color = "white", size = 0.1) }
+  if(!is.null(world_data)) { p <- p + geom_sf(data = world_data, fill = "grey80", color = "white", linewidth = 0.1) } # Use linewidth
   p <- p +
     geom_spatraster(data = raster_data) +
     scale_fill_viridis_c(option = "plasma", na.value = NA, name = names(raster_data)[1]) +
@@ -316,20 +239,15 @@ create_base_map <- function(world_data, raster_data, xlims, ylims, plot_crs) {
   return(p)
 }
 
-# --- 10d. Plot for Method 1: Global Background ---
+# --- 9e. Plot for Method 1: Global Background ---
 cat("  Generating Plot 1: Global Background\n")
-# Convert background points to sf if not already done
 bg_sf_global_plot <- if(!is.null(bg_global_df)) sf::st_as_sf(bg_global_df, coords = c("longitude", "latitude"), crs = plot_crs_sf) else NULL
 
 plot_global <- create_base_map(world_sf, plot_raster_global, c(xmin_plot, xmax_plot), c(ymin_plot, ymax_plot), plot_crs_sf) +
-  { if (!is.null(bg_sf_global_plot)) geom_sf(data = bg_sf_global_plot, aes(color = "Global BG", shape = "Global BG", size = "Global BG", alpha = "Global BG")) } +
-  geom_sf(data = occ_sf_plot, aes(color = "Occurrence", shape = "Occurrence", size = "Occurrence", alpha = "Occurrence")) +
-  scale_shape_manual(name = "Data Type", values = c("Global BG" = 1, "Occurrence" = 17)) +
-  scale_size_manual(name = "Data Type", values = c("Global BG" = 0.8, "Occurrence" = 2.0)) +
-  scale_alpha_manual(name = "Data Type", values = c("Global BG" = 0.4, "Occurrence" = 0.8)) +
-  scale_color_manual(name = "Data Type", values = c("Global BG" = "grey50", "Occurrence" = "red")) +
-  guides(shape = guide_legend(title = "Data Type"), color = guide_legend(title = "Data Type"), size = "none", alpha = "none") +
-  labs(title = paste("Background Comparison:", species_name), subtitle = "Method 1: Global Background Points", x = "Longitude", y = "Latitude")
+  { if (!is.null(bg_sf_global_plot)) geom_sf(data = bg_sf_global_plot, color = bg_color, shape = bg_shape, size = bg_size, alpha = bg_alpha) } + # Fixed aesthetics
+  geom_sf(data = occ_sf_plot, color = occ_color, shape = occ_shape, size = occ_size, alpha = occ_alpha) + # Fixed aesthetics
+  labs(title = paste("Background Comparison:", species_name), subtitle = "Method 1: Global Background Points", x = "Longitude", y = "Latitude") +
+  theme(legend.position = "right") # Only show raster legend
 
 print(plot_global)
 plot_save_dir <- "plots"; dir.create(plot_save_dir, showWarnings = FALSE)
@@ -337,25 +255,21 @@ plot_save_filename_global <- file.path(plot_save_dir, paste0("bg_plot_global_", 
 ggsave(plot_save_filename_global, plot = plot_global, width = 11, height = 7, dpi = 300, bg = "white")
 cat(paste("  Plot 1 saved to:", plot_save_filename_global, "\n"))
 
-# --- 10e. Plot for Method 2: Alpha Hull Background ---
+# --- 9f. Plot for Method 2: Alpha Hull Background ---
 if (!is.null(predictor_stack_species_hull)) {
   cat("  Generating Plot 2: Alpha Hull Background\n")
-  # Convert background points to sf if not already done
   bg_sf_species_hull_plot <- if(!is.null(bg_species_df_hull)) sf::st_as_sf(bg_species_df_hull, coords = c("longitude", "latitude"), crs = plot_crs_sf) else NULL
   alpha_hull_sf_plot <- if (!is.null(species_calibration_vect_hull)) sf::st_as_sf(species_calibration_vect_hull) else NULL
   if(!is.null(alpha_hull_sf_plot) && sf::st_crs(alpha_hull_sf_plot) != plot_crs_sf) alpha_hull_sf_plot <- sf::st_transform(alpha_hull_sf_plot, crs=plot_crs_sf)
   
   plot_hull <- create_base_map(world_sf, predictor_stack_species_hull[[1]], c(xmin_plot, xmax_plot), c(ymin_plot, ymax_plot), plot_crs_sf) +
-    { if (!is.null(alpha_hull_sf_plot)) geom_sf(data = alpha_hull_sf_plot, fill = NA, color = "blue", linewidth = 0.8, aes(linetype = "Alpha Hull Extent")) } +
-    { if (!is.null(bg_sf_species_hull_plot)) geom_sf(data = bg_sf_species_hull_plot, aes(color = "Alpha Hull BG", shape = "Alpha Hull BG", size = "Alpha Hull BG", alpha = "Alpha Hull BG")) } +
-    geom_sf(data = occ_sf_plot, aes(color = "Occurrence", shape = "Occurrence", size = "Occurrence", alpha = "Occurrence")) +
-    scale_shape_manual(name = "Data Type", values = c("Alpha Hull BG" = 16, "Occurrence" = 17)) +
-    scale_size_manual(name = "Data Type", values = c("Alpha Hull BG" = 0.5, "Occurrence" = 2.0)) +
-    scale_alpha_manual(name = "Data Type", values = c("Alpha Hull BG" = 0.6, "Occurrence" = 0.8)) +
-    scale_color_manual(name = "Data Type", values = c("Alpha Hull BG" = "black", "Occurrence" = "red")) +
-    scale_linetype_manual(name = "Extent", values = c("Alpha Hull Extent" = "solid")) +
-    guides(shape = guide_legend(title = "Data Type"), color = guide_legend(title = "Data Type"), size = "none", alpha = "none", linetype = guide_legend(title = "Extent")) +
-    labs(title = paste("Background Comparison:", species_name), subtitle = "Method 2: Alpha Hull Background Points & Extent", x = "Longitude", y = "Latitude")
+    { if (!is.null(alpha_hull_sf_plot)) geom_sf(data = alpha_hull_sf_plot, fill = NA, color = "blue", linewidth = 0.8, aes(linetype = "Calibration Extent")) } +
+    { if (!is.null(bg_sf_species_hull_plot)) geom_sf(data = bg_sf_species_hull_plot, color = bg_color, shape = bg_shape, size = bg_size, alpha = bg_alpha) } + # Fixed aesthetics
+    geom_sf(data = occ_sf_plot, color = occ_color, shape = occ_shape, size = occ_size, alpha = occ_alpha) + # Fixed aesthetics
+    scale_linetype_manual(name = "Extent", values = c("Calibration Extent" = "solid")) +
+    guides(linetype = guide_legend(title = "Extent")) +
+    labs(title = paste("Background Comparison:", species_name), subtitle = "Method 2: Alpha Hull Background Points & Extent", x = "Longitude", y = "Latitude") +
+    theme(legend.position = "right")
   
   print(plot_hull)
   plot_save_filename_hull <- file.path(plot_save_dir, paste0("bg_plot_hull_", species_name_sanitized, "_sdmtune.png"))
@@ -364,25 +278,21 @@ if (!is.null(predictor_stack_species_hull)) {
 } else { cat("WARN: Skipping Alpha Hull plot due to missing data.\n") }
 
 
-# --- 10f. Plot for Method 4: OBIS Exact Background ---
+# --- 9g. Plot for Method 4: OBIS Exact Background ---
 if (!is.null(predictor_stack_obis_exact)) {
   cat("  Generating Plot 4: OBIS Exact Background\n")
-  # Convert background points to sf if not already done
   bg_sf_obis_exact_plot <- if(!is.null(bg_obis_exact_df)) sf::st_as_sf(bg_obis_exact_df, coords = c("longitude", "latitude"), crs = plot_crs_sf) else NULL
   obis_calibration_sf_plot <- if (!is.null(obis_calibration_vect_exact)) sf::st_as_sf(obis_calibration_vect_exact) else NULL
   if(!is.null(obis_calibration_sf_plot) && sf::st_crs(obis_calibration_sf_plot) != plot_crs_sf) obis_calibration_sf_plot <- sf::st_transform(obis_calibration_sf_plot, crs=plot_crs_sf)
   
   plot_obis_exact <- create_base_map(world_sf, predictor_stack_obis_exact[[1]], c(xmin_plot, xmax_plot), c(ymin_plot, ymax_plot), plot_crs_sf) +
-    { if (!is.null(obis_calibration_sf_plot)) geom_sf(data = obis_calibration_sf_plot, fill = NA, color = "green", linewidth = 0.8, aes(linetype = "OBIS Extent")) } +
-    { if (!is.null(bg_sf_obis_exact_plot)) geom_sf(data = bg_sf_obis_exact_plot, aes(color = "OBIS Exact BG", shape = "OBIS Exact BG", size = "OBIS Exact BG", alpha = "OBIS Exact BG")) } +
-    geom_sf(data = occ_sf_plot, aes(color = "Occurrence", shape = "Occurrence", size = "Occurrence", alpha = "Occurrence")) +
-    scale_shape_manual(name = "Data Type", values = c("OBIS Exact BG" = 16, "Occurrence" = 17)) +
-    scale_size_manual(name = "Data Type", values = c("OBIS Exact BG" = 0.5, "Occurrence" = 2.0)) +
-    scale_alpha_manual(name = "Data Type", values = c("OBIS Exact BG" = 0.6, "Occurrence" = 0.8)) +
-    scale_color_manual(name = "Data Type", values = c("OBIS Exact BG" = "darkorange", "Occurrence" = "red")) +
-    scale_linetype_manual(name = "Extent", values = c("OBIS Extent" = "dashed")) +
-    guides(shape = guide_legend(title = "Data Type"), color = guide_legend(title = "Data Type"), size = "none", alpha = "none", linetype = guide_legend(title = "Extent")) +
-    labs(title = paste("Background Comparison:", species_name), subtitle = "Method 4: OBIS Ecoregion/Depth Background Points & Extent", x = "Longitude", y = "Latitude")
+    { if (!is.null(obis_calibration_sf_plot)) geom_sf(data = obis_calibration_sf_plot, fill = NA, color = "green", linewidth = 0.8, aes(linetype = "Calibration Extent")) } +
+    { if (!is.null(bg_sf_obis_exact_plot)) geom_sf(data = bg_sf_obis_exact_plot, color = bg_color, shape = bg_shape, size = bg_size, alpha = bg_alpha) } + # Fixed aesthetics
+    geom_sf(data = occ_sf_plot, color = occ_color, shape = occ_shape, size = occ_size, alpha = occ_alpha) + # Fixed aesthetics
+    scale_linetype_manual(name = "Extent", values = c("Calibration Extent" = "dashed")) +
+    guides(linetype = guide_legend(title = "Extent")) +
+    labs(title = paste("Background Comparison:", species_name), subtitle = "Method 4: OBIS Ecoregion/Depth Background Points & Extent", x = "Longitude", y = "Latitude") +
+    theme(legend.position = "right")
   
   print(plot_obis_exact)
   plot_save_filename_obis_exact <- file.path(plot_save_dir, paste0("bg_plot_obis_exact_", species_name_sanitized, "_sdmtune.png"))
