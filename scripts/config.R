@@ -136,7 +136,7 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
 # ("spatial_grid" or "spatial_lat" or "random")
 sdm_spatial_cv_type_to_use <- "spatial_grid"
-blockcv_auto_range <- TRUE
+blockcv_auto_range <- FALSE
 blockcv_range_m <- 300000
 blockcv_hexagon <- FALSE
 # ("systematic", "random")

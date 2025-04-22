@@ -125,7 +125,7 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
 #' @param species_log_file Optional path to a species-specific log file.
 #' @param seed Optional random seed for reproducibility.
 #' @return A data frame of background point coordinates (x, y), or NULL on error.
-generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = NULL) { #<< ADDED config
+generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = 123) { #<< ADDED config
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BgGenHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
   
   hlog("DEBUG", paste("Generating up to", n_background, "background points...")) # Changed log level
@@ -170,6 +170,124 @@ generate_sdm_background <- function(predictor_stack, n_background, config, logge
     return(as.data.frame(bg_points[, c("x", "y")]))
   }, error = function(e) { hlog("ERROR", paste("Error generating background points:", e$message)); return(NULL) })
 }
+
+
+
+
+#' Generate Background Points within Species-Specific Extent
+#'
+#' Creates a buffered alpha hull, masks global predictors, applies depth filter,
+#' and then calls the original generate_sdm_background function.
+#'
+#' @param occs_sf sf object with cleaned, thinned occurrence points.
+#' @param global_predictor_stack SpatRaster stack covering the global study area.
+#' @param config Project configuration list.
+#' @param logger A log4r logger object (can be NULL).
+#' @param species_log_file Optional path to species-specific log file.
+#' @param seed_offset Integer offset to add to the species AphiaID for background sampling seed.
+#' @return A list containing `$background_points` (data frame),
+#'         `$species_specific_stack` (SpatRaster), `$calibration_polygon` (SpatVector),
+#'         or NULL on error.
+generate_sdm_background_species_extent <- function(occs_sf, global_predictor_stack, config, logger = NULL, species_log_file = NULL, seed_offset = 0) {
+  
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BgSpecExtentHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
+  
+  if (!requireNamespace("concaveman", quietly = TRUE)) { hlog("ERROR", "Package 'concaveman' needed."); return(NULL) }
+  if (!inherits(occs_sf, "sf") || nrow(occs_sf) == 0) { hlog("ERROR", "Valid sf occurrence object required."); return(NULL) }
+  if (!inherits(global_predictor_stack, "SpatRaster")) { hlog("ERROR", "Valid global SpatRaster required."); return(NULL) }
+  
+  print("GOT HEREE")
+  
+  species_aphia_id_internal <- tryCatch(occs_sf$AphiaID[1], error = function(e) { hlog("WARN", "AphiaID missing from occs_sf, using random seed."); sample.int(1e6, 1) })
+  
+  print("GOT HEREEasdasd")
+  
+  # --- Create Calibration Polygon ---
+  hlog("INFO", "Creating species-specific calibration polygon...")
+  species_calibration_vect <- NULL
+  tryCatch({
+    target_crs_proj <- "+proj=moll +lon_0=125 +datum=WGS84" # Consider adjusting center
+    if(sf::st_crs(occs_sf) == sf::st_crs(NA)) { sf::st_crs(occs_sf) <- config$occurrence_crs } # Assign CRS if missing
+    occ_sf_proj <- sf::st_transform(occs_sf, crs = target_crs_proj)
+    
+    concavity_value <- 2.5; buffer_km <- 150 # Example parameters
+    hlog("DEBUG", paste("  Using Concavity:", concavity_value, "| Buffer:", buffer_km, "km"))
+    
+    if (nrow(occ_sf_proj) >= 5) { ahull_poly_proj <- concaveman::concaveman(occ_sf_proj, concavity = concavity_value) }
+    else if (nrow(occ_sf_proj) >= 3) { hlog("WARN", "  Using Convex Hull fallback."); ahull_poly_proj <- sf::st_convex_hull(sf::st_union(occ_sf_proj)) }
+    else { hlog("WARN", "  Using simple buffer fallback."); ahull_poly_proj <- sf::st_union(sf::st_buffer(occ_sf_proj, dist = buffer_km * 1000)) }
+    
+    ahull_buffered_proj <- sf::st_buffer(ahull_poly_proj, dist = buffer_km * 1000)
+    raster_crs <- sf::st_crs(terra::crs(global_predictor_stack))
+    species_calibration_poly <- sf::st_transform(ahull_buffered_proj, crs = raster_crs)
+    species_calibration_vect <- terra::vect(species_calibration_poly)
+    hlog("INFO", "  Calibration polygon created.")
+  }, error = function(e) { hlog("ERROR", paste("  Failed create calibration polygon:", e$message)); species_calibration_vect <<- NULL })
+  if(is.null(species_calibration_vect)) return(NULL)
+  
+  # --- Mask Global Stack ---
+  hlog("INFO", "Masking global predictors with species polygon...")
+  predictor_stack_species <- tryCatch({
+    terra::mask(terra::crop(global_predictor_stack, species_calibration_vect, snap="near"), species_calibration_vect)
+  }, error = function(e) { hlog("ERROR", paste("  Failed mask predictor stack:", e$message)); NULL })
+  if (is.null(predictor_stack_species)) return(NULL)
+  min_max_check_mask <- terra::global(predictor_stack_species[[1]], c("min", "max"), na.rm = TRUE)
+  if (is.na(min_max_check_mask$min) && is.na(min_max_check_mask$max)) { hlog("ERROR", "  No valid cells after masking."); return(NULL) }
+  hlog("INFO", "  Stack masked.")
+  
+  # --- Optional Depth Filter ---
+  if (config$apply_depth_filter) {
+    hlog("INFO", "Applying depth filter to species stack...")
+    depth_layer_name <- config$terrain_variables_final[grepl("bathymetry", config$terrain_variables_final, ignore.case = TRUE)][1]
+    bath_path <- file.path(config$terrain_folder, paste0(depth_layer_name, ".tif"))
+    if(file.exists(bath_path)){
+      bath_layer_global <- tryCatch(terra::rast(bath_path), error=function(e){hlog("WARN", "  Failed load bathy layer:", e$message); NULL})
+      if(!is.null(bath_layer_global)){
+        if (terra::crs(bath_layer_global) != terra::crs(predictor_stack_species)) {
+          bath_layer_global <- tryCatch(terra::project(bath_layer_global, predictor_stack_species), error = function(e) { hlog("ERROR", "  Failed projecting global bathy:", e$message); NULL })
+        }
+        if (!is.null(bath_layer_global)) {
+          bath_layer_species <- tryCatch(terra::mask(terra::crop(bath_layer_global, species_calibration_vect, snap="near"), species_calibration_vect), error = function(e) NULL)
+          if(!is.null(bath_layer_species)){
+            depth_mask_logical <- bath_layer_species >= config$depth_min & bath_layer_species <= config$depth_max
+            depth_mask_aligned <- tryCatch(terra::resample(depth_mask_logical, predictor_stack_species, method = "near"), error = function(e) NULL)
+            if (!is.null(depth_mask_aligned)) {
+              predictor_stack_species <- terra::mask(predictor_stack_species, depth_mask_aligned, maskvalues = FALSE, updatevalue = NA)
+              min_max_check_depth <- terra::global(predictor_stack_species[[1]], c("min", "max"), na.rm = TRUE)
+              if (is.na(min_max_check_depth$min) && is.na(min_max_check_depth$max)) { hlog("ERROR", "  No valid cells after depth filter."); return(NULL)}
+              hlog("INFO", "  Depth filter applied.")
+            } else { hlog("WARN", "  Skipping depth filter due to alignment error.") }
+            rm(depth_mask_logical, depth_mask_aligned); gc()
+          } else { hlog("WARN", "  Skipping depth filter due to species bathy error.") }
+          rm(bath_layer_species); gc()
+        } else { hlog("WARN", "  Skipping depth filter due to global bathy projection error.") }
+      } else { hlog("WARN", "  Failed loading bathymetry, skipping depth filter.") }
+      if(exists("bath_layer_global")) rm(bath_layer_global); gc()
+    } else { hlog("WARN", "  Bathymetry layer not found, skipping depth filter:", bath_path) }
+  } else { hlog("INFO", "  Depth filter disabled.") }
+  
+  # --- Generate Background using Original Helper ---
+  hlog("INFO", "Generating background points using species-specific stack...")
+  # Use the *original* background generation function, passing the *species-specific* stack
+  bg_species_df <- generate_sdm_background(
+    predictor_stack = predictor_stack_species, # <<< PASS THE MASKED STACK
+    n_background = config$background_points_n,
+    config = config, # Pass config in case the original helper needs it (e.g., for coral mask)
+    logger = logger,
+    species_log_file = species_log_file,
+    seed = 321 # species_aphia_id_internal + seed_offset
+  )
+  
+  if(is.null(bg_species_df)){ hlog("ERROR", "  Background point generation failed for species extent."); return(NULL) }
+  
+  hlog("INFO", "Returning background points, species stack, and polygon.")
+  return(list(
+    background_points = bg_species_df,
+    species_specific_stack = predictor_stack_species,
+    calibration_polygon = species_calibration_vect
+  ))
+}
+
 
 
 
