@@ -1,158 +1,158 @@
-# scripts/final/compare_background_methods_sdmtune.R
-#-------------------------------------------------------------------------------
-# Script to compare background sampling strategies for ONE species using SDMtune.
-# Methods Compared:
-# 1. Global Background Sampling (potentially masked by coral, Indo-Pacific extent)
-# 2. Species-Specific Alpha Hull Extent Background Sampling
-# 4. Species-Specific OBIS Ecoregion/Depth Extent Background Sampling (Exact Replication Attempt)
-# Generates SEPARATE plots for each method with CONSISTENT point styling.
-# Version: v4 - Consistent Plot Styling.
-#-------------------------------------------------------------------------------
-rm(list=ls()); gc() # Clean workspace
-
-cat("--- Running SDMtune Background Comparison Script (Separate Plots v4 - Consistent Styling) ---\n")
-
-# --- 1. Setup ---
-cat("--- Loading Config and Packages ---\n")
-script_dir <- tryCatch(dirname(sys.frame(1)$ofile), error = function(e) getwd())
-# Adjust path finding for config.R based on your execution context
-config_path_options <- c(
-  file.path(script_dir, "config.R"),              # If run from scripts/final
-  file.path(script_dir, "..", "config.R"),          # If run from scripts/
-  file.path(script_dir, "..", "..", "config.R"),     # If run from base directory
-  file.path(script_dir, "..", "..", "scripts", "config.R") # Common structure
-)
-config_path <- NULL
-for(path_opt in config_path_options) {
-  if(file.exists(path_opt)) {
-    config_path <- path_opt
-    cat("Found config at:", config_path, "\n")
-    break
-  }
-}
-if (is.null(config_path)) stop("FATAL: config.R not found in expected locations.")
-source(config_path); if (!exists("config")) stop("FATAL: config list missing after sourcing.")
-
-pacman::p_load(terra, sf, dplyr, readr, tools, stringr, SDMtune, ggplot2, tidyterra,
-               rnaturalearth, viridis, concaveman, # Added concaveman
-               log4r, future, furrr, progressr) # Added logging/parallel just in case helpers use them
-
-cat("--- Sourcing Helper Functions ---\n")
-helper_paths <- c(
-  file.path(config$helpers_dir, "env_processing_helpers.R"),
-  file.path(config$helpers_dir, "sdm_modeling_helpers.R") # Ensure generate_sdm_background_..., run_sdm_tuning_scv etc. are here
-)
-missing_helpers <- helper_paths[!file.exists(helper_paths)]
-if(length(missing_helpers) > 0) stop("Missing helper(s): ", paste(missing_helpers, collapse=", "))
-invisible(sapply(helper_paths, source))
-cat("Helpers sourced.\n")
-
-# --- 2. Define Target Species & Scenario ---
-group_name <- "anemone" # Or "anemonefish" - CHOOSE THE GROUP
-species_list_file <- config$anemone_species_list_file # Adjust if needed
-occurrence_dir <- config$anemone_occurrence_dir # Adjust if needed
-
-use_pca <- config$use_pca_predictors # Ensure this matches the predictors you want to test
-tuning_scenario <- "current" # Scenario to use for tuning/comparison
-
-cat("--- Target Group:", group_name, "---\n")
-cat("--- Using Predictors:", ifelse(use_pca, "PCA", "VIF"), "---\n")
-cat("--- Tuning Scenario:", tuning_scenario, "---\n")
-
-species_df <- readr::read_csv(species_list_file, show_col_types = FALSE)
-species_row <- species_df[1, ] # <<< --- SELECT THE TEST SPECIES ROW --- >>>
-species_name <- species_row$scientificName
-species_name_sanitized <- gsub(" ", "_", species_name)
-species_aphia_id <- species_row$AphiaID
-cat("--- Target Species:", species_name, "(AphiaID:", species_aphia_id, ") ---\n")
-
-# --- 3. Load Global Predictor Stack ---
-cat("--- Loading GLOBAL Predictor Stack for Scenario:", tuning_scenario, "---\n")
-global_predictor_stack <- NULL
-if (use_pca) {
-  pca_paths_rds <- config$pca_raster_paths_rds_path; if (!file.exists(pca_paths_rds)) stop("Global PCA paths RDS file not found.")
-  predictor_paths_list <- readRDS(pca_paths_rds)
-  global_predictor_path <- predictor_paths_list[[tuning_scenario]]
-  if (is.null(global_predictor_path) || !file.exists(global_predictor_path)) stop("GLOBAL PCA stack path missing for tuning.")
-  global_predictor_stack <- tryCatch(terra::rast(global_predictor_path), error = function(e) stop("Failed load GLOBAL PCA stack: ", e$message))
-} else {
-  selected_vars_vif <- if(group_name == "anemone") config$final_vars_vif_anemone else config$final_vars_vif_anemonefish_env
-  if(is.null(selected_vars_vif)) stop("VIF variable list not defined in config for ", group_name)
-  scenario_vif_vars <- generate_scenario_variable_list(selected_vars_vif, tuning_scenario, config)
-  global_predictor_stack <- load_selected_env_data(tuning_scenario, scenario_vif_vars, config)
-}
-if (is.null(global_predictor_stack)) stop("Failed to load GLOBAL predictor stack.")
-if (terra::crs(global_predictor_stack) == "") stop("GLOBAL predictor stack missing CRS.")
-cat("  GLOBAL stack loaded. Layers:", paste(names(global_predictor_stack), collapse=", "), "\n")
-
-# --- 4. Load & Prep Occurrences ---
-cat("--- Loading and Cleaning Occurrences ---\n")
-config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- global_predictor_stack
-occ_data_result <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger = NULL)
-if (is.null(occ_data_result) || is.null(occ_data_result$coords) || occ_data_result$count < config$min_occurrences_sdm) stop("Insufficient occurrences.")
-occs_coords_df <- as.data.frame(occ_data_result$coords); colnames(occs_coords_df) <- c("longitude", "latitude")
-occs_sf_clean <- sf::st_as_sf(occs_coords_df, coords=c("longitude","latitude"), crs=config$occurrence_crs) # CRS from config
-# Ensure occs_sf_clean has the correct CRS matching the predictor stack
-if(sf::st_crs(occs_sf_clean) != sf::st_crs(terra::crs(global_predictor_stack))){
-  occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(terra::crs(global_predictor_stack)))
-  cat("  Transformed occurrence CRS to match predictors.\n")
-}
-cat("  Occurrence count:", nrow(occs_coords_df), "\n")
-
-
-# --- 5. Method 1: Global Background & Tuning ---
-cat("\n--- Running Method 1: GLOBAL Background Sampling & SDMtune ---\n")
-bg_global_df <- generate_sdm_background(global_predictor_stack, config$background_points_n, config, logger = NULL, seed = 123)
-if (is.null(bg_global_df)) stop("Failed global background generation.")
-colnames(bg_global_df) <- c("longitude", "latitude")
-cat("  Generated", nrow(bg_global_df), "global background points.\n")
-
-cat("  Running SDMtune (Global Background)...\n")
-tuning_output_global <- run_sdm_tuning_scv(occs_coords_df, global_predictor_stack, bg_global_df, config, logger=NULL, species_name=species_name)
-if (is.null(tuning_output_global)) warning("SDMtune failed for Global Background.")
-
-
-# --- 6. Method 2: Species-Specific Alpha Hull Background & Tuning ---
-cat("\n--- Running Method 2: SPECIES-SPECIFIC Alpha Hull Background Sampling & SDMtune ---\n")
-bg_species_result_hull <- generate_sdm_background_species_extent( # Make sure this helper is defined
-  occs_sf = occs_sf_clean,
-  global_predictor_stack = global_predictor_stack,
-  config = config,
-  logger = NULL,
-  seed_offset = 1
-)
-
-tuning_output_species_hull <- NULL # Initialize
-predictor_stack_species_hull <- NULL
-species_calibration_vect_hull <- NULL
-bg_species_df_hull <- NULL
-
-if(is.null(bg_species_result_hull)) {
-  cat("WARN: Failed species-specific (Alpha Hull) background generation helper.\n")
-} else {
-  bg_species_df_hull <- bg_species_result_hull$background_points
-  predictor_stack_species_hull <- bg_species_result_hull$species_specific_stack
-  species_calibration_vect_hull <- bg_species_result_hull$calibration_polygon
-  colnames(bg_species_df_hull) <- c("longitude", "latitude") # Ensure consistent naming
-  cat("  Generated", nrow(bg_species_df_hull), "species-specific (Alpha Hull) background points.\n")
-  cat("  Alpha Hull specific stack created.\n")
-  
-  cat("  Running SDMtune (Species Alpha Hull Background)...\n")
-  tuning_output_species_hull <- run_sdm_tuning_scv(
-    occs_coords_df,
-    predictor_stack_species_hull,
-    bg_species_df_hull,
-    config,
-    logger=NULL,
-    species_name=species_name
-  )
-  if (is.null(tuning_output_species_hull)) warning("SDMtune failed for Species Alpha Hull Background.")
-}
+# # scripts/final/compare_background_methods_sdmtune.R
+# #-------------------------------------------------------------------------------
+# # Script to compare background sampling strategies for ONE species using SDMtune.
+# # Methods Compared:
+# # 1. Global Background Sampling (potentially masked by coral, Indo-Pacific extent)
+# # 2. Species-Specific Alpha Hull Extent Background Sampling
+# # 4. Species-Specific OBIS Ecoregion/Depth Extent Background Sampling (Exact Replication Attempt)
+# # Generates SEPARATE plots for each method with CONSISTENT point styling.
+# # Version: v4 - Consistent Plot Styling.
+# #-------------------------------------------------------------------------------
+# rm(list=ls()); gc() # Clean workspace
+# 
+# cat("--- Running SDMtune Background Comparison Script (Separate Plots v4 - Consistent Styling) ---\n")
+# 
+# # --- 1. Setup ---
+# cat("--- Loading Config and Packages ---\n")
+# script_dir <- tryCatch(dirname(sys.frame(1)$ofile), error = function(e) getwd())
+# # Adjust path finding for config.R based on your execution context
+# config_path_options <- c(
+#   file.path(script_dir, "config.R"),              # If run from scripts/final
+#   file.path(script_dir, "..", "config.R"),          # If run from scripts/
+#   file.path(script_dir, "..", "..", "config.R"),     # If run from base directory
+#   file.path(script_dir, "..", "..", "scripts", "config.R") # Common structure
+# )
+# config_path <- NULL
+# for(path_opt in config_path_options) {
+#   if(file.exists(path_opt)) {
+#     config_path <- path_opt
+#     cat("Found config at:", config_path, "\n")
+#     break
+#   }
+# }
+# if (is.null(config_path)) stop("FATAL: config.R not found in expected locations.")
+# source(config_path); if (!exists("config")) stop("FATAL: config list missing after sourcing.")
+# 
+# pacman::p_load(terra, sf, dplyr, readr, tools, stringr, SDMtune, ggplot2, tidyterra,
+#                rnaturalearth, viridis, concaveman, # Added concaveman
+#                log4r, future, furrr, progressr) # Added logging/parallel just in case helpers use them
+# 
+# cat("--- Sourcing Helper Functions ---\n")
+# helper_paths <- c(
+#   file.path(config$helpers_dir, "env_processing_helpers.R"),
+#   file.path(config$helpers_dir, "sdm_modeling_helpers.R") # Ensure generate_sdm_background_..., run_sdm_tuning_scv etc. are here
+# )
+# missing_helpers <- helper_paths[!file.exists(helper_paths)]
+# if(length(missing_helpers) > 0) stop("Missing helper(s): ", paste(missing_helpers, collapse=", "))
+# invisible(sapply(helper_paths, source))
+# cat("Helpers sourced.\n")
+# 
+# # --- 2. Define Target Species & Scenario ---
+# group_name <- "anemone" # Or "anemonefish" - CHOOSE THE GROUP
+# species_list_file <- config$anemone_species_list_file # Adjust if needed
+# occurrence_dir <- config$anemone_occurrence_dir # Adjust if needed
+# 
+# use_pca <- config$use_pca_predictors # Ensure this matches the predictors you want to test
+# tuning_scenario <- "current" # Scenario to use for tuning/comparison
+# 
+# cat("--- Target Group:", group_name, "---\n")
+# cat("--- Using Predictors:", ifelse(use_pca, "PCA", "VIF"), "---\n")
+# cat("--- Tuning Scenario:", tuning_scenario, "---\n")
+# 
+# species_df <- readr::read_csv(species_list_file, show_col_types = FALSE)
+# species_row <- species_df[1, ] # <<< --- SELECT THE TEST SPECIES ROW --- >>>
+# species_name <- species_row$scientificName
+# species_name_sanitized <- gsub(" ", "_", species_name)
+# species_aphia_id <- species_row$AphiaID
+# cat("--- Target Species:", species_name, "(AphiaID:", species_aphia_id, ") ---\n")
+# 
+# # --- 3. Load Global Predictor Stack ---
+# cat("--- Loading GLOBAL Predictor Stack for Scenario:", tuning_scenario, "---\n")
+# global_predictor_stack <- NULL
+# if (use_pca) {
+#   pca_paths_rds <- config$pca_raster_paths_rds_path; if (!file.exists(pca_paths_rds)) stop("Global PCA paths RDS file not found.")
+#   predictor_paths_list <- readRDS(pca_paths_rds)
+#   global_predictor_path <- predictor_paths_list[[tuning_scenario]]
+#   if (is.null(global_predictor_path) || !file.exists(global_predictor_path)) stop("GLOBAL PCA stack path missing for tuning.")
+#   global_predictor_stack <- tryCatch(terra::rast(global_predictor_path), error = function(e) stop("Failed load GLOBAL PCA stack: ", e$message))
+# } else {
+#   selected_vars_vif <- if(group_name == "anemone") config$final_vars_vif_anemone else config$final_vars_vif_anemonefish_env
+#   if(is.null(selected_vars_vif)) stop("VIF variable list not defined in config for ", group_name)
+#   scenario_vif_vars <- generate_scenario_variable_list(selected_vars_vif, tuning_scenario, config)
+#   global_predictor_stack <- load_selected_env_data(tuning_scenario, scenario_vif_vars, config)
+# }
+# if (is.null(global_predictor_stack)) stop("Failed to load GLOBAL predictor stack.")
+# if (terra::crs(global_predictor_stack) == "") stop("GLOBAL predictor stack missing CRS.")
+# cat("  GLOBAL stack loaded. Layers:", paste(names(global_predictor_stack), collapse=", "), "\n")
+# 
+# # --- 4. Load & Prep Occurrences ---
+# cat("--- Loading and Cleaning Occurrences ---\n")
+# config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- global_predictor_stack
+# occ_data_result <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger = NULL)
+# if (is.null(occ_data_result) || is.null(occ_data_result$coords) || occ_data_result$count < config$min_occurrences_sdm) stop("Insufficient occurrences.")
+# occs_coords_df <- as.data.frame(occ_data_result$coords); colnames(occs_coords_df) <- c("longitude", "latitude")
+# occs_sf_clean <- sf::st_as_sf(occs_coords_df, coords=c("longitude","latitude"), crs=config$occurrence_crs) # CRS from config
+# # Ensure occs_sf_clean has the correct CRS matching the predictor stack
+# if(sf::st_crs(occs_sf_clean) != sf::st_crs(terra::crs(global_predictor_stack))){
+#   occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(terra::crs(global_predictor_stack)))
+#   cat("  Transformed occurrence CRS to match predictors.\n")
+# }
+# cat("  Occurrence count:", nrow(occs_coords_df), "\n")
+# 
+# 
+# # --- 5. Method 1: Global Background & Tuning ---
+# cat("\n--- Running Method 1: GLOBAL Background Sampling & SDMtune ---\n")
+# bg_global_df <- generate_sdm_background(global_predictor_stack, config$background_points_n, config, logger = NULL, seed = 123)
+# if (is.null(bg_global_df)) stop("Failed global background generation.")
+# colnames(bg_global_df) <- c("longitude", "latitude")
+# cat("  Generated", nrow(bg_global_df), "global background points.\n")
+# 
+# cat("  Running SDMtune (Global Background)...\n")
+# tuning_output_global <- run_sdm_tuning_scv(occs_coords_df, global_predictor_stack, bg_global_df, config, logger=NULL, species_name=species_name)
+# if (is.null(tuning_output_global)) warning("SDMtune failed for Global Background.")
+# 
+# 
+# # --- 6. Method 2: Species-Specific Alpha Hull Background & Tuning ---
+# cat("\n--- Running Method 2: SPECIES-SPECIFIC Alpha Hull Background Sampling & SDMtune ---\n")
+# bg_species_result_hull <- generate_sdm_background_species_extent( # Make sure this helper is defined
+#   occs_sf = occs_sf_clean,
+#   global_predictor_stack = global_predictor_stack,
+#   config = config,
+#   logger = NULL,
+#   seed_offset = 1
+# )
+# 
+# tuning_output_species_hull <- NULL # Initialize
+# predictor_stack_species_hull <- NULL
+# species_calibration_vect_hull <- NULL
+# bg_species_df_hull <- NULL
+# 
+# if(is.null(bg_species_result_hull)) {
+#   cat("WARN: Failed species-specific (Alpha Hull) background generation helper.\n")
+# } else {
+#   bg_species_df_hull <- bg_species_result_hull$background_points
+#   predictor_stack_species_hull <- bg_species_result_hull$species_specific_stack
+#   species_calibration_vect_hull <- bg_species_result_hull$calibration_polygon
+#   colnames(bg_species_df_hull) <- c("longitude", "latitude") # Ensure consistent naming
+#   cat("  Generated", nrow(bg_species_df_hull), "species-specific (Alpha Hull) background points.\n")
+#   cat("  Alpha Hull specific stack created.\n")
+#   
+#   cat("  Running SDMtune (Species Alpha Hull Background)...\n")
+#   tuning_output_species_hull <- run_sdm_tuning_scv(
+#     occs_coords_df,
+#     predictor_stack_species_hull,
+#     bg_species_df_hull,
+#     config,
+#     logger=NULL,
+#     species_name=species_name
+#   )
+#   if (is.null(tuning_output_species_hull)) warning("SDMtune failed for Species Alpha Hull Background.")
+# }
 
 # --- 7. Method 4: OBIS Ecoregion/Depth Background (Exact Replication Attempt) ---
 # (Renumbered from Method 3 in previous response as Method 3 was commented out)
 cat("\n--- Running Method 4: OBIS Ecoregion/Depth (Exact) Background Sampling & SDMtune ---\n")
-bg_obis_exact_result <- generate_sdm_background_obis_exact( # Ensure this helper exists
+bg_obis_exact_result <- generate_sdm_background_obis_part2( # Ensure this helper exists
   occs_sf = occs_sf_clean,
   global_predictor_stack = global_predictor_stack,
   config = config,
