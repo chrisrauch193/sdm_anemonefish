@@ -452,6 +452,220 @@ generate_sdm_background_obis_extent <- function(occs_sf, global_predictor_stack,
 
 
 
+
+#' Generate Background Points using OBIS/MPAEU Ecoregion/Depth Method (Exact Replication Attempt v2)
+#'
+#' Creates a species-specific calibration extent replicating the OBIS/MPAEU logic:
+#' 1. Finds intersecting ecoregions based on occurrences.
+#' 2. Buffers points slightly to find adjacent ecoregions.
+#' 3. Optionally buffers the combined ecoregion polygon.
+#' 4. Optionally filters by depth range derived from occurrences within the ecoregion extent.
+#' 5. Masks global predictors using the final spatial extent.
+#' 6. Samples background points (quadrature) from the masked area.
+#' Includes fix for depth mask extent mismatch when Indo-Pacific crop is applied.
+#'
+#' @param occs_sf sf object with cleaned, thinned occurrence points (needs CRS).
+#' @param global_predictor_stack SpatRaster stack covering the global study area (needs CRS).
+#' @param config Project configuration list (needs ecoregion_shapefile, bathymetry_file,
+#'        limit_by_depth_obis, depth_buffer_obis, poly_buffer_obis, poly_buffer_final,
+#'        background_points_n, apply_indo_pacific_crop, indo_pacific_bbox).
+#' @param seed_offset Integer offset for background sampling seed.
+#' @return A list containing `$background_points` (data frame),
+#'         `$species_specific_stack` (SpatRaster), `$calibration_polygon` (SpatVector representing the final spatial extent used for masking),
+#'         or NULL on error.
+generate_sdm_background_obis_exact <- function(occs_sf, global_predictor_stack, config, seed_offset = 3) {
+  
+  # Use cat for direct output in this comparison script
+  cat("INFO: Starting OBIS/MPAEU (Exact v2) background generation method...\n")
+  
+  # --- Input Checks ---
+  if (!inherits(occs_sf, "sf") || nrow(occs_sf) < 3) { cat("ERROR: Valid sf occurrence object with at least 3 points required.\n"); return(NULL) }
+  if (is.na(sf::st_crs(occs_sf))) { cat("ERROR: Occurrence sf object needs a CRS.\n"); return(NULL) }
+  if (!inherits(global_predictor_stack, "SpatRaster")) { cat("ERROR: Valid global SpatRaster required.\n"); return(NULL) }
+  if (terra::crs(global_predictor_stack) == "") { cat("ERROR: Global predictor stack needs a CRS.\n"); return(NULL) }
+  if (!file.exists(config$ecoregion_shapefile)) { cat("ERROR: Ecoregion shapefile not found:", config$ecoregion_shapefile, "\n"); return(NULL) }
+  if (config$limit_by_depth_obis && !file.exists(config$bathymetry_file)) { cat("ERROR: Bathymetry file required for depth filtering not found:", config$bathymetry_file, "\n"); return(NULL) }
+  
+  species_aphia_id_internal <- tryCatch(occs_sf$AphiaID[1], error = function(e) { cat("WARN: AphiaID missing from occs_sf, using random seed.\n"); sample.int(1e6, 1) })
+  
+  # --- Load Ecoregions ---
+  cat("DEBUG: Loading ecoregions...\n")
+  ecoregions <- tryCatch(terra::vect(config$ecoregion_shapefile), error = function(e) { cat("ERROR: Failed load ecoregions:", e$message, "\n"); NULL })
+  if (is.null(ecoregions)) return(NULL)
+  
+  # Ensure CRS match (project occurrences if needed)
+  occs_vect <- tryCatch(terra::vect(occs_sf), error = function(e) { cat("ERROR: Failed convert occs sf to vect:", e$message, "\n"); NULL })
+  if(is.null(occs_vect)) return(NULL)
+  
+  if (terra::crs(occs_vect) != terra::crs(ecoregions)) {
+    cat("DEBUG: Projecting occurrences to match ecoregions CRS...\n")
+    occs_vect <- tryCatch(terra::project(occs_vect, terra::crs(ecoregions)), error = function(e) { cat("ERROR: Failed project occurrences:", e$message, "\n"); NULL })
+    if(is.null(occs_vect)) return(NULL)
+  }
+  
+  # --- Identify Intersecting & Adjacent Ecoregions (OBIS Step) ---
+  cat("DEBUG: Identifying intersecting ecoregions...\n")
+  intersect_idx <- tryCatch(terra::is.related(ecoregions, occs_vect, "intersects"), error=function(e){cat("WARN: is.related failed:",e$message,"\n");NULL})
+  if (is.null(intersect_idx) || !any(intersect_idx)) { cat("WARN: No occurrences intersect with ecoregions. Cannot define extent this way.\n"); return(NULL) }
+  ecoreg_occ <- ecoregions[intersect_idx, ]
+  ecoreg_names_intersect <- tryCatch(ecoreg_occ$Realm, error=function(e) paste("Region", 1:length(ecoreg_occ))) # Get names if Realm column exists
+  cat("DEBUG: Found", length(ecoreg_occ), "intersecting ecoregions:", paste(unique(ecoreg_names_intersect), collapse=", "), "\n")
+  
+  cat("DEBUG: Finding adjacent ecoregions using buffered points...\n")
+  sf::sf_use_s2(FALSE)
+  occs_buffered_sf <- tryCatch(sf::st_buffer(sf::st_as_sf(occs_vect), dist = config$poly_buffer_obis),
+                               error = function(e) { cat("ERROR: Failed buffer points:", e$message, "\n"); NULL })
+  if(is.null(occs_buffered_sf)) { sf::sf_use_s2(TRUE); return(NULL) }
+  
+  adjacent_idx <- tryCatch(terra::is.related(ecoregions, terra::vect(occs_buffered_sf), "intersects"), error=function(e){cat("WARN: is.related failed for adjacent:",e$message,"\n");NULL})
+  if(is.null(adjacent_idx)) adjacent_idx <- intersect_idx # Fallback
+  sf::sf_use_s2(TRUE)
+  
+  final_indices <- unique(c(which(intersect_idx), which(adjacent_idx)))
+  ecoreg_sel <- ecoregions[final_indices, ]
+  ecoreg_names_final <- tryCatch(ecoreg_sel$Realm, error=function(e) paste("Region", 1:length(ecoreg_sel)))
+  cat("DEBUG: Selected", length(ecoreg_sel), "total ecoregions:", paste(unique(ecoreg_names_final), collapse=", "), "\n")
+  
+  cat("DEBUG: Buffering final selected ecoregion polygon...\n")
+  sf::sf_use_s2(FALSE)
+  ecoreg_sel_buffered_sf <- tryCatch(sf::st_buffer(sf::st_as_sf(ecoreg_sel), dist = config$poly_buffer_final),
+                                     error = function(e) { cat("ERROR: Failed buffer final polygon:", e$message, "\n"); NULL })
+  if(is.null(ecoreg_sel_buffered_sf)) { sf::sf_use_s2(TRUE); return(NULL) }
+  sf::sf_use_s2(TRUE)
+  
+  raster_crs_terra <- terra::crs(global_predictor_stack)
+  obis_calibration_poly_sf <- sf::st_transform(ecoreg_sel_buffered_sf, crs = sf::st_crs(raster_crs_terra))
+  obis_calibration_vect <- terra::vect(obis_calibration_poly_sf)
+  cat("INFO: Ecoregion-based calibration polygon created.\n")
+  
+  # --- Depth Filtering (Optional - OBIS Step) ---
+  depth_mask <- NULL
+  limit_by_depth_flag <- config$limit_by_depth_obis # Store initial setting
+  
+  if (limit_by_depth_flag) {
+    cat("INFO: Applying OBIS depth filter...\n")
+    
+    bath_global <- tryCatch(terra::rast(config$bathymetry_file), error = function(e) { cat("ERROR: Failed load bathymetry:", e$message, "\n"); NULL })
+    
+    if (is.null(bath_global)) {
+      limit_by_depth_flag <- FALSE # Disable depth filtering if loading failed
+      cat("WARN: Disabling depth filter because bathymetry loading failed.\n")
+    } else {
+      
+      # *** Apply Indo-Pacific Crop to Bathymetry if configured ***
+      if (config$apply_indo_pacific_crop) {
+        cat("DEBUG: Applying Indo-Pacific crop to global bathymetry layer...\n")
+        ip_extent <- terra::ext(config$indo_pacific_bbox)
+        bath_global <- tryCatch(terra::crop(bath_global, ip_extent),
+                                error=function(e){ cat("WARN: Failed cropping global bathy:", e$message, "\n"); NULL})
+        if(is.null(bath_global)){ cat("WARN: Proceeding without depth filter due to bathy crop error.\n"); limit_by_depth_flag <- FALSE }
+        else { cat("DEBUG: Global bathymetry cropped to Indo-Pacific extent.\n")}
+      }
+      
+      # Proceed only if bathy is still valid
+      if(limit_by_depth_flag){
+        if (terra::crs(bath_global) != raster_crs_terra) {
+          cat("DEBUG: Projecting global bathymetry...\n")
+          bath_global <- tryCatch(terra::project(bath_global, raster_crs_terra), error = function(e) { cat("ERROR: Failed project bathymetry:", e$message, "\n"); NULL })
+          if (is.null(bath_global)) { limit_by_depth_flag <- FALSE; cat("WARN: Disabling depth filter because projection failed.\n") }
+        }
+      }
+      
+      # Proceed only if depth filtering is still enabled
+      if (limit_by_depth_flag) {
+        # Crop bathymetry to the ecoregion polygon extent first
+        bath_species_extent <- tryCatch(terra::crop(bath_global, obis_calibration_vect, snap="near"), error = function(e) { cat("WARN: Failed cropping bathymetry for depth filter:", e$message, "\n"); NULL })
+        
+        if (is.null(bath_species_extent)) {
+          cat("WARN: Proceeding without depth filter due to cropping error.\n")
+        } else {
+          # Need occs projected to raster CRS for extraction
+          occs_vect_proj <- tryCatch(terra::project(occs_vect, raster_crs_terra), error=function(e)NULL)
+          if(is.null(occs_vect_proj)){
+            cat("WARN: Could not project occurrences to raster CRS for depth extraction. Skipping depth filter.\n")
+          } else {
+            bath_pts_vals <- tryCatch(terra::extract(bath_species_extent, occs_vect_proj, ID = FALSE), error=function(e){cat("WARN: Depth extraction failed:", e$message, "\n");NULL})
+            
+            if(is.null(bath_pts_vals) || nrow(bath_pts_vals) == 0 || all(is.na(bath_pts_vals[[1]]))) {
+              cat("WARN: No valid depth values extracted for occurrences within ecoregion extent. Skipping depth filter.\n")
+            } else {
+              depth_range_pts <- range(bath_pts_vals[[1]], na.rm = TRUE)
+              min_depth <- depth_range_pts[1] - config$depth_buffer_obis
+              max_depth <- depth_range_pts[2] + config$depth_buffer_obis
+              max_depth <- min(0, max_depth)
+              cat("DEBUG:   Depth range filter:", min_depth, "to", max_depth, "m\n")
+              
+              # Create depth mask by classifying the cropped bathymetry
+              depth_mask <- bath_species_extent
+              depth_mask[depth_mask < min_depth | depth_mask > max_depth] <- NA
+              depth_mask[!is.na(depth_mask)] <- 1
+              
+              # Check if all cells were masked out
+              max_val_check <- terra::global(depth_mask, "max", na.rm = TRUE)$max
+              if (is.na(max_val_check) || max_val_check == 0) {
+                cat("WARN: Depth filter masked all cells within ecoregion extent. Skipping depth filter.\n")
+                depth_mask <- NULL
+              } else {
+                cat("INFO: Depth filter mask created based on ecoregion extent.\n")
+              }
+            }
+          }
+          if(exists("bath_species_extent")) rm(bath_species_extent); gc() # Cleanup bath_species_extent
+          if(exists("bath_pts_vals")) rm(bath_pts_vals); gc()
+        }
+      } # End if limit_by_depth_flag after projection check
+      if(exists("bath_global")) rm(bath_global); gc() # Cleanup global bathy
+    } # End if bathymetry loading succeeded
+  } else { cat("INFO: Depth filter disabled by config.\n") }
+  
+  # --- Mask Global Stack ---
+  cat("INFO: Masking global predictors with final species extent (Ecoregions +/- Depth)...\n")
+  predictor_stack_obis_exact <- global_predictor_stack
+  
+  # Apply depth mask first (if it was successfully created AND depth filtering is still enabled)
+  if(!is.null(depth_mask) && limit_by_depth_flag){
+    predictor_stack_obis_exact <- tryCatch(terra::mask(terra::crop(predictor_stack_obis_exact, depth_mask, snap="near"), depth_mask),
+                                           error = function(e){cat("ERROR: Failed depth masking predictor stack:", e$message, "\n"); NULL})
+    if(is.null(predictor_stack_obis_exact)){ rm(depth_mask); gc(); return(NULL)}
+    rm(depth_mask); gc()
+    cat("DEBUG: Predictor stack masked by depth.\n")
+  }
+  
+  # Then mask by the final buffered ecoregion polygon
+  predictor_stack_obis_exact <- tryCatch(terra::mask(terra::crop(predictor_stack_obis_exact, obis_calibration_vect, snap="near"), obis_calibration_vect),
+                                         error = function(e){cat("ERROR: Final ecoregion masking failed:", e$message, "\n"); NULL})
+  if(is.null(predictor_stack_obis_exact)) return(NULL)
+  
+  # Final check for valid cells
+  min_max_check_final <- terra::global(predictor_stack_obis_exact[[1]], c("min", "max"), na.rm = TRUE)
+  if (is.na(min_max_check_final$min) && is.na(min_max_check_final$max)) { cat("ERROR:   No valid cells after final masking.\n"); return(NULL) }
+  cat("INFO:   Final species-specific stack created for background sampling.\n")
+  
+  # --- Generate Background ---
+  cat("INFO: Generating background points using OBIS-exact stack...\n")
+  # Call the original helper, passing the species-specific stack
+  bg_obis_exact_df <- generate_sdm_background(
+    predictor_stack = predictor_stack_obis_exact,
+    n_background = config$background_points_n,
+    config = config, # Pass config (e.g., for coral masking within OBIS extent)
+    logger = NULL, # No logger passed
+    species_log_file = NULL, # No species log passed
+    seed = 321 # species_aphia_id_internal + seed_offset # Use a fixed seed for this comparison script
+  )
+  if(is.null(bg_obis_exact_df)){ cat("ERROR:   Background point generation failed for OBIS extent.\n"); return(NULL) }
+  
+  cat("INFO: Returning background points, OBIS-specific stack, and polygon.\n")
+  return(list(
+    background_points = bg_obis_exact_df,
+    species_specific_stack = predictor_stack_obis_exact,
+    calibration_polygon = obis_calibration_vect # Polygon BEFORE depth masking for viz
+  ))
+}
+
+
+
+
+
 #' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
 #'
 #' Calculates block size via autocorrelation (if requested) and generates

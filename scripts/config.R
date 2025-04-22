@@ -144,6 +144,16 @@ blockcv_selection <- "random"
 blockcv_n_iterate <- 300
 blockcv_lat_blocks <- 20000
 
+
+# OBIS stuff
+ecoregion_shapefile <- file.path(shapefile_dir, "MarineRealms_BO.shp")
+bathymetry_file     <- file.path(terrain_folder, "bathymetry_mean.tif")
+limit_by_depth_obis <- TRUE  # Or FALSE
+depth_buffer_obis   <- 500
+poly_buffer_obis    <- 0.2 # Small degree buffer for adjacency
+poly_buffer_final   <- 0.5 # Larger degree buffer for final extent (optional, replicating OBIS)
+
+
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
 config <- list(
@@ -205,8 +215,15 @@ config <- list(
   blockcv_hexagon = blockcv_hexagon,          # Use hexagonal blocks for spatial_grid?
   blockcv_selection = blockcv_selection, # Fold assignment method ("systematic" or "random")
   blockcv_n_iterate = blockcv_n_iterate,          # Iterations for blockCV fold assignment (more relevant for 'random' selection)
-  blockcv_lat_blocks = blockcv_lat_blocks       # Only needed if using "spatial_lat"
+  blockcv_lat_blocks = blockcv_lat_blocks,       # Only needed if using "spatial_lat"
   
+  # OBIS Stuff
+  ecoregion_shapefile = ecoregion_shapefile,
+  bathymetry_file = bathymetry_file,
+  limit_by_depth_obis = limit_by_depth_obis,
+  depth_buffer_obis = depth_buffer_obis,
+  poly_buffer_obis = poly_buffer_obis,
+  poly_buffer_final = poly_buffer_final
 )
 
 
