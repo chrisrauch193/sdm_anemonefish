@@ -108,12 +108,15 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   if(is.null(tuning_predictor_stack)) { msg <- paste0("Skipping: Failed load predictor stack for tuning scenario '", tuning_scenario, "'."); slog("ERROR", msg); return(list(status = "error_tuning_predictors", species = species_name, occurrence_count = NA, message = msg)) }
   slog("DEBUG", "Tuning predictor stack loaded.")
   
+  raster_crs_terra <- terra::crs(tuning_predictor_stack)
   
   config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- tuning_predictor_stack
   slog("DEBUG", "Loading/cleaning/thinning occurrences.")
   occ_data_result <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger=NULL, species_log_file=species_log_file)
   if (is.null(occ_data_result) || is.null(occ_data_result$coords) || occ_data_result$count < config$min_occurrences_sdm) { msg <- paste0("Skipping: Insufficient valid/thinned occurrences (found ", occ_data_result$count %||% 0, ")."); slog("WARN", msg); return(list(status = "skipped_occurrences", species = species_name, occurrence_count = occ_data_result$count %||% 0, message = msg)) }
   occs_coords <- occ_data_result$coords; occurrence_count_after_thinning <- occ_data_result$count
+  occs_sf_clean <- sf::st_as_sf(as.data.frame(occs_coords), coords=c("decimalLongitude","decimalLatitude"), crs=config$occurrence_crs) # sf for spatial ops
+  if(sf::st_crs(occs_sf_clean) != sf::st_crs(raster_crs_terra)){ occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(raster_crs_terra))}
   slog("INFO", "Occurrence count after clean/thin:", occurrence_count_after_thinning)
   
   final_model <- NULL; tuning_output <- NULL; load_existing_model <- FALSE
@@ -126,7 +129,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
       slog("INFO", "Successfully loaded existing final model. Skipping tuning/training.")
       load_existing_model <- TRUE
       # Prepare SWD needed for VI with loaded final model
-      background_points_for_vi <- generate_sdm_background(tuning_predictor_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
+      background_points_for_vi <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
       if(!is.null(background_points_for_vi)){
         full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_for_vi, env = tuning_predictor_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI on loaded model:", e$message); NULL })
       } else { slog("WARN", "Failed background point generation for VI on loaded model.") }
@@ -140,7 +143,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   if (!load_existing_model) {
     slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points.")
-    background_points <- generate_sdm_background(tuning_predictor_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
+    background_points <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
     if (is.null(background_points)) { msg <- paste0("Skipping: Failed background point generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     slog("DEBUG", "Background points generated.")
     
