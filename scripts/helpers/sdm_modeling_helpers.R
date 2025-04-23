@@ -608,7 +608,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
     hlog("INFO", "Generating grid blocks.")
     hlog("INFO", paste("Final range to use: ", range))
     spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, size = range,
-                                         hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type)
+                                         hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type, extend = 0.5)
     blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack) + geom_sf(data = swd_sf, 
                                                                                     alpha = .5)
   }
