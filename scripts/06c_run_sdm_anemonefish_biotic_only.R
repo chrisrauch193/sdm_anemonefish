@@ -136,7 +136,7 @@ process_species_sdm_biotic_pc1 <- function(species_row, config, env_predictor_pa
   slog("DEBUG", "Preparing Biotic+PC1 predictor stack for tuning scenario:", tuning_scenario)
   tuning_env_path <- env_predictor_paths_list[[tuning_scenario]]
   if (is.null(tuning_env_path) || !file.exists(tuning_env_path)) { msg <- paste0("Skipping: Env PCA stack path missing for tuning."); slog("ERROR", msg); return(list(status = "error_tuning_env_pca_path", species = species_name, occurrence_count = NA, message = msg)) }
-  pc1_tuning_layer <- tryCatch(terra::rast(tuning_env_path)[[1]], error = function(e) { slog("ERROR", "Failed load tuning PC1:", e$message); NULL })
+  pc1_tuning_layer <- tryCatch(terra::rast(tuning_env_path)[[4]], error = function(e) { slog("ERROR", "Failed load tuning PC1:", e$message); NULL }) # TODO: I MADE A CHANGE TO PC4 HERE!!!!
   if (is.null(pc1_tuning_layer)) { msg <- paste0("Skipping: Failed load tuning PC1 layer."); slog("ERROR", msg); return(list(status = "error_tuning_env_pc1_load", species = species_name, occurrence_count = NA, message = msg)) }
   reference_geom_tuning <- pc1_tuning_layer
   
@@ -166,11 +166,15 @@ process_species_sdm_biotic_pc1 <- function(species_row, config, env_predictor_pa
   names(tuning_predictor_stack) <- c("PC1", "host_suitability_max")
   slog("INFO", paste("Tuning predictor stack created:", paste(names(tuning_predictor_stack), collapse=", ")))
   
+  raster_crs_terra <- terra::crs(tuning_predictor_stack)
+  
   config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- tuning_predictor_stack
   slog("DEBUG", "Loading/cleaning/thinning occurrences.")
   occ_data_result <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger = NULL, species_log_file=species_log_file)
   if (is.null(occ_data_result) || is.null(occ_data_result$coords) || occ_data_result$count < config$min_occurrences_sdm) { msg <- paste0("Skipping: Insufficient occurrences (", occ_data_result$count %||% 0, ")."); slog("WARN", msg); return(list(status = "skipped_occurrences", species = species_name, occurrence_count = occ_data_result$count %||% 0, message = msg)) }
   occs_coords <- occ_data_result$coords; occurrence_count_after_thinning <- occ_data_result$count
+  occs_sf_clean <- sf::st_as_sf(as.data.frame(occs_coords), coords=c("decimalLongitude","decimalLatitude"), crs=config$occurrence_crs) # sf for spatial ops
+  if(sf::st_crs(occs_sf_clean) != sf::st_crs(raster_crs_terra)){ occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(raster_crs_terra))}
   slog("INFO", "Occurrence count after clean/thin:", occurrence_count_after_thinning)
   
   final_model <- NULL; tuning_output <- NULL; load_existing_model <- FALSE; full_swd_data <- NULL
@@ -183,7 +187,7 @@ process_species_sdm_biotic_pc1 <- function(species_row, config, env_predictor_pa
       load_existing_model <- TRUE
       if(file.exists(tuning_rds_file)) { tuning_output <- tryCatch(readRDS(tuning_rds_file), error=function(e){slog("WARN","Could not load tuning RDS for VI."); NULL}) }
       if(is.null(tuning_output)) { slog("WARN", "Tuning RDS file not found/loaded, VI will use final model object."); tuning_output <- final_model }
-      background_points_for_vi <- generate_sdm_background(tuning_predictor_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
+      background_points_for_vi <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
       if(!is.null(background_points_for_vi)){ full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_for_vi, env = tuning_predictor_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI:", e$message); NULL }) } else { slog("WARN", "Failed background gen for VI.") }
       rm(background_points_for_vi); gc()
     } else { msg <- paste0("Existing final model file invalid/failed load. Will re-run."); slog("WARN", msg); load_existing_model <- FALSE }
@@ -192,7 +196,7 @@ process_species_sdm_biotic_pc1 <- function(species_row, config, env_predictor_pa
   if (!load_existing_model) {
     slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points.")
-    background_points <- generate_sdm_background(tuning_predictor_stack, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = species_aphia_id)
+    background_points <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
     if (is.null(background_points)) { msg <- paste0("Skipping: Failed background generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     slog("DEBUG", "Background points generated.")
     
