@@ -178,7 +178,7 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
   if (is.null(tuning_combined_stack)) { return(list(status = "error_tuning_predictors", species = species_name, occurrence_count = NA, message = paste0("log_prefix", "Failed to create tuning_combined_stack."))) }
   # --- End Stack Prep ---
   
-  raster_crs_terra <- terra::crs(tuning_predictor_stack)
+  raster_crs_terra <- terra::crs(tuning_combined_stack)
   
   # --- Load/Clean Occurrences ---
   config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- tuning_combined_stack
@@ -201,7 +201,7 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
       load_existing_model <- TRUE
       if(file.exists(tuning_rds_file)) { tuning_output <- tryCatch(readRDS(tuning_rds_file), error=function(e){slog("WARN","Could not load tuning RDS for VI."); NULL}) }
       if(is.null(tuning_output)) { slog("WARN", "Tuning RDS file not found/loaded, VI will use final model object."); tuning_output <- final_model }
-      background_points_for_vi <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+      background_points_for_vi <- generate_sdm_background_obis(occs_sf_clean, tuning_combined_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
       if(!is.null(background_points_for_vi)){ full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_for_vi, env = tuning_combined_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI on loaded model:", e$message); NULL }) } else { slog("WARN", "Failed background gen for VI on loaded model.") }
       rm(background_points_for_vi); gc()
     } else { msg <- paste0("Existing final model file invalid/failed load. Will re-run."); slog("WARN", msg); load_existing_model <- FALSE }
@@ -210,7 +210,7 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
   if (!load_existing_model) {
     slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points.")
-    background_points <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+    background_points <- generate_sdm_background_obis(occs_sf_clean, tuning_combined_stack, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
     if (is.null(background_points)) { msg <- paste0("Skipping: Failed background point generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     slog("DEBUG", "Background points generated.")
     

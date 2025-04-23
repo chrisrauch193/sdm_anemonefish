@@ -136,7 +136,7 @@ process_species_sdm_biotic_pc1 <- function(species_row, config, env_predictor_pa
   slog("DEBUG", "Preparing Biotic+PC1 predictor stack for tuning scenario:", tuning_scenario)
   tuning_env_path <- env_predictor_paths_list[[tuning_scenario]]
   if (is.null(tuning_env_path) || !file.exists(tuning_env_path)) { msg <- paste0("Skipping: Env PCA stack path missing for tuning."); slog("ERROR", msg); return(list(status = "error_tuning_env_pca_path", species = species_name, occurrence_count = NA, message = msg)) }
-  pc1_tuning_layer <- tryCatch(terra::rast(tuning_env_path)[[1]], error = function(e) { slog("ERROR", "Failed load tuning PC1:", e$message); NULL })
+  pc1_tuning_layer <- tryCatch(terra::rast(tuning_env_path)[[4]], error = function(e) { slog("ERROR", "Failed load tuning PC1:", e$message); NULL }) # TODO: I MADE A CHANGE TO PC4 HERE!!!!
   if (is.null(pc1_tuning_layer)) { msg <- paste0("Skipping: Failed load tuning PC1 layer."); slog("ERROR", msg); return(list(status = "error_tuning_env_pc1_load", species = species_name, occurrence_count = NA, message = msg)) }
   reference_geom_tuning <- pc1_tuning_layer
   
