@@ -152,7 +152,7 @@
 # --- 7. Method 4: OBIS Ecoregion/Depth Background (Exact Replication Attempt) ---
 # (Renumbered from Method 3 in previous response as Method 3 was commented out)
 cat("\n--- Running Method 4: OBIS Ecoregion/Depth (Exact) Background Sampling & SDMtune ---\n")
-bg_obis_exact_result <- generate_sdm_background_obis_part2( # Ensure this helper exists
+bg_obis_exact_result <- generate_sdm_background_obis_test( # Ensure this helper exists
   occs_sf = occs_sf_clean,
   global_predictor_stack = global_predictor_stack,
   config = config,
