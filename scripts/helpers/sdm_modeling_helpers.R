@@ -116,62 +116,6 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
 }
 
 
-#' Generate Background Points within the Raster Extent (v2 - with Coral Masking)
-#' Can optionally mask sampling to coral reef areas defined in config.
-#' @param predictor_stack SpatRaster stack (used for extent/masking).
-#' @param n_background Number of points to attempt generating.
-#' @param config Project configuration list (needs `mask_background_points_to_coral`, `apply_coral_mask`, `coral_shapefile`). #<< ADDED config
-#' @param logger A log4r logger object (can be NULL).
-#' @param species_log_file Optional path to a species-specific log file.
-#' @param seed Optional random seed for reproducibility.
-#' @return A data frame of background point coordinates (x, y), or NULL on error.
-generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = 123) { #<< ADDED config
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BgGenHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
-  
-  hlog("DEBUG", paste("Generating up to", n_background, "background points...")) # Changed log level
-  if (is.null(predictor_stack) || !inherits(predictor_stack, "SpatRaster") || terra::nlyr(predictor_stack) == 0) { hlog("ERROR", "Predictor stack is required."); return(NULL) }
-  if (!is.null(seed)) set.seed(seed)
-  
-  # --- Determine the layer to sample from ---
-  sampling_layer <- predictor_stack[[1]] # Start with the first layer
-  sampling_mask <- NULL # Initialize
-  
-  # Apply Coral Mask (if configured in config)
-  if (config$mask_background_points_to_coral && config$apply_coral_mask) {
-    hlog("DEBUG", "  Attempting coral reef mask for background point sampling...")
-    if (!is.null(config$coral_shapefile) && file.exists(config$coral_shapefile)) {
-      coral_areas_sf <- tryCatch({ sf::st_read(config$coral_shapefile, quiet = TRUE) }, error = function(e) {hlog("WARN",paste("   Failed load coral shapefile:", e$message)); NULL})
-      if (!is.null(coral_areas_sf)) {
-        coral_areas_vect <- tryCatch({ terra::vect(coral_areas_sf) }, error = function(e) {hlog("WARN",paste("   Failed convert coral sf to vect:", e$message)); NULL})
-        if (!is.null(coral_areas_vect)) {
-          if(terra::crs(coral_areas_vect) != terra::crs(sampling_layer)){
-            hlog("DEBUG", "    Projecting coral shapefile CRS...")
-            coral_areas_vect <- tryCatch(terra::project(coral_areas_vect, terra::crs(sampling_layer)), error = function(e){hlog("WARN",paste("     Failed project coral shapefile:", e$message)); NULL})
-          }
-          if(!is.null(coral_areas_vect)){
-            sampling_mask <- tryCatch(terra::mask(sampling_layer, coral_areas_vect), error=function(e){hlog("WARN",paste("     Failed mask sampling layer:", e$message)); NULL})
-            if(!is.null(sampling_mask)) { hlog("DEBUG", "  Coral reef mask applied for sampling.") }
-            else { hlog("WARN", "  Failed to create mask. Sampling from unmasked layer.") }
-          } else { hlog("WARN", "  CRS projection failed. Sampling from unmasked layer.") }
-        } else { hlog("WARN", "  sf to vect conversion failed. Sampling from unmasked layer.") }
-      } else { hlog("WARN", "  Coral shapefile loading failed. Sampling from unmasked layer.") }
-    } else { hlog("WARN", "  Coral shapefile path missing/invalid. Sampling from unmasked layer.") }
-  } else { hlog("DEBUG", "  Background point sampling not masked to coral reefs.") }
-  
-  # Use the masked layer if created, otherwise the original first layer
-  layer_to_sample_from <- if(!is.null(sampling_mask)) sampling_mask else sampling_layer
-  
-  # --- Sample Points ---
-  tryCatch({
-    bg_points <- terra::spatSample(layer_to_sample_from, size = n_background, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
-    if (nrow(bg_points) < n_background) { hlog("WARN", paste("Could only sample", nrow(bg_points), "background points (requested", n_background, ", likely due to mask/raster extent).")) }
-    if (nrow(bg_points) == 0) { hlog("ERROR", "Failed to generate ANY background points from the sampling area."); return(NULL) }
-    hlog("INFO", paste("Generated", nrow(bg_points), "background points.")) # Changed log level
-    return(as.data.frame(bg_points[, c("x", "y")]))
-  }, error = function(e) { hlog("ERROR", paste("Error generating background points:", e$message)); return(NULL) })
-}
-
-
 #' Generate Background Points using OBIS/MPAEU Ecoregion/Depth Method (Exact Replication v3)
 #'
 #' Replicates the OBIS/MPAEU Part 2 spatial extent definition AND background point sampling.
