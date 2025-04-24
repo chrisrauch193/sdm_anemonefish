@@ -116,6 +116,10 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
 }
 
 
+
+
+
+
 #' Generate Background Points using OBIS/MPAEU Ecoregion/Depth Method (Exact Replication v3)
 #'
 #' Replicates the OBIS/MPAEU Part 2 spatial extent definition AND background point sampling.
@@ -321,7 +325,7 @@ generate_sdm_background_obis_test <- function(occs_sf, global_predictor_stack, c
 }
 
 
-generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config, logger, species_log_file = NULL, seed_offset = 4) {
+generate_sdm_background_obis_original <- function(occs_sf, global_predictor_stack, config, logger, species_log_file = NULL, seed_offset = 4) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[GenerateSDMBackgroundOBISPart2]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
   
   # --- Input Checks ---
@@ -497,6 +501,199 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
 }
 
 
+generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config, logger, species_log_file = NULL, seed_offset = 4) {
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[GenerateSDMBackgroundOBISPart2]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
+  
+  # --- Input Checks ---
+  if (!inherits(occs_sf, "sf") || nrow(occs_sf) < 3) { hlog("ERROR", "Valid sf occurrence object with >= 3 points required.\n"); return(NULL) }
+  if (is.na(sf::st_crs(occs_sf))) { hlog("ERROR", "Occurrence sf object needs a CRS.\n"); return(NULL) }
+  if (!inherits(global_predictor_stack, "SpatRaster") || terra::nlyr(global_predictor_stack) < 1) { hlog("ERROR", "Valid global SpatRaster required.\n"); return(NULL) }
+  if (terra::crs(global_predictor_stack) == "") { hlog("ERROR", "Global predictor stack needs a CRS.\n"); return(NULL) }
+  if (!file.exists(config$ecoregion_shapefile)) { hlog("ERROR", "Ecoregion shapefile not found:", config$ecoregion_shapefile, "\n"); return(NULL) }
+  if (config$limit_by_depth_obis && !file.exists(config$bathymetry_file)) { hlog("ERROR", "Bathymetry file required for depth filtering not found:", config$bathymetry_file, "\n"); return(NULL) }
+  
+  species_aphia_id_internal <- tryCatch(occs_sf$AphiaID[1], error = function(e) { hlog("WARN", "AphiaID missing from occs_sf, using random seed.\n"); sample.int(1e6, 1) })
+  
+  # --- 1. Ecoregion Extent Definition ---
+  # ... (Keep the ecoregion loading, intersection, adjacency, buffering logic from the previous version) ...
+  # --- Load Ecoregions ---
+  hlog("DEBUG", "Loading ecoregions...\n")
+  ecoregions <- tryCatch(terra::vect(config$ecoregion_shapefile), error = function(e) { hlog("ERROR", "Failed load ecoregions:", e$message, "\n"); NULL })
+  if (is.null(ecoregions)) return(NULL)
+  occs_vect <- tryCatch(terra::vect(occs_sf), error = function(e) { hlog("ERROR", "Failed convert occs sf to vect:", e$message, "\n"); NULL })
+  if(is.null(occs_vect)) return(NULL)
+  if (terra::crs(occs_vect) != terra::crs(ecoregions)) {
+    hlog("DEBUG", "Projecting occurrences to match ecoregions CRS...\n")
+    occs_vect <- tryCatch(terra::project(occs_vect, terra::crs(ecoregions)), error = function(e) { hlog("ERROR", "Failed project occurrences:", e$message, "\n"); NULL })
+    if(is.null(occs_vect)) return(NULL)
+  }
+  # --- Identify Intersecting & Adjacent Ecoregions (OBIS Step) ---
+  hlog("DEBUG", "Identifying intersecting ecoregions...\n")
+  intersect_idx <- tryCatch(terra::is.related(ecoregions, occs_vect, "intersects"), error=function(e){hlog("WARN", "is.related failed:",e$message,"\n");NULL})
+  if (is.null(intersect_idx) || !any(intersect_idx)) { hlog("WARN", "No occurrences intersect with ecoregions. Cannot define extent this way.\n"); return(NULL) }
+  ecoreg_occ <- ecoregions[intersect_idx, ]
+  hlog("DEBUG", "Finding adjacent ecoregions using buffered points...\n")
+  sf::sf_use_s2(FALSE)
+  occs_buffered_sf <- tryCatch(sf::st_buffer(sf::st_as_sf(occs_vect), dist = config$poly_buffer_obis), error = function(e) { hlog("ERROR", "Failed buffer points:", e$message, "\n"); NULL })
+  if(is.null(occs_buffered_sf)) { sf::sf_use_s2(TRUE); return(NULL) }
+  adjacent_idx <- tryCatch(terra::is.related(ecoregions, terra::vect(occs_buffered_sf), "intersects"), error=function(e){hlog("WARN", "is.related failed for adjacent:",e$message,"\n");NULL})
+  if(is.null(adjacent_idx)) adjacent_idx <- intersect_idx # Fallback
+  sf::sf_use_s2(TRUE)
+  final_indices <- unique(c(which(intersect_idx), which(adjacent_idx)))
+  ecoreg_sel <- ecoregions[final_indices, ]
+  hlog("DEBUG", "Buffering final selected ecoregion polygon...\n")
+  sf::sf_use_s2(FALSE)
+  ecoreg_sel_buffered_sf <- tryCatch(sf::st_buffer(sf::st_as_sf(ecoreg_sel), dist = config$poly_buffer_final), error = function(e) { hlog("ERROR", "Failed buffer final polygon:", e$message, "\n"); NULL })
+  if(is.null(ecoreg_sel_buffered_sf)) { sf::sf_use_s2(TRUE); return(NULL) }
+  sf::sf_use_s2(TRUE)
+  raster_crs_terra <- terra::crs(global_predictor_stack)
+  obis_calibration_poly_sf <- sf::st_transform(ecoreg_sel_buffered_sf, crs = sf::st_crs(raster_crs_terra))
+  obis_calibration_vect <- terra::vect(obis_calibration_poly_sf)
+  hlog("INFO", "Ecoregion-based calibration polygon created (before depth filter).\n")
+  
+  # --- 2. Depth Filtering (Optional) ---
+  # ... (Keep the depth filtering logic exactly as corrected in the previous response) ...
+  depth_mask <- NULL
+  limit_by_depth_flag <- config$limit_by_depth_obis
+  if (limit_by_depth_flag) {
+    hlog("INFO", "Applying OBIS depth filter...\n")
+    bath_global <- tryCatch(terra::rast(config$bathymetry_file), error = function(e) { hlog("ERROR", "Failed load bathymetry:", e$message, "\n"); NULL })
+    if (is.null(bath_global)) { limit_by_depth_flag <- FALSE; hlog("WARN", "Disabling depth filter because bathymetry loading failed.\n") }
+    else {
+      if (config$apply_indo_pacific_crop) { hlog("DEBUG", "Applying Indo-Pacific crop to global bathymetry layer...\n"); ip_extent <- terra::ext(config$indo_pacific_bbox); bath_global <- tryCatch(terra::crop(bath_global, ip_extent), error=function(e){ hlog("WARN", "Failed cropping global bathy:", e$message, "\n"); NULL}); if(is.null(bath_global)){ hlog("WARN", "Proceeding without depth filter due to bathy crop error.\n"); limit_by_depth_flag <- FALSE } else { hlog("DEBUG", "Global bathymetry cropped to Indo-Pacific extent.\n")} }
+      if(limit_by_depth_flag){ if (terra::crs(bath_global) != raster_crs_terra) { hlog("DEBUG", "Projecting global bathymetry...\n"); bath_global <- tryCatch(terra::project(bath_global, raster_crs_terra), error = function(e) { hlog("ERROR", "Failed project bathymetry:", e$message, "\n"); NULL }); if (is.null(bath_global)) { limit_by_depth_flag <- FALSE; hlog("WARN", "Disabling depth filter because projection failed.\n") } } }
+      if (limit_by_depth_flag) {
+        bath_species_extent <- tryCatch(terra::crop(bath_global, obis_calibration_vect, snap="near"), error = function(e) { hlog("WARN", "Failed cropping bathymetry for depth filter:", e$message, "\n"); NULL })
+        if (is.null(bath_species_extent)) { hlog("WARN", "Proceeding without depth filter due to cropping error.\n"); limit_by_depth_flag <- FALSE; }
+        else {
+          occs_vect_proj <- tryCatch(terra::project(occs_vect, raster_crs_terra), error=function(e)NULL)
+          if(is.null(occs_vect_proj)){ hlog("WARN", "Could not project occurrences to raster CRS for depth extraction. Skipping depth filter.\n"); limit_by_depth_flag <- FALSE; }
+          else {
+            bath_pts_vals <- tryCatch(terra::extract(bath_species_extent, occs_vect_proj, ID = FALSE), error=function(e){hlog("WARN", "Depth extraction failed:", e$message, "\n");NULL})
+            if(is.null(bath_pts_vals) || nrow(bath_pts_vals) == 0 || all(is.na(bath_pts_vals[[1]]))) { hlog("WARN", "No valid depth values extracted for occurrences within ecoregion extent. Skipping depth filter.\n"); limit_by_depth_flag <- FALSE; }
+            else {
+              depth_range_pts <- range(bath_pts_vals[[1]], na.rm = TRUE); min_depth <- depth_range_pts[1] - config$depth_buffer_obis; max_depth <- depth_range_pts[2] + config$depth_buffer_obis; max_depth <- min(0, max_depth); hlog("DEBUG", "  Depth range filter:", min_depth, "to", max_depth, "m\n")
+              depth_mask <- bath_species_extent; depth_mask[depth_mask < min_depth | depth_mask > max_depth] <- NA; depth_mask[!is.na(depth_mask)] <- 1
+              max_val_check <- terra::global(depth_mask, "max", na.rm = TRUE)$max
+              if (is.na(max_val_check) || max_val_check == 0) { hlog("WARN", "Depth filter masked all cells within ecoregion extent. Skipping depth filter.\n"); depth_mask <- NULL; limit_by_depth_flag <- FALSE; }
+              else { hlog("INFO", "Depth filter mask created based on ecoregion extent and occurrence depths.\n") }
+            }
+          }
+          if(exists("bath_species_extent_masked")) rm(bath_species_extent_masked); gc()
+          if(exists("bath_pts_vals")) rm(bath_pts_vals); gc()
+        }
+        if(exists("bath_species_extent")) rm(bath_species_extent); gc()
+      }
+      if(exists("bath_global")) rm(bath_global); gc()
+    }
+  } else { hlog("INFO", "Depth filter disabled by config.\n") }
+  
+  # --- 3. Mask Environmental Layers ---
+  hlog("INFO", "Masking global predictors with final species extent (Ecoregions +/- Depth)...\n")
+  predictor_stack_obis_part2 <- global_predictor_stack
+  
+  if(!is.null(depth_mask) && limit_by_depth_flag){
+    predictor_stack_obis_part2 <- tryCatch(terra::mask(terra::crop(predictor_stack_obis_part2, depth_mask, snap="near"), depth_mask),
+                                           error = function(e){hlog("ERROR", "Failed depth masking predictor stack:", e$message, "\n"); NULL})
+    if(is.null(predictor_stack_obis_part2)){ rm(depth_mask); gc(); return(NULL)}
+    rm(depth_mask); gc()
+    hlog("DEBUG", "Predictor stack masked by depth.\n")
+  }
+  
+  predictor_stack_obis_part2 <- tryCatch(terra::mask(terra::crop(predictor_stack_obis_part2, obis_calibration_vect, snap="near"), obis_calibration_vect),
+                                         error = function(e){hlog("ERROR", "Final ecoregion masking failed:", e$message, "\n"); NULL})
+  if(is.null(predictor_stack_obis_part2)) return(NULL)
+  
+  min_max_check_final <- terra::global(predictor_stack_obis_part2[[1]], c("min", "max"), na.rm = TRUE)
+  if (is.na(min_max_check_final$min) && is.na(min_max_check_final$max)) { hlog("ERROR", "  No valid cells after final masking.\n"); return(NULL) }
+  hlog("INFO", "  Final species-specific stack created.\n")
+  
+  # --- 4. Calculate Quadrature Number (OBIS logic - mimicking .cm_calc_quad) ---
+  hlog("DEBUG", "Calculating number of background points (quad_n) using OBIS logic...\n")
+  
+  # Use the target number from config as the base 'quad_samp' value
+  # Their code uses a default of 50000 or 1% of available cells if quad_samp is between 0-1.
+  # We'll use config$background_points_n as the target, but apply their adjustment logic.
+  quad_samp_target <- config$background_points_n # Base target number
+  n_presences <- nrow(occs_sf) # Number of presence points (after cleaning/thinning)
+  
+  # Count valid cells in the final masked stack
+  env_size_t <- tryCatch({
+    valid_cells <- terra::global(predictor_stack_obis_part2[[1]], fun="notNA") # Count non-NA cells
+    valid_cells$notNA
+  }, error=function(e){ hlog("WARN", "Could not count valid cells for quad_n calc.\n"); NA})
+  
+  if(is.na(env_size_t) || env_size_t == 0){ hlog("ERROR", "No valid cells in final masked stack to sample background from.\n"); return(NULL) }
+  hlog("DEBUG", "  Number of valid cells in final masked stack:", env_size_t, "\n")
+  
+  # OBIS logic: if n_presences >= target background number, potentially double target,
+  # BUT ensure total points (pres + bg) doesn't exceed available cells.
+  quad_n_final <- quad_samp_target # Start with the config target
+  
+  if (n_presences >= quad_samp_target) {
+    est_tsize <- n_presences * 2 # Potential doubling
+    if (est_tsize > env_size_t) {
+      # If doubled presences exceed available cells, cap bg points
+      # And potentially reduce presences (OBIS does this, we won't here for simplicity in comparison)
+      quad_n_final <- env_size_t - n_presences # Max possible background points
+      if (quad_n_final < 0) quad_n_final <- 10 # Ensure at least some background points
+      hlog("WARN", "  Doubled presences exceed available cells. Capping background points to:", quad_n_final, "(Total cells:", env_size_t, ", Presences:", n_presences, ")\n")
+      # Note: OBIS code would also downsample presences here, we skip this.
+    } else {
+      # If doubling fits, use double the presences as the background target
+      quad_n_final <- n_presences * 2
+      hlog("DEBUG", "  Using doubled presences as background target:", quad_n_final, "\n")
+    }
+  }
+  
+  # Ensure quad_n doesn't exceed available cells
+  quad_n_final <- min(quad_n_final, env_size_t)
+  hlog("INFO", "  Final calculated number of background points (quad_n):", quad_n_final, "\n")
+  
+  # --- 5. Sample Background Points ---
+  hlog("INFO", "Generating background points using OBIS Part2 logic & stack...\n")
+  set.seed(config$background_seed %||% (111 + seed_offset)) # Use consistent seed logic if available
+  
+  # Sample directly from the final masked stack
+  bg_obis_part2_df <- tryCatch({
+    terra::spatSample(predictor_stack_obis_part2,
+                      size = quad_n_final, # Use the calculated number
+                      method = "random",
+                      na.rm = TRUE,
+                      xy = TRUE,
+                      warn = FALSE)
+  }, error = function(e) { hlog("ERROR", "spatSample failed for background points:", e$message, "\n"); NULL })
+  
+  if (is.null(bg_obis_part2_df)) { hlog("ERROR", "  Background point generation failed.\n"); return(NULL) }
+  if (nrow(bg_obis_part2_df) < quad_n_final) { hlog("WARN", "  Could only sample", nrow(bg_obis_part2_df), "background points (requested", quad_n_final, ").\n") }
+  if (nrow(bg_obis_part2_df) == 0) { hlog("ERROR", "  Failed to generate ANY background points.\n"); return(NULL) }
+  
+  # Keep only coordinates
+  bg_coords_df <- as.data.frame(bg_obis_part2_df[, c("x", "y")])
+  
+  hlog("INFO", "  Generated", nrow(bg_coords_df), "OBIS Part2 background points.\n")
+  
+  
+  # --- 6. Return Results ---
+  hlog("INFO", "Returning background points, species stack, and polygon.\n")
+  return(list(
+    background_points = bg_coords_df,
+    species_specific_stack = predictor_stack_obis_part2,
+    calibration_polygon = obis_calibration_vect, # Polygon *before* depth masking
+    quad_n_calculated = quad_n_final # Return the actual number sampled/calculated
+  ))
+  
+  
+  # return(bg_coords_df)
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -517,16 +714,21 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
 create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
   
+  
+  hlog("INFO", "OKAY WE ARE DOING BLOCKCV STUFF")
+  
+  
   # --- Extract Config Parameters ---
   cv_method      <- config$sdm_spatial_cv_type_to_use
   
-  nfolds         <- config$sdm_n_folds         %||% 5
-  auto_range     <- config$blockcv_auto_range  %||% TRUE
-  range          <- config$blockcv_range_m     %||% 200000
-  use_hexagon    <- config$blockcv_hexagon     %||% FALSE
-  selection_type <- config$blockcv_selection   %||% "systematic"
-  n_iterate      <- config$blockcv_n_iterate   %||% 300
-  lat_blocks     <- config$blockcv_lat_blocks  %||% 50
+  nfolds         <- config$sdm_n_folds
+  auto_range     <- config$blockcv_auto_range
+  range          <- config$blockcv_range_default
+  range_max      <- config$blockcv_range_max
+  use_hexagon    <- config$blockcv_hexagon
+  selection_type <- config$blockcv_selection
+  n_iterate      <- config$blockcv_n_iterate
+  lat_blocks     <- config$blockcv_lat_blocks
   
   hlog("DEBUG", paste("Attempting to create", nfolds, "spatial folds (blockCV simplified logic)..."))
   
@@ -543,8 +745,14 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
     hlog("INFO", "Using auto range")
     sf::sf_use_s2(FALSE)
     auto_cor <- blockCV::cv_spatial_autocor(x = sf::st_make_valid(swd_sf), column = "pa")
-    range = auto_cor$range
-    hlog("INFO", paste("Auto range result: ", range))
+    hlog("INFO", paste("Auto range result: ", auto_cor$range))
+    
+    if (auto_cor$range < range_max) {
+      range <- auto_cor$range
+    } else {
+      hlog("INFO", "cv_spatial_autocor result exceeded max range. Setting to max allowed range")
+      range <- range_max
+    }
   }
   
   
@@ -552,7 +760,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
     hlog("INFO", "Generating grid blocks.")
     hlog("INFO", paste("Final range to use: ", range))
     spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, size = range,
-                                         hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, selection = selection_type, extend = 0.5)
+                                         hexagon = use_hexagon, k = nfolds, progress = T, report = T, plot = T, selection = selection_type, extend = 0.5)
     blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack) + geom_sf(data = swd_sf, 
                                                                                     alpha = .5)
   }
@@ -560,7 +768,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
   if (cv_method == "spatial_lat") {
     hlog("INFO", "Generating latitudinal blocks.")
     spatial_folds <- blockCV::cv_spatial(r = predictor_stack, x = swd_sf, column = "pa", iteration = n_iterate, rows_cols = c(lat_blocks, 1),
-                                         hexagon = use_hexagon, k = nfolds, progress = F, report = T, plot = F, extend = 0.5)
+                                         hexagon = use_hexagon, k = nfolds, progress = T, report = T, plot = T, extend = 0.5)
     blockCV::cv_plot(cv = spatial_folds, x = swd_sf) + geom_sf(data = swd_sf, 
                                                                alpha = .5)
   }
@@ -651,6 +859,19 @@ run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, conf
     
   }, error = function(e) { hlog("ERROR", paste("SDMtune::gridSearch failed:", e$message)); return(NULL) })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -981,4 +1202,101 @@ calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept
   })
 }
 
+
+
+
+
+# Add this function to scripts/helpers/sdm_modeling_helpers.R
+
+#' Log Final Model Evaluation Metrics
+#'
+#' Calculates training AUC, training TSS, and AICc for a trained SDMmodel
+#' and appends the results to a CSV log file.
+#'
+#' @param final_model The trained `SDMmodel` object.
+#' @param full_swd_data The `SWD` object used to train the final model. Required for calculating training metrics.
+#' @param tuning_predictor_stack The `SpatRaster` stack used for training. Required for AICc calculation.
+#' @param species_name_sanitized Sanitized species name.
+#' @param group_name Group name ("anemone" or "anemonefish").
+#' @param predictor_type_suffix Suffix indicating model type.
+#' @param config The configuration list (needs `log_dir_base`).
+#' @param logger A log4r logger object (can be NULL).
+#' @param species_log_file Optional path for detailed species logs.
+#' @return TRUE on success, FALSE on failure.
+log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor_stack,
+                                    species_name_sanitized, group_name, predictor_type_suffix,
+                                    config, logger = NULL, species_log_file = NULL) {
+  
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[LogMetricsHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
+  
+  # --- Input validation ---
+  if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
+    hlog("ERROR", "Invalid SDMmodel object provided for metric logging.")
+    return(FALSE)
+  }
+  if (is.null(full_swd_data) || !inherits(full_swd_data, "SWD")) {
+    hlog("ERROR", "SWD object required for metric logging.")
+    return(FALSE)
+  }
+  if (is.null(tuning_predictor_stack) || !inherits(tuning_predictor_stack, "SpatRaster")) {
+    hlog("ERROR", "Predictor stack required for AICc calculation.")
+    return(FALSE)
+  }
+  
+  
+  # --- Define Output File ---
+  # Place it in the main log directory defined in config
+  output_log_file <- file.path(config$log_dir_base, paste0("sdm_final_model_metrics_", group_name, ".csv"))
+  hlog("DEBUG", paste("Logging final model metrics to:", output_log_file))
+  
+  # --- Calculate Metrics ---
+  metrics <- list(
+    Timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
+    GroupName = group_name,
+    SpeciesName = species_name_sanitized, # Using sanitized for consistency
+    PredictorSuffix = predictor_type_suffix,
+    AUC_train = NA_real_,
+    TSS_train = NA_real_,
+    AICc = NA_real_
+  )
+  
+  tryCatch({
+    # Calculate Training AUC (using test=NULL implies training data)
+    metrics$AUC_train <- SDMtune::auc(final_model, test = NULL)
+    hlog("DEBUG", paste("  Calculated AUC_train:", round(metrics$AUC_train, 4)))
+  }, error = function(e) {
+    hlog("WARN", paste("Could not calculate Training AUC:", e$message))
+  })
+  
+  tryCatch({
+    # Calculate Training TSS (using test=NULL implies training data)
+    metrics$TSS_train <- SDMtune::tss(final_model, test = NULL)
+    hlog("DEBUG", paste("  Calculated TSS_train:", round(metrics$TSS_train, 4)))
+  }, error = function(e) {
+    hlog("WARN", paste("Could not calculate Training TSS:", e$message))
+  })
+  
+  tryCatch({
+    # Calculate AICc (requires the environmental raster stack)
+    # Only calculate if the model method supports it (Maxent/Maxnet)
+    metrics$AICc <- SDMtune::aicc(final_model, env = tuning_predictor_stack)
+    hlog("DEBUG", paste("  Calculated AICc:", metrics$AICc, 2))
+  }, error = function(e) {
+    hlog("WARN", paste("Could not calculate AICc:", e$message))
+    metrics$AICc <- NA # Ensure it's NA on error
+  })
+  
+  # --- Append to CSV File ---
+  metrics_df <- as.data.frame(metrics)
+  
+  tryCatch({
+    write_headers <- !file.exists(output_log_file)
+    readr::write_csv(metrics_df, output_log_file, append = !write_headers, col_names = write_headers)
+    hlog("INFO", paste("Successfully logged metrics for", species_name_sanitized))
+    return(TRUE)
+  }, error = function(e) {
+    hlog("ERROR", paste("Failed to write metrics to log file:", output_log_file, "Error:", e$message))
+    return(FALSE)
+  })
+}
 #-------------------------------------------------------------------------

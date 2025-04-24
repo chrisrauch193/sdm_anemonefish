@@ -136,11 +136,12 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
 # ("spatial_grid" or "spatial_lat" or "random")
 sdm_spatial_cv_type_to_use <- "spatial_grid"
-blockcv_auto_range <- FALSE
-blockcv_range_m <- 300000
-blockcv_hexagon <- FALSE
+blockcv_auto_range <- TRUE
+blockcv_range_default <- 300000 # 20000
+blockcv_range_max <- 500000
+blockcv_hexagon <- TRUE
 # ("systematic", "random")
-blockcv_selection <- "random"
+blockcv_selection <- "systematic"
 blockcv_n_iterate <- 300
 blockcv_lat_blocks <- 20000
 
@@ -211,7 +212,8 @@ config <- list(
   # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
   sdm_spatial_cv_type_to_use = sdm_spatial_cv_type_to_use, # Which generated block type to use? ("spatial_grid" or "spatial_lat" or "random")
   blockcv_auto_range = blockcv_auto_range,       # TRUE: Calculate range based on autocorrelation
-  blockcv_range_m = blockcv_range_m,        # Fixed range in METERS (used only if blockcv_auto_range = FALSE)
+  blockcv_range_default = blockcv_range_default,        # Fixed range in METERS (used only if blockcv_auto_range = FALSE)
+  blockcv_range_max = blockcv_range_max,
   blockcv_hexagon = blockcv_hexagon,          # Use hexagonal blocks for spatial_grid?
   blockcv_selection = blockcv_selection, # Fold assignment method ("systematic" or "random")
   blockcv_n_iterate = blockcv_n_iterate,          # Iterations for blockCV fold assignment (more relevant for 'random' selection)
