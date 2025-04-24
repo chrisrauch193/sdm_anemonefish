@@ -1,4 +1,4 @@
-# scripts/06c_run_sdm_anemonefish_biotic_pc1.R
+# scripts/sdm_runs/06c_run_sdm_anemonefish_biotic_pc1.R
 #-------------------------------------------------------------------------------
 # Run SDMs for Anemonefish Species using PC1 + Max Host Suitability
 # (SDMtune Workflow). Includes Parallel Processing, Logging, Progress,

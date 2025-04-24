@@ -1,11 +1,6 @@
-# scripts/sdm_runs/06a_run_sdm_anemone.R
-#-------------------------------------------------------------------------------
-# Run Standard SDMs for Anemone Species using either PCA or VIF-selected Env
-# Predictors (SDMtune Workflow) with Parallel Processing, Logging, and Progress.
-# Includes species-specific detailed log files.
-# Saves outputs to target structure defined in config.R (v4 - Corrected Path Usage).
-#-------------------------------------------------------------------------------
-cat("--- Running Script 06a: Run Standard Anemone SDMs (v4 - Corrected Path Usage) ---\n")
+# scripts/sdm_runs/experiments/tweaking_base_run.R
+
+cat("--- Running Script tweaking_base_run.R ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
 if (file.exists("scripts/config.R")) {
@@ -33,7 +28,7 @@ logger <- setup_logger(log_file = config$log_file_path,
                        log_to_console = config$log_to_console,
                        console_level = config$log_console_level)
 
-log4r::info(logger, "--- Starting Script 06a: Run Standard Anemone SDMs (v4 - Corrected Path Usage) ---")
+log4r::info(logger, "--- Starting Script tweaking_base_run.R ---")
 
 # --- 5. Define Group Specifics & Predictor Type ---
 group_name <- "anemone"
@@ -124,7 +119,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   
   species_log_file <- file.path(config$species_log_dir, paste0(species_name_sanitized, predictor_type_suffix, "_detail.log"))
   slog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), paste0("[", species_name, "]"), paste0(..., collapse = " ")); cat(msg, "\n", file = species_log_file, append = TRUE) }
-  slog("INFO", "--- Starting processing (Script 06a v7 - Correct VI Call) ---")
+  slog("INFO", "--- Starting processing (tweaking_base_run.R) ---")
   
   intermediate_models_dir <- file.path(config$models_dir_intermediate, paste0(group_name, predictor_type_suffix))
   intermediate_results_dir <- file.path(config$results_dir_intermediate, paste0(group_name, predictor_type_suffix))
@@ -185,10 +180,15 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     if (is.null(background_points)) { msg <- paste0("Skipping: Failed background point generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     slog("DEBUG", "Background points generated.")
     
+    
+    
     # Prepare SWD data ONCE for tuning and final model training/VI
     full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points, env = tuning_predictor_stack, verbose = FALSE) }, error = function(e) { slog("ERROR", paste("Failed prepareSWD for tuning/training:", e$message)); NULL })
     if (is.null(full_swd_data)) { rm(background_points); gc(); return(list(status = "error_swd_preparation", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("log_prefix", "SWD prep failed."))) }
     slog("DEBUG", "SWD object prepared.")
+    
+    
+    
     
     slog("INFO", "Starting hyperparameter tuning.")
     tuning_output <- run_sdm_tuning_scv(occs_coords, tuning_predictor_stack, background_points, config, logger=NULL, species_name, species_log_file=species_log_file)
@@ -196,42 +196,33 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     best_hypers <- attr(tuning_output, "best_hypers")
     if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { rm(background_points, full_swd_data); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results."))) }
     
+    
+    
+    
     slog("INFO", "Starting final model training.")
     final_model <- train_final_sdm(occs_coords, tuning_predictor_stack, background_points, best_hypers, config, logger=NULL, species_name, species_log_file=species_log_file)
     if(is.null(final_model)){ msg <- paste0("Skipping: Training failed."); slog("ERROR", msg); rm(background_points, full_swd_data); gc(); return(list(status = "error_training", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
     slog("INFO", "Final model training complete.")
     if(!save_final_model(final_model, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { rm(background_points, full_swd_data); gc(); return(list(status = "error_saving_model", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save final model."))) }
     
+    
+    
     rm(background_points); gc() # Only remove bg points, keep full_swd_data for VI
   } # End if !load_existing_model
   
-  # --- Variable Importance (Corrected Call v7) ---
-  # Now we *always* pass the final_model and the training swd data
-  if (!is.null(final_model)) {
-    if(!is.null(full_swd_data)){ # Check if SWD data is available
-      slog("INFO", "Calculating and saving variable importance...")
-      vi_success <- calculate_and_save_vi(
-        final_model = final_model,             # Pass the final SDMmodel
-        training_swd = full_swd_data,        # Pass the full training SWD data
-        species_name_sanitized = species_name_sanitized,
-        group_name = group_name,
-        predictor_type_suffix = predictor_type_suffix,
-        config = config,
-        logger = NULL,
-        species_log_file = species_log_file)
-      if(!vi_success) slog("WARN", "Variable importance calculation/saving failed.")
-    } else {
-      slog("WARN", "Skipping variable importance: training SWD data is missing (required for final model VI).")
-    }
-  } else {
-    slog("WARN", "Skipping variable importance: final model object is unavailable.")
-  }
   
+  
+
   # --- Prediction Loop ---
   # (Prediction loop remains the same as v4)
   predictions_made = 0; prediction_errors = 0
   scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
   slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
+  
+  
+  # TODO: JUST GOING TO USE CURRENT FOR NOW
+  scenarios_to_predict <- c("current")
+  
   
   if (!is.null(final_model)) {
     for (pred_scenario in scenarios_to_predict) {
@@ -285,34 +276,18 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
 } # End process_species_sdm function
 
 
-# --- 10. Setup Parallel Backend & Run ---
-# (Parallel setup and furrr::future_map call remain the same as v4)
-if (config$use_parallel && config$num_cores > 1) {
-  log4r::info(logger, paste("Setting up parallel backend with", config$num_cores, "cores (multisession)."))
-  gc(full=TRUE); future::plan(future::multisession, workers = config$num_cores, gc = TRUE)
-} else {
-  log4r::info(logger, "Running sequentially."); future::plan(future::sequential)
-}
-progressr::handlers(global = TRUE); progressr::handlers("txtprogressbar")
 
 log4r::info(logger, paste("Starting SDM processing for", nrow(species_df), group_name, "species..."))
-
-results_list <- progressr::with_progress({
-  furrr::future_map(1:nrow(species_df), ~{
-    process_species_sdm(
-      species_row = species_df[.x, ],
-      config = config,
-      predictor_paths_or_list = predictor_paths_or_list,
-      group_name = group_name,
-      predictor_type_suffix = predictor_type_suffix,
-      use_pca = use_pca,
-      occurrence_dir = occurrence_dir,
-      tuning_scenario = "current"
-    )
-  }, .options = furrr_options(seed = TRUE, scheduling = 1.0))
-})
-
-log4r::info(logger, "Parallel/sequential processing complete.")
+res <- process_species_sdm(
+  species_row = species_df[1, ],
+  config = config,
+  predictor_paths_or_list = predictor_paths_or_list,
+  group_name = group_name,
+  predictor_type_suffix = predictor_type_suffix,
+  use_pca = use_pca,
+  occurrence_dir = occurrence_dir,
+  tuning_scenario = "current"
+)
 
 
 # --- 11. Process Results ---
@@ -320,18 +295,13 @@ log4r::info(logger, "Parallel/sequential processing complete.")
 occurrence_counts <- list()
 success_count <- 0; error_count <- 0; skipped_count <- 0; partial_success_count <- 0
 log4r::info(logger, paste("--- Processing Results Summary (", group_name, predictor_type_suffix, "Models) ---"))
-for (res in results_list) {
-  if (is.null(res)) { error_count <- error_count + 1; log4r::error(logger, "Received NULL result."); next }
-  log_level_func <- switch(res$status, success=log4r::info, success_with_pred_errors=log4r::warn, skipped_occurrences=log4r::warn, log4r::error)
-  log_level_func(logger, res$message)
-  occurrence_counts[[res$species]] <- if(!is.null(res$occurrence_count)) res$occurrence_count else NA
-  if (res$status == "success") success_count <- success_count + 1
-  else if (res$status == "success_with_pred_errors") partial_success_count <- partial_success_count + 1
-  else if (grepl("skipped", res$status)) skipped_count <- skipped_count + 1
-  else error_count <- error_count + 1
-}
+if (is.null(res)) { error_count <- error_count + 1; log4r::error(logger, "Received NULL result."); next }
+log_level_func <- switch(res$status, success=log4r::info, success_with_pred_errors=log4r::warn, skipped_occurrences=log4r::warn, log4r::error)
+log_level_func(logger, res$message)
+occurrence_counts[[res$species]] <- if(!is.null(res$occurrence_count)) res$occurrence_count else NA
+if (res$status == "success") success_count <- success_count + 1
+
 log4r::info(logger, paste("--- Overall Summary (", group_name, predictor_type_suffix, "Models) ---"))
-log4r::info(logger, paste("Total Species Targets:", length(results_list)))
 log4r::info(logger, paste("Fully Successful Runs:", success_count))
 log4r::info(logger, paste("Partially Successful Runs:", partial_success_count))
 log4r::info(logger, paste("Skipped:", skipped_count))
@@ -344,6 +314,6 @@ if (length(occurrence_counts) > 0) {
   cat("\n--- Final Occurrence Counts (", group_name, predictor_type_suffix, ", after cleaning/thinning) ---\n"); print(occ_count_df_print)
 } else { log4r::warn(logger, "No occurrence counts were recorded.") }
 
-future::plan(future::sequential); gc(full=TRUE)
-log4r::info(logger, "--- Script 06a (v7 - Corrected VI Call) finished. ---")
+gc(full=TRUE)
+log4r::info(logger, "--- Script tweaking_base_run.R finished. ---")
 #-------------------------------------------------------------------------------

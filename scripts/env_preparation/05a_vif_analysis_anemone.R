@@ -1,4 +1,4 @@
-# scripts/05a_vif_analysis_anemone.R
+# scripts/env_preparation/05a_vif_analysis_anemone.R
 #-------------------------------------------------------------------------------
 # INTERACTIVE VIF/Correlation Analysis Script for ANEMONE HOSTS
 # Analyzes a user-defined CORE set of variables across ALL scenarios.

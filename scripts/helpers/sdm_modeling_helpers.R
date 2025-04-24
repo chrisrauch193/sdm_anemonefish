@@ -933,10 +933,6 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 }
 
 
-# scripts/helpers/sdm_modeling_helpers.R
-
-# ... (keep other functions above) ...
-
 #' Calculate and Save Variable Importance (v9 - Handles MaxNet Directly)
 #' Calculates permutation importance. For MaxNet models, it extracts the
 #' importance calculated during training. For other models, it uses SDMtune::varImp.

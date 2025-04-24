@@ -1,4 +1,4 @@
-# scripts/06b_run_sdm_anemonefish_env.R
+# scripts/sdm_runs/06b_run_sdm_anemonefish_env.R
 #-------------------------------------------------------------------------------
 # Run Standard SDMs for Anemonefish Species using ONLY Environmental
 # Predictors (PCA or VIF-selected) (SDMtune Workflow) with Parallel, Logging, Progress.

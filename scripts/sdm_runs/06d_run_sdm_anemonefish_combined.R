@@ -1,4 +1,4 @@
-# scripts/06d_run_sdm_anemonefish_combined.R
+# scripts/sdm_runs/06d_run_sdm_anemonefish_combined.R
 #-------------------------------------------------------------------------------
 # Run Combined SDMs for Anemonefish Species using Environmental Predictors (PCA)
 # and a Biotic Predictor (Max Host Suitability) (SDMtune Workflow).

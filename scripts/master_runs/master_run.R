@@ -1,3 +1,5 @@
+# scripts/master_runs/master_run.R
+
 source("~/a0236995/sdm_anemonefish/scripts/config.R", echo=TRUE)
 
 # source("~/a0236995/sdm_anemonefish/scripts/05b_preprocess_env_pca_only.R", echo=TRUE)

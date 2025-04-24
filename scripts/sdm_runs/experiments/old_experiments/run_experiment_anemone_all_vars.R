@@ -1,4 +1,4 @@
-# scripts/run_experiment_anemone_all_vars.R
+# scripts/sdm_runs/experiments/old_experiments/run_experiment_anemone_all_vars.R
 #-------------------------------------------------------------------------------
 # EXPERIMENTAL SCRIPT for Anemone SDMs
 #

@@ -1,4 +1,4 @@
-# scripts/05b_vif_analysis_anemonefish_env.R
+# scripts/env_preparation/05b_vif_analysis_anemonefish_env.R
 #-------------------------------------------------------------------------------
 # INTERACTIVE VIF/Correlation Analysis Script for ANEMONEFISH (Env Variables Only)
 # Analyzes a user-defined CORE set of variables across ALL scenarios.
