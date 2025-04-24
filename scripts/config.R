@@ -136,14 +136,13 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
 # ("spatial_grid" or "spatial_lat" or "random")
 sdm_spatial_cv_type_to_use <- "spatial_grid"
-blockcv_auto_range <- TRUE
-blockcv_range_default <- 300000 # 20000
-blockcv_range_max <- 500000
+blockcv_auto_range <- FALSE
+blockcv_range_default <- 20000 # 300000
+blockcv_range_max <- 1000000
 blockcv_hexagon <- TRUE
 # ("systematic", "random")
 blockcv_selection <- "systematic"
 blockcv_n_iterate <- 300
-blockcv_lat_blocks <- 20000
 
 
 # OBIS stuff

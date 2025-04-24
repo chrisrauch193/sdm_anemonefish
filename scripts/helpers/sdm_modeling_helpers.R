@@ -1206,97 +1206,140 @@ calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept
 
 
 
-# Add this function to scripts/helpers/sdm_modeling_helpers.R
 
-#' Log Final Model Evaluation Metrics
+
+# Corrected function for scripts/helpers/sdm_modeling_helpers.R
+
+#' Log Final Model Evaluation Metrics (v4 - Corrected for Available CV Metrics)
 #'
-#' Calculates training AUC, training TSS, and AICc for a trained SDMmodel
-#' and appends the results to a CSV log file.
+#' Calculates training AUC/TSS, AICc for the final model, and extracts
+#' the mean test AUC from the cross-validation tuning results table.
+#' Appends all metrics to a CSV log file.
 #'
 #' @param final_model The trained `SDMmodel` object.
-#' @param full_swd_data The `SWD` object used to train the final model. Required for calculating training metrics.
-#' @param tuning_predictor_stack The `SpatRaster` stack used for training. Required for AICc calculation.
+#' @param full_swd_data The `SWD` object used to train the final model.
+#' @param tuning_predictor_stack The `SpatRaster` stack used for training/AICc.
+#' @param tuning_output The `SDMtune` object returned by `gridSearch`.
 #' @param species_name_sanitized Sanitized species name.
 #' @param group_name Group name ("anemone" or "anemonefish").
 #' @param predictor_type_suffix Suffix indicating model type.
-#' @param config The configuration list (needs `log_dir_base`).
+#' @param config The configuration list.
 #' @param logger A log4r logger object (can be NULL).
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor_stack,
+log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor_stack, tuning_output,
                                     species_name_sanitized, group_name, predictor_type_suffix,
                                     config, logger = NULL, species_log_file = NULL) {
   
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[LogMetricsHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[LogMetricsHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
   
   # --- Input validation ---
-  if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
-    hlog("ERROR", "Invalid SDMmodel object provided for metric logging.")
-    return(FALSE)
-  }
-  if (is.null(full_swd_data) || !inherits(full_swd_data, "SWD")) {
-    hlog("ERROR", "SWD object required for metric logging.")
-    return(FALSE)
-  }
-  if (is.null(tuning_predictor_stack) || !inherits(tuning_predictor_stack, "SpatRaster")) {
-    hlog("ERROR", "Predictor stack required for AICc calculation.")
-    return(FALSE)
-  }
-  
+  if (is.null(final_model) || !inherits(final_model, "SDMmodel")) { hlog("ERROR", "Invalid SDMmodel provided."); return(FALSE) }
+  if (is.null(full_swd_data) || !inherits(full_swd_data, "SWD")) { hlog("WARN", "SWD object missing, cannot calculate training metrics.") } # Warning instead of error
+  if (is.null(tuning_predictor_stack) || !inherits(tuning_predictor_stack, "SpatRaster")) { hlog("ERROR", "Predictor stack required for AICc."); return(FALSE) }
+  if (is.null(tuning_output) || !inherits(tuning_output, "SDMtune")) { hlog("ERROR", "Valid tuning_output object required for test metrics."); return(FALSE) }
   
   # --- Define Output File ---
-  # Place it in the main log directory defined in config
   output_log_file <- file.path(config$log_dir_base, paste0("sdm_final_model_metrics_", group_name, ".csv"))
   hlog("DEBUG", paste("Logging final model metrics to:", output_log_file))
   
-  # --- Calculate Metrics ---
+  # --- Initialize Metrics List ---
+  # Only include metrics we can actually get
   metrics <- list(
     Timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
     GroupName = group_name,
-    SpeciesName = species_name_sanitized, # Using sanitized for consistency
+    SpeciesName = species_name_sanitized,
     PredictorSuffix = predictor_type_suffix,
     AUC_train = NA_real_,
     TSS_train = NA_real_,
+    AUC_test_CV = NA_real_, # Mean test AUC from CV tuning results
     AICc = NA_real_
+    # Removed TSS_test_CV as it's not in tuning_output@results by default
   )
   
-  tryCatch({
-    # Calculate Training AUC (using test=NULL implies training data)
-    metrics$AUC_train <- SDMtune::auc(final_model, test = NULL)
-    hlog("DEBUG", paste("  Calculated AUC_train:", round(metrics$AUC_train, 4)))
-  }, error = function(e) {
-    hlog("WARN", paste("Could not calculate Training AUC:", e$message))
-  })
+  # --- Calculate Training Metrics (from final_model using full_swd_data) ---
+  if (!is.null(full_swd_data)) {
+    tryCatch({ metrics$AUC_train <- SDMtune::auc(final_model, test = NULL) }, error = function(e) { hlog("WARN", paste("Could not calculate Training AUC:", e$message)) })
+    tryCatch({ metrics$TSS_train <- SDMtune::tss(final_model, test = NULL) }, error = function(e) { hlog("WARN", paste("Could not calculate Training TSS:", e$message)) })
+  } else {
+    hlog("WARN", "Skipping training metric calculation due to missing SWD data.")
+  }
   
+  # --- Calculate AICc (from final_model using tuning_predictor_stack) ---
   tryCatch({
-    # Calculate Training TSS (using test=NULL implies training data)
-    metrics$TSS_train <- SDMtune::tss(final_model, test = NULL)
-    hlog("DEBUG", paste("  Calculated TSS_train:", round(metrics$TSS_train, 4)))
-  }, error = function(e) {
-    hlog("WARN", paste("Could not calculate Training TSS:", e$message))
-  })
-  
-  tryCatch({
-    # Calculate AICc (requires the environmental raster stack)
-    # Only calculate if the model method supports it (Maxent/Maxnet)
     metrics$AICc <- SDMtune::aicc(final_model, env = tuning_predictor_stack)
-    hlog("DEBUG", paste("  Calculated AICc:", metrics$AICc, 2))
+    hlog("INFO", metrics$AICc)
+  }, error = function(e) { hlog("WARN", paste("Could not calculate AICc:", e$message)) })
+  hlog("INFO", metrics$AICc)
+  
+  
+  # --- Extract Test AUC Metric (from tuning_output results for the best model) ---
+  tryCatch({
+    res_df <- tuning_output@results
+    if(!is.null(res_df) && nrow(res_df) > 0) {
+      # Find the best row based on the metric used for tuning
+      tuning_metric <- config$sdm_evaluation_metric %||% "AUC"
+      metric_base_upper <- toupper(tuning_metric)
+      target_metric_col <- if (tolower(tuning_metric) == "aicc") "AICc" else paste0("test_", metric_base_upper) # Should be test_AUC here
+      
+      best_row_index <- NULL
+      if (target_metric_col %in% colnames(res_df)) {
+        valid_metric_indices <- which(!is.na(res_df[[target_metric_col]]))
+        if(length(valid_metric_indices) > 0) {
+          select_fun <- if (target_metric_col == "AICc") which.min else which.max
+          best_row_relative_index <- select_fun(res_df[[target_metric_col]][valid_metric_indices])
+          best_row_index <- valid_metric_indices[best_row_relative_index]
+        }
+      }
+      
+      if(is.null(best_row_index)) {
+        hlog("WARN", "Could not reliably determine best row index from tuning results to extract test AUC. Attempting fallback to first row.")
+        fallback_idx <- which(!is.na(res_df$test_AUC))[1] # Fallback relies on test_AUC existing
+        if(!is.na(fallback_idx)) {
+          best_row_index <- fallback_idx
+          hlog("WARN", "Using first valid row (index ", best_row_index, ") for test AUC.")
+        } else {
+          hlog("ERROR", "No valid rows/test_AUC found in tuning results table.")
+          best_row_index <- NA
+        }
+      }
+      
+      # Extract test AUC from the best row if index is valid
+      if(!is.na(best_row_index)){
+        if ("test_AUC" %in% colnames(res_df)) {
+          metrics$AUC_test_CV <- res_df$test_AUC[best_row_index]
+          hlog("DEBUG", paste("  Extracted test_AUC (CV):", round(metrics$AUC_test_CV, 4)))
+        } else {
+          hlog("WARN", "test_AUC column not found in tuning results table.") # Should not happen if tuning metric is AUC
+          metrics$AUC_test_CV <- NA # Ensure it's NA if column missing
+        }
+        # Cannot extract test_TSS as it's not present
+        # metrics$TSS_test_CV <- NA
+      } else {
+        metrics$AUC_test_CV <- NA # Ensure NA if no valid row found
+      }
+      
+    } else {
+      hlog("WARN", "Tuning results table is empty or missing. Cannot extract test AUC.")
+    }
   }, error = function(e) {
-    hlog("WARN", paste("Could not calculate AICc:", e$message))
-    metrics$AICc <- NA # Ensure it's NA on error
+    hlog("ERROR", paste("Failed to extract test AUC from tuning_output:", e$message))
   })
   
   # --- Append to CSV File ---
   metrics_df <- as.data.frame(metrics)
+  # Round numeric columns
+  numeric_cols <- sapply(metrics_df, is.numeric)
+  metrics_df[numeric_cols] <- lapply(metrics_df[numeric_cols], round, digits = 4)
+  if("AICc" %in% names(metrics_df)) metrics_df$AICc <- round(metrics_df$AICc, 2)
   
   tryCatch({
     write_headers <- !file.exists(output_log_file)
     readr::write_csv(metrics_df, output_log_file, append = !write_headers, col_names = write_headers)
-    hlog("INFO", paste("Successfully logged metrics for", species_name_sanitized))
+    hlog("INFO", paste("Successfully logged final model metrics for", species_name_sanitized))
     return(TRUE)
   }, error = function(e) {
     hlog("ERROR", paste("Failed to write metrics to log file:", output_log_file, "Error:", e$message))
     return(FALSE)
   })
 }
-#-------------------------------------------------------------------------

@@ -37,10 +37,10 @@ occurrence_dir <- config$anemone_occurrence_dir
 use_pca <- config$use_pca_predictors
 predictor_type_suffix <- ifelse(use_pca, "_pca", "_vif")
 
-# --- 5. Define Group Specifics & Predictor Type ---
-group_name <- "anemonefish"
-species_list_file <- config$anemonefish_species_list_file
-occurrence_dir <- config$anemonefish_occurrence_dir
+# # --- 5. Define Group Specifics & Predictor Type ---
+# group_name <- "anemonefish"
+# species_list_file <- config$anemonefish_species_list_file
+# occurrence_dir <- config$anemonefish_occurrence_dir
 
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
 log4r::info(logger, paste("--- Using Predictors:", ifelse(use_pca, "PCA Components", "VIF-Selected Variables"), "---"))
@@ -227,13 +227,14 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     
     log_final_model_metrics(
       final_model = final_model,
-      full_swd_data = full_swd_data, # Pass the SWD object used for training
-      tuning_predictor_stack = tuning_predictor_stack, # Pass the raster stack
+      full_swd_data = full_swd_data,
+      tuning_predictor_stack = species_specific_stack, # Use the stack model was trained on
+      tuning_output = tuning_output,                  # Pass the tuning result object
       species_name_sanitized = species_name_sanitized,
       group_name = group_name,
       predictor_type_suffix = predictor_type_suffix,
       config = config,
-      logger = NULL, # Pass main logger if needed, otherwise uses species log
+      logger = NULL, # Or pass main logger if desired
       species_log_file = species_log_file
     )
     
