@@ -43,7 +43,7 @@ coral_shapefile <- file.path(shapefile_dir, "WCMC008_CoralReef2018_Py_v4_1.shp")
 apply_indo_pacific_crop <- TRUE # Set to TRUE to crop all rasters to the defined bbox
 indo_pacific_bbox <- c(xmin=30, xmax=180, ymin=-50, ymax=50) # Define Lon/Lat bounding box
 
-mask_background_points_to_coral <- TRUE # Set to TRUE to sample BG points ONLY from coral areas
+mask_background_points_to_coral <- FALSE # Set to TRUE to sample BG points ONLY from coral areas
 
 # --- Intermediate Output Paths (for temp files, RDS models/tuning) ---
 # Define these *before* the final config list is created
@@ -122,7 +122,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
 sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
-apply_coral_mask <- TRUE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
+apply_coral_mask <- FALSE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
 use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1

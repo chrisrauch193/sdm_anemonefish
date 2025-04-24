@@ -37,10 +37,10 @@ occurrence_dir <- config$anemone_occurrence_dir
 use_pca <- config$use_pca_predictors
 predictor_type_suffix <- ifelse(use_pca, "_pca", "_vif")
 
-# # --- 5. Define Group Specifics & Predictor Type ---
-# group_name <- "anemonefish"
-# species_list_file <- config$anemonefish_species_list_file
-# occurrence_dir <- config$anemonefish_occurrence_dir
+# --- 5. Define Group Specifics & Predictor Type ---
+group_name <- "anemonefish"
+species_list_file <- config$anemonefish_species_list_file
+occurrence_dir <- config$anemonefish_occurrence_dir
 
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
 log4r::info(logger, paste("--- Using Predictors:", ifelse(use_pca, "PCA Components", "VIF-Selected Variables"), "---"))
