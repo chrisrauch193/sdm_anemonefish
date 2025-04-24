@@ -5,7 +5,7 @@
 # - Path construction uses new config structure for target output.
 # - Added Variable Importance helper.
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2) # Added readr
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2, ecospat, spThin, geosphere) # Added readr
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count)
@@ -119,6 +119,214 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
 
 
 
+#' Thin Occurrence Records Based on Spatial Autocorrelation (Mantel Correlogram)
+#'
+#' Calculates spatial autocorrelation using Mantel correlograms and optionally
+#' thins occurrence points to the minimum non-significant distance found.
+#'
+#' @param occs_coords Data frame or matrix with occurrence coordinates (colnames 'longitude', 'latitude').
+#' @param predictor_stack SpatRaster stack covering the occurrence area. Used for extracting env data.
+#' @param config Configuration list with SAC parameters.
+#' @param logger Logger object.
+#' @param species_log_file Path to species log.
+#' @return A list containing:
+#'         `coords_thinned`: Data frame of thinned coordinates or original coordinates if thinning not applied/failed.
+#'         `n_thinned`: Number of points after thinning.
+#'         `thinning_distance_km`: The distance (km) used for thinning (or NA if not thinned).
+#'         or NULL if a fatal error occurs.
+#' @export
+thin_occurrences_by_sac <- function(occs_coords, predictor_stack, config, logger, species_log_file) {
+  
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SacThinHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}
+  
+  if (!config$apply_sac_thinning) {
+    hlog("INFO", "Spatial autocorrelation thinning disabled in config.")
+    return(list(coords_thinned = as.data.frame(occs_coords),
+                n_thinned = nrow(occs_coords),
+                thinning_distance_km = NA))
+  }
+  
+  if (!requireNamespace("ecospat", quietly = TRUE) || !requireNamespace("spThin", quietly = TRUE)) {
+    hlog("ERROR", "Packages 'ecospat' and 'spThin' required for SAC thinning.")
+    return(NULL)
+  }
+  if (!requireNamespace("geosphere", quietly = TRUE)) {
+    hlog("ERROR", "Package 'geosphere' required for distance calculations.")
+    return(NULL)
+  }
+  
+  
+  hlog("INFO", "Applying spatial autocorrelation thinning (Mantel method)...")
+  
+  # --- Prepare Data ---
+  pts_df <- as.data.frame(occs_coords)
+  colnames(pts_df) <- c("longitude", "latitude") # Ensure correct names
+  
+  # Limit points for correlogram calculation if dataset is very large
+  if (nrow(pts_df) > 1000) {
+    hlog("DEBUG", "Subsampling to 1000 points for Mantel correlogram calculation.")
+    set.seed(123) # for reproducibility of subsampling
+    pts_for_mantel <- pts_df[sample(1:nrow(pts_df), 1000, replace = FALSE), ]
+  } else {
+    pts_for_mantel <- pts_df
+  }
+  pts_for_mantel <- pts_for_mantel[!duplicated(pts_for_mantel), ] # Remove duplicates just in case
+  
+  # Extract environmental data at points
+  env_extract <- tryCatch({
+    terra::extract(predictor_stack, pts_for_mantel, ID = FALSE, na.rm = FALSE) # Keep NAs for now
+  }, error = function(e){
+    hlog("ERROR", paste("Failed extracting env data for SAC:", e$message)); NULL
+  })
+  if(is.null(env_extract)) return(NULL)
+  
+  # Combine coords and env data, remove rows with any NAs in env data
+  data_df_mantel <- cbind(pts_for_mantel, env_extract)
+  valid_rows_mantel <- complete.cases(data_df_mantel)
+  data_df_mantel <- data_df_mantel[valid_rows_mantel, ]
+  
+  if (nrow(data_df_mantel) < 10) { # Need sufficient points for calculation
+    hlog("WARN", "Less than 10 valid points with env data for Mantel test. Skipping thinning.")
+    return(list(coords_thinned = pts_df, n_thinned = nrow(pts_df), thinning_distance_km = NA))
+  }
+  hlog("DEBUG", paste("Using", nrow(data_df_mantel), "points for Mantel correlogram."))
+  
+  # --- Calculate Mantel Correlogram ---
+  # ecospat requires matrix/dataframe input
+  coords_for_mantel <- data_df_mantel[, c("longitude", "latitude")]
+  env_for_mantel <- data_df_mantel[, -(1:2)] # Exclude lon/lat columns
+  
+  # Calculate distances in meters using geosphere for accuracy with lon/lat
+  # Note: ecospat often works with km, but let's calculate in m and convert class dist
+  geo_dist_m <- tryCatch(geosphere::distm(coords_for_mantel), error=function(e){
+    hlog("ERROR", paste("Distance calculation failed:", e$message)); NULL
+  })
+  if(is.null(geo_dist_m)) return(NULL)
+  
+  env_dist <- tryCatch(dist(scale(env_for_mantel)), error=function(e){ # Scale env vars
+    hlog("ERROR", paste("Env distance calculation failed:", e$message)); NULL
+  })
+  if(is.null(env_dist)) return(NULL)
+  
+  # Convert classdist and maxdist from config (assumed meters) to km if needed by ecospat, or keep as is
+  # ecospat.mantel.correlogram expects max distance, number of classes
+  # Let's use meters internally and convert at the end.
+  class_dist_m <- config$autocor_classdist
+  max_dist_m <- config$autocor_maxdist
+  n_classes <- floor(max_dist_m / class_dist_m)
+  
+  if(n_classes < 2) {
+    hlog("WARN", "Max distance or class distance results in < 2 classes. Skipping thinning.")
+    return(list(coords_thinned = pts_df, n_thinned = nrow(pts_df), thinning_distance_km = NA))
+  }
+  
+  mantel_res <- NULL
+  tryCatch({
+    mantel_res <- ecospat::ecospat.mantel.correlogram(
+      dfvar = as.data.frame(scale(env_for_mantel)), # Needs dataframe
+      colxy = coords_for_mantel,
+      nclass = n_classes,
+      max = max_dist_m, # Provide max distance in meters
+      nperm = 100 # Number of permutations for significance
+    )
+  }, error = function(e) {
+    hlog("ERROR", paste("ecospat.mantel.correlogram failed:", e$message))
+    # Provide more detail if possible
+    if(grepl("smaller than the radius of the neighbourhood", e$message)) {
+      hlog("ERROR", "  -> Hint: Check if autocor_classdist is large relative to data spread, or if points are too clustered.")
+    }
+    NULL
+  })
+  
+  if (is.null(mantel_res) || is.null(mantel_res$mantel.res)) {
+    hlog("WARN", "Mantel correlogram calculation failed or returned no results. Skipping thinning.")
+    return(list(coords_thinned = pts_df, n_thinned = nrow(pts_df), thinning_distance_km = NA))
+  }
+  
+  # Find first non-significant distance class (upper bound)
+  # ecospat output: mantel.res has columns: n.tests, Mantel.cor, p.value, p.val.adj
+  results_df_mantel <- as.data.frame(mantel_res$mantel.res)
+  results_df_mantel$dist.class.m <- mantel_res$breaks[-1] # Upper bound of distance class in meters
+  
+  first_nonsig_idx <- which(results_df_mantel$p.value > config$autocor_signif)[1]
+  
+  distance_m <- NA
+  if (!is.na(first_nonsig_idx)) {
+    distance_m <- results_df_mantel$dist.class.m[first_nonsig_idx]
+    hlog("INFO", paste("First non-significant distance class ends at:", round(distance_m / 1000, 1), "km"))
+  } else {
+    distance_m <- max_dist_m # If all are significant, use max distance tested
+    hlog("WARN", paste("All distance classes up to", round(max_dist_m / 1000, 1), "km showed significant autocorrelation. Using max distance for potential thinning."))
+  }
+  
+  # --- Apply Thinning using spThin ---
+  thinned_coords <- pts_df # Default to original if thinning not applied/needed
+  n_final <- nrow(thinned_coords)
+  thin_dist_km_final <- NA
+  
+  prune_thresh_m <- config$sac_prune_threshold
+  if (distance_m >= prune_thresh_m) {
+    hlog("INFO", paste("Non-significant distance (", round(distance_m / 1000, 1), "km) meets threshold (", round(prune_thresh_m / 1000, 1), "km). Applying thinning..."))
+    thin_dist_km_final <- round(distance_m / 1000, 1) # Distance used for thinning
+    
+    # spThin expects specific column names and a species column
+    pts_for_thinning <- pts_df
+    colnames(pts_for_thinning) <- c("LONG", "LAT") # Match spThin defaults if possible
+    pts_for_thinning$SPECIES <- "MySpecies"
+    
+    # Check number of points vs spThin limit
+    if(nrow(pts_for_thinning) > 15000) {
+      hlog("WARN", "More than 15000 points, spThin might be slow or error-prone. Consider grid thinning as alternative if needed.")
+      # Add grid thinning alternative here if desired
+    }
+    
+    thinned_list <- NULL
+    tryCatch({
+      # Run thinning
+      thinned_list <- spThin::thin(
+        loc.data = pts_for_thinning,
+        lat.col = "LAT",
+        long.col = "LONG",
+        spec.col = "SPECIES",
+        thin.par = thin_dist_km_final, # Use distance in KM
+        reps = 1, # Only need one rep
+        locs.thinned.list.return = TRUE,
+        write.files = FALSE,
+        write.log.file = FALSE,
+        verbose = FALSE # Control verbosity internally
+      )
+    }, error = function(e) {
+      hlog("ERROR", paste("spThin::thin failed:", e$message))
+      NULL # Return NULL on error
+    })
+    
+    if (!is.null(thinned_list) && length(thinned_list) > 0 && inherits(thinned_list[[1]], "data.frame")) {
+      thinned_coords <- thinned_list[[1]]
+      colnames(thinned_coords) <- c("longitude", "latitude") # Revert names
+      n_final <- nrow(thinned_coords)
+      hlog("INFO", paste("Thinning resulted in", n_final, "records (using", thin_dist_km_final, "km distance)."))
+    } else {
+      hlog("WARN", "spThin failed or returned empty list. Proceeding with unthinned data.")
+      thin_dist_km_final <- NA # Reset distance if thinning failed
+    }
+    # Remove spThin log if created
+    if(file.exists("spatial_thin_log.txt")) file.remove("spatial_thin_log.txt")
+    
+  } else {
+    hlog("INFO", paste("First non-significant distance (", round(distance_m / 1000, 1), "km) is below threshold (", round(prune_thresh_m / 1000, 1), "km). No thinning applied."))
+    thinned_coords <- pts_df # Keep original points
+    n_final <- nrow(thinned_coords)
+    thin_dist_km_final <- NA
+  }
+  
+  return(list(coords_thinned = thinned_coords,
+              n_thinned = n_final,
+              thinning_distance_km = thin_dist_km_final))
+}
+
+
+
+
 
 #' Generate Background Points using OBIS/MPAEU Ecoregion/Depth Method (Exact Replication v3)
 #'
@@ -192,42 +400,91 @@ generate_sdm_background_obis_test <- function(occs_sf, global_predictor_stack, c
   obis_calibration_vect <- terra::vect(obis_calibration_poly_sf)
   cat("INFO: Ecoregion-based calibration polygon created (before depth filter).\n")
   
-  # --- 2. Depth Filtering (Optional) ---
-  # ... (Keep the depth filtering logic exactly as corrected in the previous response) ...
+  # --- 2. Depth Filtering (Using Fixed Limits from Config) ---
   depth_mask <- NULL
-  limit_by_depth_flag <- config$limit_by_depth_obis
+  limit_by_depth_flag <- config$limit_by_depth_obis # Check if depth filtering is enabled at all
+  
   if (limit_by_depth_flag) {
-    cat("INFO: Applying OBIS depth filter...\n")
-    bath_global <- tryCatch(terra::rast(config$bathymetry_file), error = function(e) { cat("ERROR: Failed load bathymetry:", e$message, "\n"); NULL })
-    if (is.null(bath_global)) { limit_by_depth_flag <- FALSE; cat("WARN: Disabling depth filter because bathymetry loading failed.\n") }
-    else {
-      if (config$apply_indo_pacific_crop) { cat("DEBUG: Applying Indo-Pacific crop to global bathymetry layer...\n"); ip_extent <- terra::ext(config$indo_pacific_bbox); bath_global <- tryCatch(terra::crop(bath_global, ip_extent), error=function(e){ cat("WARN: Failed cropping global bathy:", e$message, "\n"); NULL}); if(is.null(bath_global)){ cat("WARN: Proceeding without depth filter due to bathy crop error.\n"); limit_by_depth_flag <- FALSE } else { cat("DEBUG: Global bathymetry cropped to Indo-Pacific extent.\n")} }
-      if(limit_by_depth_flag){ if (terra::crs(bath_global) != raster_crs_terra) { cat("DEBUG: Projecting global bathymetry...\n"); bath_global <- tryCatch(terra::project(bath_global, raster_crs_terra), error = function(e) { cat("ERROR: Failed project bathymetry:", e$message, "\n"); NULL }); if (is.null(bath_global)) { limit_by_depth_flag <- FALSE; cat("WARN: Disabling depth filter because projection failed.\n") } } }
-      if (limit_by_depth_flag) {
-        bath_species_extent <- tryCatch(terra::crop(bath_global, obis_calibration_vect, snap="near"), error = function(e) { cat("WARN: Failed cropping bathymetry for depth filter:", e$message, "\n"); NULL })
-        if (is.null(bath_species_extent)) { cat("WARN: Proceeding without depth filter due to cropping error.\n"); limit_by_depth_flag <- FALSE; }
-        else {
-          occs_vect_proj <- tryCatch(terra::project(occs_vect, raster_crs_terra), error=function(e)NULL)
-          if(is.null(occs_vect_proj)){ cat("WARN: Could not project occurrences to raster CRS for depth extraction. Skipping depth filter.\n"); limit_by_depth_flag <- FALSE; }
-          else {
-            bath_pts_vals <- tryCatch(terra::extract(bath_species_extent, occs_vect_proj, ID = FALSE), error=function(e){cat("WARN: Depth extraction failed:", e$message, "\n");NULL})
-            if(is.null(bath_pts_vals) || nrow(bath_pts_vals) == 0 || all(is.na(bath_pts_vals[[1]]))) { cat("WARN: No valid depth values extracted for occurrences within ecoregion extent. Skipping depth filter.\n"); limit_by_depth_flag <- FALSE; }
-            else {
-              depth_range_pts <- range(bath_pts_vals[[1]], na.rm = TRUE); min_depth <- depth_range_pts[1] - config$depth_buffer_obis; max_depth <- depth_range_pts[2] + config$depth_buffer_obis; max_depth <- min(0, max_depth); cat("DEBUG:   Depth range filter:", min_depth, "to", max_depth, "m\n")
-              depth_mask <- bath_species_extent; depth_mask[depth_mask < min_depth | depth_mask > max_depth] <- NA; depth_mask[!is.na(depth_mask)] <- 1
-              max_val_check <- terra::global(depth_mask, "max", na.rm = TRUE)$max
-              if (is.na(max_val_check) || max_val_check == 0) { cat("WARN: Depth filter masked all cells within ecoregion extent. Skipping depth filter.\n"); depth_mask <- NULL; limit_by_depth_flag <- FALSE; }
-              else { cat("INFO: Depth filter mask created based on ecoregion extent and occurrence depths.\n") }
-            }
-          }
-          if(exists("bath_species_extent_masked")) rm(bath_species_extent_masked); gc()
-          if(exists("bath_pts_vals")) rm(bath_pts_vals); gc()
+    hlog("INFO", "Applying FIXED depth filter based on config$depth_min and config$depth_max...")
+    
+    # Check if fixed limits are valid
+    min_depth_fixed <- config$depth_min
+    max_depth_fixed <- config$depth_max
+    if (is.null(min_depth_fixed) || is.null(max_depth_fixed) || !is.numeric(min_depth_fixed) || !is.numeric(max_depth_fixed)) {
+      hlog("ERROR", "config$depth_min or config$depth_max not found or not numeric. Cannot apply fixed depth filter.")
+      limit_by_depth_flag <- FALSE # Disable filtering if config values are bad
+    } else {
+      hlog("INFO", paste("  Using fixed depth range:", min_depth_fixed, "to", max_depth_fixed, "m"))
+      
+      # --- Load and prepare bathymetry raster ---
+      bath_global <- tryCatch(terra::rast(config$bathymetry_file), error = function(e) {
+        hlog("ERROR", paste("Failed load bathymetry:", e$message))
+        NULL
+      })
+      
+      if (is.null(bath_global)) {
+        limit_by_depth_flag <- FALSE
+        hlog("WARN", "Disabling depth filter because bathymetry loading failed.")
+      } else {
+        # Optional: Crop global bathy to Indo-Pacific (consistent with PCA prep)
+        if (config$apply_indo_pacific_crop) {
+          hlog("DEBUG", "Applying Indo-Pacific crop to global bathymetry layer...")
+          ip_extent <- terra::ext(config$indo_pacific_bbox)
+          bath_global <- tryCatch(terra::crop(bath_global, ip_extent), error=function(e){
+            hlog("WARN", paste("Failed cropping global bathy:", e$message, "- proceeding without crop."))
+            bath_global # Use uncropped if error
+          })
         }
-        if(exists("bath_species_extent")) rm(bath_species_extent); gc()
+        
+        # Ensure CRS matches predictor stack
+        if (terra::crs(bath_global) != raster_crs_terra) {
+          hlog("DEBUG", "Projecting global bathymetry...")
+          bath_global <- tryCatch(terra::project(bath_global, raster_crs_terra), error = function(e) {
+            hlog("ERROR", paste("Failed project bathymetry:", e$message))
+            NULL
+          })
+          if (is.null(bath_global)) {
+            limit_by_depth_flag <- FALSE
+            hlog("WARN", "Disabling depth filter because projection failed.")
+          }
+        }
+        
+        # --- Create mask based on fixed depth within OBIS extent ---
+        if (limit_by_depth_flag) {
+          # Crop bathymetry to the species' OBIS extent first
+          bath_species_extent <- tryCatch(terra::crop(bath_global, obis_calibration_vect, snap="near"), error = function(e) {
+            hlog("WARN", paste("Failed cropping bathymetry to OBIS extent for depth filter:", e$message))
+            NULL
+          })
+          
+          if (is.null(bath_species_extent)) {
+            hlog("WARN", "Proceeding without depth filter due to cropping error.")
+            limit_by_depth_flag <- FALSE
+          } else {
+            # Create the mask using fixed limits
+            depth_mask <- bath_species_extent
+            depth_mask[depth_mask < min_depth_fixed | depth_mask > max_depth_fixed] <- NA
+            depth_mask[!is.na(depth_mask)] <- 1 # Set valid cells to 1
+            
+            # Check if the mask removed all valid cells
+            max_val_check <- tryCatch(terra::global(depth_mask, "max", na.rm = TRUE)$max, error = function(e) NA) # Handle potential errors in global
+            if (is.na(max_val_check) || max_val_check == 0) {
+              hlog("WARN", "FIXED depth filter masked all cells within the OBIS ecoregion extent. Skipping depth filter.")
+              depth_mask <- NULL
+              limit_by_depth_flag <- FALSE # Disable filter if it masks everything
+            } else {
+              hlog("INFO", "FIXED depth filter mask created.")
+            }
+            rm(bath_species_extent); gc() # Clean up intermediate raster
+          }
+        }
+        if(exists("bath_global")) rm(bath_global); gc() # Clean up global bathy
       }
-      if(exists("bath_global")) rm(bath_global); gc()
-    }
-  } else { cat("INFO: Depth filter disabled by config.\n") }
+    } # End else block (config values were valid)
+  } else {
+    hlog("INFO", "Depth filter disabled by config$limit_by_depth_obis.")
+  }
+  # --- End Depth Filtering Block ---
   
   # --- 3. Mask Environmental Layers ---
   cat("INFO: Masking global predictors with final species extent (Ecoregions +/- Depth)...\n")

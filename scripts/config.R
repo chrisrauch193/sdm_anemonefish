@@ -154,6 +154,14 @@ poly_buffer_obis    <- 0.2 # Small degree buffer for adjacency
 poly_buffer_final   <- 0.5 # Larger degree buffer for final extent (optional, replicating OBIS)
 
 
+# Spatial Autocorrelation (SAC) Thinning Settings
+apply_sac_thinning <- TRUE     # Apply Mantel test + spThin thinning
+autocor_classdist <- 50000      # 50 km steps for Mantel correlogram
+autocor_maxdist <- 1000000   # 1000 km max distance for correlogram
+autocor_signif <- 0.05      # Significance level for non-correlation
+sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on BlockCV results)
+
+
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
 config <- list(
@@ -224,7 +232,14 @@ config <- list(
   limit_by_depth_obis = limit_by_depth_obis,
   depth_buffer_obis = depth_buffer_obis,
   poly_buffer_obis = poly_buffer_obis,
-  poly_buffer_final = poly_buffer_final
+  poly_buffer_final = poly_buffer_final,
+  
+  # Spatial Autocorrelation (SAC) Thinning Settings
+  apply_sac_thinning = apply_sac_thinning,
+  autocor_classdist = autocor_classdist,
+  autocor_maxdist = autocor_maxdist,
+  autocor_signif = autocor_signif,
+  sac_prune_threshold = sac_prune_threshold
 )
 
 
