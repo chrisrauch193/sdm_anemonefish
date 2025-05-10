@@ -1,4 +1,4 @@
-# # scripts/final/compare_background_methods_sdmtune.R
+# # scripts/sdm_runs/experiments/old_experiments/compare_background_methods_sdmtune.R
 # #-------------------------------------------------------------------------------
 # # Script to compare background sampling strategies for ONE species using SDMtune.
 # # Methods Compared:

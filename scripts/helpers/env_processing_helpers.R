@@ -95,9 +95,6 @@ load_stack_env_data <- function(scenario_name, config) {
   }, error = function(e) { warning("Error stacking rasters: ", e$message); print(basename(all_raster_files)); return(NULL) })
 }
 
-# --- Other Helper Functions (preprocess_env_rasters, load_clean_thin_group_occurrences, extract_env_values, plotting functions) ---
-# --- remain unchanged from the previous version ---
-
 #' Preprocess Environmental Rasters
 preprocess_env_rasters <- function(env_stack, config) {
   cat("--- Preprocessing environmental rasters ---\n")
@@ -185,10 +182,6 @@ extract_env_values <- function(occurrences_sf, env_stack) {
 }
 
 
-# scripts/helpers/env_processing_helpers.R
-
-# --- (Other functions above) ---
-
 #' Load and Stack SPECIFIC Environmental Rasters for a Scenario
 #'
 #' Loads only the specified environmental rasters for a given scenario.
@@ -271,38 +264,6 @@ load_selected_env_data <- function(scenario_name, selected_vars, config) {
   }, error = function(e) { warning("Error stacking selected rasters: ", e$message); return(NULL) })
 }
 
-#-------------------------------------------------------------------------------
-
-
-#' #' Plot VIF results using ggplot (from user's 05 script)
-#' plot_vif_results_original <- function(vif_result, save_path = NULL) {
-#'   if(!is.numeric(vif_result) || is.null(names(vif_result))){warning("plot_vif_results_original expects a named numeric vector (output of car::vif).", call.=FALSE); return(NULL)}
-#'   df <- data.frame(Variable = names(vif_result), VIF = vif_result); num_vars <- nrow(df)
-#'   if (num_vars == 0) return(NULL); colors <- grDevices::colorRampPalette(c("#1F3F8C", "#A9192A"))(num_vars)
-#'   df$VIF <- pmax(0, df$VIF)
-#'   p <- ggplot2::ggplot(df, aes(x = reorder(Variable, VIF), y = VIF)) + ggplot2::geom_bar(stat = "identity", aes(fill = Variable), show.legend = FALSE) + ggplot2::scale_fill_manual(values = colors) + ggplot2::labs(title = "VIF Analysis Results (car::vif)", x = "Environment Variables", y = "VIF Value") + ggplot2::scale_y_continuous(limits = c(0, max(5, ceiling(max(df$VIF, na.rm = TRUE)))), breaks = scales::pretty_breaks(n = 5)) + ggplot2::theme_minimal(base_size = 12) + ggplot2::theme(axis.text.x = element_text(angle = 45, hjust = 1))
-#'   if (!is.null(save_path)) {tryCatch({ggplot2::ggsave(save_path, plot = p, width = 8 + 0.1 * num_vars, height = 6, limitsize = FALSE); cat("  VIF plot saved to", save_path, "\n")}, error = function(e) { warning("Failed to save VIF plot: ", e$message, call.=FALSE)})}
-#'   return(p)
-#' }
-#' 
-#' #' Plot Pearson Correlation using corrplot (from user's 05 script)
-#' plot_correlation_results_original <- function(env_extract, save_path = NULL) {
-#'   if(!is.data.frame(env_extract) && !is.matrix(env_extract) || ncol(env_extract) < 2) {warning("plot_correlation_results_original requires a data frame or matrix with at least 2 columns.", call.=FALSE); return(NULL)}
-#'   env.cor <- stats::cor(env_extract, method = "pearson", use = "pairwise.complete.obs")
-#'   env.p <- NULL; if(requireNamespace("Hmisc", quietly = TRUE)){env.p <- Hmisc::rcorr(as.matrix(env_extract), type="pearson")$P} else {warning("Hmisc package not found, p-values on corrplot may be missing or incomplete.", call.=FALSE)}
-#'   tryCatch({ plot_obj <- function() { corrplot::corrplot(corr = env.cor, method="color", type = "upper", order = "hclust", p.mat = env.p, sig.level = c(.01, .05), insig = "label_sig", pch.cex = 1.5, pch.col = "grey", addCoef.col = "black", number.cex = 0.7, tl.col = "black", tl.srt = 45, diag = FALSE, na.label = "NA", mar=c(0,0,1,0)) }
-#'   if (!is.null(save_path)) { grDevices::png(filename = save_path, width = 8, height = 8, units = "in", res = 300); plot_obj(); grDevices::dev.off(); cat("  Correlation plot saved to", save_path, "\n")} else { plot_obj() }
-#'   return(invisible(NULL))
-#'   }, error = function(e){warning("Failed to create or save correlation plot: ", e$message, call.=FALSE); return(NULL)})
-#' }
-# scripts/helpers/env_processing_helpers.R
-
-# --- Load packages needed by these helpers ---
-# Ensure these are loaded, ideally via config.R sourcing 01_install_requirements.R
-# pacman::p_load(terra, sf, dplyr, readr, ggplot2, scales, corrplot, tools, stringr, Hmisc)
-
-# --- (Keep load_stack_env_data, preprocess_env_rasters, ---
-# ---  load_clean_thin_group_occurrences, extract_env_values unchanged from the previous correct version) ---
 
 #' Generate Scenario-Specific Variable Names from Core List (Corrected v3)
 #' Correctly handles future naming conventions based on file examples.

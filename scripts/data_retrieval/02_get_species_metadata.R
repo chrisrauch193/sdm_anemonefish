@@ -1,4 +1,4 @@
-# scripts/02_get_species_metadata.R
+# scripts/data_retrieval/02_get_species_metadata.R
 #-------------------------------------------------------------------------------
 # Download species metadata from WoRMS and GBIF for anemones and anemonefish.
 # Reads species names from Excel files, matches them to accepted names/IDs,

@@ -1,4 +1,4 @@
-# scripts/05b_preprocess_env_pca_only.R
+# scripts/env_preparation/05_preprocess_env_pca_only.R
 #-------------------------------------------------------------------------------
 # Preprocess Environmental Data using PCA Only (Braun et al. 2023 Method) - v3
 #

@@ -1,4 +1,4 @@
-# scripts/00_run_all_scripts.R
+# scripts/master_runs/00_run_all_scripts.R
 #-------------------------------------------------------------------------------
 # Master script to run the Anemone/Anemonefish SDM workflow (Steps 1-7)
 # 1. Setup: Load config, install/load packages.

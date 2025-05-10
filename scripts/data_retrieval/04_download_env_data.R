@@ -1,4 +1,4 @@
-# scripts/04_download_env_data.R
+# scripts/data_retrieval/04_download_env_data.R
 #-------------------------------------------------------------------------------
 # Download Environmental Data using logic from the original script.
 # Uses obissdm::get_env_data (ensure package is installed).

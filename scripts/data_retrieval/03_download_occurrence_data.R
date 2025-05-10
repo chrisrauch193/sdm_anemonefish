@@ -1,4 +1,4 @@
-# scripts/03_download_occurrence_data.R
+# scripts/data_retrieval/03_download_occurrence_data.R
 #-------------------------------------------------------------------------------
 # Download occurrence data for all species listed in the final CSV files.
 # Uses the helper function `download_occurrence_data`.
