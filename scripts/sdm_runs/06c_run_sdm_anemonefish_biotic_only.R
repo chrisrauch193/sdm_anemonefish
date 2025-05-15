@@ -166,6 +166,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     slog("DEBUG", "Max host suitability layer created for tuning scenario.")
     
     # Combine Env PC4 + Max Host
+    # TODO: Convert to faked env layer
     tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
     slog("INFO", paste("GLOBAL Tuning predictor stack (06d logic: Env PCA + Host) created:", paste(names(tuning_predictor_stack_global), collapse=", ")))
     rm(tuning_env_stack, host_stack_tuning, max_host_suitability_tuning, host_rasters_tuning_list); gc()
