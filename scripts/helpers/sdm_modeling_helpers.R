@@ -1174,16 +1174,6 @@ pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr,
 # ===========================================================================
 # --- BIOMOD2 Helper Functions ---
 # ===========================================================================
-
-#' Format Data for BIOMOD2
-#' Prepares data in the format required by BIOMOD_FormatingData.
-#'
-#' @param species_name_for_biomod Sanitized species name (e.g., Genus.species) for BIOMOD_FormatingData resp.name.
-#' @param pres_coords Matrix or data frame of presence coordinates (longitude, latitude).
-#' @param bg_coords Matrix or data frame of background coordinates (longitude, latitude).
-#' @param env_stack SpatRaster stack of environmental predictors.
-#' @param species_log_file Optional path to species-specific log file (or NULL for cat).
-#' @return A BIOMOD.formated.data object or NULL on error.
 format_data_for_biomod2 <- function(species_name_for_biomod, pres_coords, bg_coords, env_stack, species_log_file = NULL) {
   log_prefix_b2_fmt <- paste(Sys.time(), paste0("[", species_name_for_biomod, "]"))
   b2_hlog_fmt <- function(level, ...) {
@@ -1191,23 +1181,17 @@ format_data_for_biomod2 <- function(species_name_for_biomod, pres_coords, bg_coo
     full_msg <- paste(log_prefix_b2_fmt, paste0("[BIOMOD2_FormatData]"), level, "-", msg_content)
     if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
   }
-  
   b2_hlog_fmt("INFO", "Formatting data for BIOMOD2...")
   if (is.null(pres_coords) || nrow(pres_coords) == 0) { b2_hlog_fmt("ERROR", "Presence coords missing."); return(NULL) }
   if (is.null(bg_coords) || nrow(bg_coords) == 0) { b2_hlog_fmt("ERROR", "Background coords missing."); return(NULL) }
   if (is.null(env_stack) || !inherits(env_stack, "SpatRaster")) { b2_hlog_fmt("ERROR", "Env stack missing/invalid."); return(NULL) }
-  
   tryCatch({
     myResp <- c(rep(1, nrow(pres_coords)), rep(0, nrow(bg_coords)))
-    myXY <- rbind(as.data.frame(pres_coords), as.data.frame(bg_coords)) # Ensure data.frames
+    myXY <- rbind(as.data.frame(pres_coords), as.data.frame(bg_coords)) 
     colnames(myXY) <- c('x', 'y') 
-    
     myBiomodData <- biomod2::BIOMOD_FormatingData(
-      resp.var = myResp,
-      expl.var = env_stack,
-      resp.xy = myXY,
-      resp.name = species_name_for_biomod, # Name BIOMOD2 will use internally
-      PA.nb.rep = 0 
+      resp.var = myResp, expl.var = env_stack, resp.xy = myXY, 
+      resp.name = species_name_for_biomod, PA.nb.rep = 0
     )
     b2_hlog_fmt("INFO", "BIOMOD_FormatingData successful.")
     return(myBiomodData)
@@ -1218,28 +1202,108 @@ format_data_for_biomod2 <- function(species_name_for_biomod, pres_coords, bg_coo
 }
 
 #' Create Spatial CV Folds Table for BIOMOD2 using blockCV
-#' (Placeholder - to be implemented based on vignette when ready)
-#' For now, this function will return NULL, causing BIOMOD_Modeling to use its internal random CV.
-create_biomod2_block_cv_table <- function(biomod_formatted_data, predictor_stack, config, species_log_file = NULL) {
-  log_prefix_b2_cv <- paste(Sys.time(), "[BIOMOD2_BlockCV_Placeholder]")
-  cat(log_prefix_b2_cv, "INFO: Placeholder for blockCV table generation. Returning NULL for now (will use random CV in BIOMOD_Modeling).\n")
-  return(NULL) 
-  # --- Actual implementation would be similar to what we discussed previously ---
-  # ... using blockCV::cv_spatial with biomod2 = TRUE ...
-  # ... and then renaming columns of scv_results$biomodTable ...
-}
-
-#' Run Basic BIOMOD2 Modeling (e.g., MAXNET with 'bigboss' defaults)
 #'
 #' @param biomod_formatted_data Output from `format_data_for_biomod2`.
-#' @param biomod_cv_table Optional output from `create_biomod2_block_cv_table`. If NULL, random CV is used.
-#' @param model_to_run Character, e.g., 'MAXNET'.
-#' @param species_name_for_files Sanitized species name with underscores for file/dir paths.
-#' @param predictor_type_suffix Suffix for model output directory.
-#' @param group_name_for_paths Group name for path construction.
-#' @param config Project configuration.
+#' @param predictor_stack SpatRaster stack (the same one used for BIOMOD_FormatingData).
+#' @param config Project configuration list (for blockCV settings like range, k, selection).
 #' @param species_log_file Optional path to species-specific log file.
-#' @return A BIOMOD.models.out object or NULL on error.
+#' @return A data.frame suitable for `CV.user.table` in `BIOMOD_Modeling`, or NULL on error.
+create_biomod2_block_cv_table <- function(biomod_formatted_data, predictor_stack, config, species_log_file = NULL) {
+  log_prefix_b2_cv <- paste(Sys.time(), paste0("[", biomod_formatted_data@sp.name, "]")) # Use sp.name from biomod data
+  b2_hlog_cv <- function(level, ...) {
+    msg_content <- paste0(..., collapse = " ")
+    full_msg <- paste(log_prefix_b2_cv, "[BIOMOD2_BlockCV]", level, "-", msg_content)
+    if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
+  }
+  
+  b2_hlog_cv("INFO", "Creating blockCV spatial folds for BIOMOD2...")
+  if (!requireNamespace("blockCV", quietly = TRUE)) { b2_hlog_cv("ERROR", "Package 'blockCV' is required."); return(NULL) }
+  if (is.null(biomod_formatted_data)) { b2_hlog_cv("ERROR", "biomod_formatted_data is required."); return(NULL) }
+  if (is.null(predictor_stack)) { b2_hlog_cv("ERROR", "predictor_stack is required for blockCV spatial context."); return(NULL) }
+  
+  tryCatch({
+    pa_data_df <- data.frame(x = biomod_formatted_data@coord[,1],
+                             y = biomod_formatted_data@coord[,2],
+                             occ = biomod_formatted_data@data.species)
+    
+    # Ensure CRS is correctly obtained and applied
+    # predictor_stack should have a valid CRS
+    target_crs_val <- terra::crs(predictor_stack, proj=TRUE)
+    if(is.null(target_crs_val) || target_crs_val == "") {
+      b2_hlog_cv("WARN", "Predictor stack has no CRS defined. Assuming EPSG:4326 for sf object creation.")
+      target_crs_val <- "EPSG:4326"
+    }
+    pa_data_sf <- sf::st_as_sf(pa_data_df, coords = c("x", "y"), crs = target_crs_val)
+    
+    block_range_val <- config$blockcv_range_default 
+    if (config$blockcv_auto_range) {
+      sf::sf_use_s2(FALSE) # Often recommended for blockCV distance functions
+      auto_cor_info <- tryCatch(
+        blockCV::cv_spatial_autocor(x = pa_data_sf, column = "occ", plot = FALSE, progress = FALSE),
+        error = function(e){ 
+          b2_hlog_cv("WARN", paste("cv_spatial_autocor failed:", e$message, "- Using default block range."))
+          NULL
+        })
+      sf::sf_use_s2(TRUE)
+      if (!is.null(auto_cor_info) && !is.na(auto_cor_info$range) && auto_cor_info$range > 0) {
+        block_range_val <- min(auto_cor_info$range, config$blockcv_range_max %||% Inf)
+        b2_hlog_cv("INFO", paste("  Using auto-calculated block range for blockCV:", round(block_range_val), "m"))
+      } else {
+        b2_hlog_cv("WARN", paste("  Auto-range for blockCV failed or non-positive. Using default range:", config$blockcv_range_default, "m"))
+        block_range_val <- config$blockcv_range_default
+      }
+    } else {
+      b2_hlog_cv("INFO", paste("  Using fixed block range for blockCV:", block_range_val, "m"))
+    }
+    if(block_range_val <= 0) block_range_val <- 1000 
+    
+    b2_hlog_cv("DEBUG", paste("  blockCV params: k =", config$sdm_n_folds, ", size =", block_range_val, 
+                              ", selection =", config$blockcv_selection %||% "random", 
+                              ", iteration =", config$blockcv_n_iterate %||% 50))
+    
+    scv_results <- blockCV::cv_spatial(
+      x = pa_data_sf,
+      column = "occ",
+      r = predictor_stack[[1]], 
+      k = config$sdm_n_folds, 
+      size = block_range_val,
+      selection = config$blockcv_selection %||% "random",
+      iteration = config$blockcv_n_iterate %||% 50,
+      biomod2 = TRUE, 
+      progress = FALSE,
+      plot = FALSE
+    )
+    
+    biomod_cv_table_from_blockCV <- NULL
+    if (!is.null(scv_results)) {
+      if (!is.null(scv_results$biomodTable)) { 
+        biomod_cv_table_from_blockCV <- scv_results$biomodTable
+      } else if (!is.null(scv_results$biomod_table)) { 
+        b2_hlog_cv("DEBUG", "Found 'biomod_table' (lowercase) in blockCV results.")
+        biomod_cv_table_from_blockCV <- scv_results$biomod_table
+      }
+    }
+    
+    if (is.null(biomod_cv_table_from_blockCV)) {
+      b2_hlog_cv("ERROR", "blockCV::cv_spatial did not return the biomodTable/biomod_table component.")
+      if(!is.null(scv_results)) b2_hlog_cv("DEBUG", paste("Names in scv_results:", paste(names(scv_results), collapse=", ")))
+      return(NULL)
+    }
+    
+    colnames(biomod_cv_table_from_blockCV) <- paste0("_allData_RUN", seq_len(ncol(biomod_cv_table_from_blockCV)))
+    
+    b2_hlog_cv("INFO", "blockCV spatial folds table for BIOMOD2 created successfully.")
+    return(as.data.frame(biomod_cv_table_from_blockCV)) # Ensure it's a data.frame
+    
+  }, error = function(e) {
+    b2_hlog_cv("ERROR", paste("Error creating BIOMOD2 block CV table:", e$message))
+    return(NULL)
+  })
+}
+
+
+#' Run Basic BIOMOD2 Modeling (e.g., MAXNET with 'bigboss' defaults and blockCV)
+#' (Keep this function as previously defined, it now correctly uses the CV table)
 run_biomod2_models_basic <- function(biomod_formatted_data, biomod_cv_table,
                                      model_to_run = 'MAXNET',
                                      species_name_for_files, predictor_type_suffix,
@@ -1251,15 +1315,21 @@ run_biomod2_models_basic <- function(biomod_formatted_data, biomod_cv_table,
     full_msg <- paste(log_prefix_b2_run, paste0("[BIOMOD2_RunBasic:", model_to_run, "]"), level, "-", msg_content)
     if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
   }
-  
   b2_hlog_run("INFO", "Running basic BIOMOD2 modeling...")
+  
+  # CV.strategy is 'user.defined' if biomod_cv_table is provided, else 'random'
+  cv_strat <- if (is.null(biomod_cv_table)) 'random' else 'user.defined'
+  num_reps <- if (is.null(biomod_cv_table)) (config$sdm_n_folds %||% 2) else ncol(biomod_cv_table)
+  cv_perc_val <- if (is.null(biomod_cv_table)) 0.8 else NULL
+  
+  b2_hlog_run("INFO", paste("  CV Strategy:", cv_strat, "Num Reps/Folds:", num_reps))
   
   myBiomodOptions <- biomod2::bm_ModelingOptions(
     data.type = 'binary',
     models = c(model_to_run), 
-    strategy = 'bigboss', # Use 'bigboss' for robust defaults
+    strategy = 'bigboss', 
     bm.format = biomod_formatted_data,
-    calib.lines = biomod_cv_table 
+    # calib.lines = biomod_cv_table # Pass for context if options depend on it (may not be strictly needed for bigboss)
   )
   
   species_biomod_run_dir <- file.path(config$sdm_output_dir_intermediate, "biomod2_outputs", 
@@ -1275,17 +1345,17 @@ run_biomod2_models_basic <- function(biomod_formatted_data, biomod_cv_table,
   tryCatch({
     myBiomodModelOut <- biomod2::BIOMOD_Modeling(
       bm.format = biomod_formatted_data,
-      modeling.id = paste0(model_to_run, '_BasicRun_', format(Sys.time(), "%Y%m%d%H%M%S")),
+      modeling.id = paste0(model_to_run, '_BlockCVRun_', format(Sys.time(), "%Y%m%d%H%M%S")),
       models = c(model_to_run), 
       bm.options = myBiomodOptions,
-      CV.strategy = if (is.null(biomod_cv_table)) 'random' else 'user.defined',
-      CV.nb.rep = if (is.null(biomod_cv_table)) config$sdm_n_folds %||% 2 else ncol(biomod_cv_table), # Use sdm_n_folds from config
-      CV.perc = if (is.null(biomod_cv_table)) 0.8 else NULL,
+      CV.strategy = cv_strat,
+      CV.nb.rep = num_reps, 
+      CV.perc = cv_perc_val,
       CV.user.table = biomod_cv_table, 
       var.import = 0, 
       metric.eval = c('ROC', 'TSS'), 
       do.full.models = TRUE, 
-      seed.val = config$AphiaID_for_seed %||% 42 # AphiaID should be in config or passed
+      seed.val = config$AphiaID_for_seed %||% 42 
     )
   }, error = function(e) {
     b2_hlog_run("ERROR", paste("Error in BIOMOD_Modeling:", e$message))
@@ -1298,6 +1368,12 @@ run_biomod2_models_basic <- function(biomod_formatted_data, biomod_cv_table,
   else b2_hlog_run("ERROR", "BIOMOD_Modeling failed.")
   return(myBiomodModelOut)
 }
+
+
+
+
+
+
 
 
 #' Project BIOMOD2 Models to Current Scenario (Simplified for basic run)

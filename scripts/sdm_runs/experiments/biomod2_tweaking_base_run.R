@@ -83,6 +83,8 @@ config$AphiaID_for_seed <- species_aphia_id # Store in config for helper seed ac
 
 cat(paste(Sys.time(), "[INFO] --- Processing Species:", species_name_actual, "(AphiaID:", species_aphia_id, ") ---\n"))
 
+
+
 # --- 8. Define and Run process_species_biomod2_basic Function ---
 process_species_biomod2_basic <- function(sp_name_actual, sp_name_biomod, sp_aphia, 
                                           occ_dir_sp, env_stack_curr, 
@@ -90,9 +92,9 @@ process_species_biomod2_basic <- function(sp_name_actual, sp_name_biomod, sp_aph
                                           grp_name_val, cfg_obj) {
   
   log_prefix <- paste(Sys.time(), paste0("[", sp_name_actual, "]"))
-  cat(log_prefix, "INFO [BIOMOD2_Process] --- Starting basic BIOMOD2 processing ---\n")
+  cat(log_prefix, "INFO [BIOMOD2_Process] --- Starting basic BIOMOD2 processing with blockCV ---\n")
   
-  # 8.1 Load Occurrences
+  # 8.1 Load Occurrences (as before)
   cat(log_prefix, "DEBUG [BIOMOD2_Process] Loading occurrences...\n")
   cfg_occ <- cfg_obj; cfg_occ$thinning_method <- NULL 
   occ_data_res <- load_clean_individual_occ_coords(sp_aphia, occ_dir_sp, cfg_occ, logger=NULL, species_log_file=NULL)
@@ -102,7 +104,7 @@ process_species_biomod2_basic <- function(sp_name_actual, sp_name_biomod, sp_aph
   pres_coords_current <- occ_data_res$coords
   cat(log_prefix, "INFO [BIOMOD2_Process] Presences:", nrow(pres_coords_current), "\n")
   
-  # 8.2 Background Points
+  # 8.2 Background Points (as before)
   cat(log_prefix, "DEBUG [BIOMOD2_Process] Generating background points...\n")
   set.seed(sp_aphia %||% 123); n_bg <- cfg_obj$background_points_n %||% 10000
   bg_pts_raw <- terra::spatSample(env_stack_curr, size=n_bg, method="random", na.rm=TRUE, xy=TRUE, warn=FALSE)
@@ -110,38 +112,50 @@ process_species_biomod2_basic <- function(sp_name_actual, sp_name_biomod, sp_aph
   bg_coords_current <- as.data.frame(bg_pts_raw[, c("x", "y")]); colnames(bg_coords_current) <- c("longitude", "latitude")
   cat(log_prefix, "INFO [BIOMOD2_Process] Background points:", nrow(bg_coords_current), "\n")
   
-  # 8.3 Format Data
+  # 8.3 Format Data (as before)
   myBiomodDataCurrent <- format_data_for_biomod2(sp_name_biomod, pres_coords_current, bg_coords_current, env_stack_curr, NULL)
   if (is.null(myBiomodDataCurrent)) { cat(log_prefix, "ERROR [BIOMOD2_Process] Data formatting failed.\n"); return(NULL)}
+  cat(log_prefix, "INFO [BIOMOD2_Process] Data formatted successfully for BIOMOD2.\n")
   
-  # 8.4 Placeholder for blockCV (currently uses BIOMOD2 internal random CV)
-  cat(log_prefix, "INFO [BIOMOD2_Process] Using BIOMOD2 internal random CV (blockCV placeholder).\n")
-  myBiomodCVTableCurrent <- NULL # create_biomod2_block_cv_table(myBiomodDataCurrent, env_stack_curr, cfg_obj, NULL)
+  # 8.4 *** INTEGRATE blockCV Table Generation ***
+  cat(log_prefix, "INFO [BIOMOD2_Process] Creating blockCV table for BIOMOD2...\n")
+  myBiomodCVTableCurrent <- create_biomod2_block_cv_table(
+    biomod_formatted_data = myBiomodDataCurrent,
+    predictor_stack = env_stack_curr, # The same stack used for BIOMOD_FormatingData
+    config = cfg_obj, 
+    species_log_file = NULL
+  )
   
-  # 8.5 Run MAXNET with 'bigboss' options
-  cfg_obj$group_name_for_biomod_output <- grp_name_val # Ensure helper can make paths
-  myBiomodModelOutCurrent <- run_biomod2_models_basic(
+  if (is.null(myBiomodCVTableCurrent)) {
+    cat(log_prefix, "WARN [BIOMOD2_Process] Failed to create blockCV table. BIOMOD_Modeling will use internal random CV.\n")
+    # Allow it to proceed with random CV if blockCV fails for some reason in tweaking
+  } else {
+    cat(log_prefix, "INFO [BIOMOD2_Process] blockCV table created successfully for BIOMOD2.\n")
+  }
+  
+  # 8.5 Run MAXNET with 'bigboss' options and the CV table
+  cfg_obj$group_name_for_biomod_output <- grp_name_val 
+  myBiomodModelOutCurrent <- run_biomod2_models_basic( # This helper now uses the CV table
     myBiomodDataCurrent, myBiomodCVTableCurrent, 'MAXNET',
-    gsub("\\.", "_", sp_name_biomod), # Use file-safe name for dir
-    pred_type_suffix_base_val, # e.g., _pca (not the combined _pca_biomod2)
+    gsub("\\.", "_", sp_name_biomod), 
+    pred_type_suffix_base_val, 
     grp_name_val, cfg_obj, NULL
   )
   if (is.null(myBiomodModelOutCurrent)) { cat(log_prefix, "ERROR [BIOMOD2_Process] Modeling failed.\n"); return(NULL)}
   
-  # 8.6 Project Current
+  # 8.6 Project Current (as before)
   algo_to_project_current <- 'MAXNET'
   cat(log_prefix, "INFO [BIOMOD2_Process] Projecting", algo_to_project_current, "to current...\n")
   projection_current <- project_biomod2_models_current(
     myBiomodModelOutCurrent, env_stack_curr,
-    gsub("\\.", "_", sp_name_biomod), # Pass file-safe name for logging
+    gsub("\\.", "_", sp_name_biomod), 
     pred_type_suffix_base_val,
     algo_to_project_current, cfg_obj, NULL
   )
   if (is.null(projection_current)) { cat(log_prefix, "ERROR [BIOMOD2_Process] Projection failed.\n"); return(NULL)}
   
-  # 8.7 Save Projection
-  # Suffix for this basic biomod2 MAXNET run
-  biomod2_model_run_suffix <- paste0(pred_type_suffix_base_val, "_biomod2_MAXNET_default")
+  # 8.7 Save Projection (as before)
+  biomod2_model_run_suffix <- paste0(pred_type_suffix_base_val, "_biomod2_", algo_to_project_current, "_blockCV_default") # Indicate blockCV used
   save_success <- save_biomod2_projection(
     projection_current, gsub("\\.", "_", sp_name_biomod), current_scenario_name,
     biomod2_model_run_suffix, cfg_obj, NULL, NULL
@@ -149,9 +163,11 @@ process_species_biomod2_basic <- function(sp_name_actual, sp_name_biomod, sp_aph
   if(save_success) cat(log_prefix, "INFO [BIOMOD2_Process] Current projection saved.\n")
   else cat(log_prefix, "ERROR [BIOMOD2_Process] Failed to save current projection.\n")
   
-  cat(log_prefix, "INFO [BIOMOD2_Process] --- Basic BIOMOD2 processing finished ---\n")
-  return(list(status = "success_biomod2_basic", species = sp_name_actual, biomodModel=myBiomodModelOutCurrent))
+  cat(log_prefix, "INFO [BIOMOD2_Process] --- Basic BIOMOD2 processing with blockCV finished ---\n")
+  return(list(status = "success_biomod2_blockcv", species = sp_name_actual, biomodModel=myBiomodModelOutCurrent))
 } # End process_species_biomod2_basic
+
+
 
 # --- 9. Run for the Selected Species ---
 # For tweaking script, ensure parallel is off
