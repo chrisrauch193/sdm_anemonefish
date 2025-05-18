@@ -7,7 +7,8 @@
 # - Incorporated SAC thinning and OBIS-style background generation returning list.
 # - Added spatial CV fold creation and metric logging.
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2, ecospat, spThin, geosphere) # Added readr, blockCV, ggplot2, ecospat, spThin, geosphere
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2, ecospat, spThin, geosphere,
+               biomod2, presenceabsence, randomForest, gbm, mda, gam) # Added biomod2 and dependencies
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count) - Modified to NOT do cell thinning internally.
@@ -1125,4 +1126,304 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
     return(FALSE)
   })
 }
+
+
+
+
+
+
+
+
+
+# ===========================================================================
+# --- BIOMOD2 Helper Functions (New Additions) ---
+# ===========================================================================
+#' Format Data for BIOMOD2
+#' (Keep this function as previously defined - it's good)
+
+
+
+# scripts/helpers/sdm_modeling_helpers.R
 #-------------------------------------------------------------------------------
+# Helper functions for SDM Modeling (SDMtune & BIOMOD2)
+#-------------------------------------------------------------------------------
+pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
+               blockCV, ggplot2, ecospat, spThin, geosphere,
+               biomod2, maxnet, # For BIOMOD2 MAXNET
+               # Common dependencies for other biomod2 models if used later:
+               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
+)
+
+# --- SDMtune Specific Helpers (Keep all your existing ones) ---
+# load_clean_individual_occ_coords
+# thin_occurrences_by_sac
+# generate_sdm_background_obis
+# create_spatial_cv_folds_simplified (This is for SDMtune)
+# run_sdm_tuning_scv
+# train_final_sdm
+# construct_prediction_filename # IMPORTANT: We will reuse this for BIOMOD2 naming
+# predict_sdm_suitability
+# save_tuning_results
+# save_final_model
+# save_sdm_prediction # IMPORTANT: We will adapt a BIOMOD2 version based on this
+# calculate_and_save_vi
+# log_final_model_metrics
+# --- End of SDMtune Specific Helpers ---
+
+
+# ===========================================================================
+# --- BIOMOD2 Helper Functions ---
+# ===========================================================================
+
+#' Format Data for BIOMOD2
+#' Prepares data in the format required by BIOMOD_FormatingData.
+#'
+#' @param species_name_for_biomod Sanitized species name (e.g., Genus.species) for BIOMOD_FormatingData resp.name.
+#' @param pres_coords Matrix or data frame of presence coordinates (longitude, latitude).
+#' @param bg_coords Matrix or data frame of background coordinates (longitude, latitude).
+#' @param env_stack SpatRaster stack of environmental predictors.
+#' @param species_log_file Optional path to species-specific log file (or NULL for cat).
+#' @return A BIOMOD.formated.data object or NULL on error.
+format_data_for_biomod2 <- function(species_name_for_biomod, pres_coords, bg_coords, env_stack, species_log_file = NULL) {
+  log_prefix_b2_fmt <- paste(Sys.time(), paste0("[", species_name_for_biomod, "]"))
+  b2_hlog_fmt <- function(level, ...) {
+    msg_content <- paste0(..., collapse = " ")
+    full_msg <- paste(log_prefix_b2_fmt, paste0("[BIOMOD2_FormatData]"), level, "-", msg_content)
+    if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
+  }
+  
+  b2_hlog_fmt("INFO", "Formatting data for BIOMOD2...")
+  if (is.null(pres_coords) || nrow(pres_coords) == 0) { b2_hlog_fmt("ERROR", "Presence coords missing."); return(NULL) }
+  if (is.null(bg_coords) || nrow(bg_coords) == 0) { b2_hlog_fmt("ERROR", "Background coords missing."); return(NULL) }
+  if (is.null(env_stack) || !inherits(env_stack, "SpatRaster")) { b2_hlog_fmt("ERROR", "Env stack missing/invalid."); return(NULL) }
+  
+  tryCatch({
+    myResp <- c(rep(1, nrow(pres_coords)), rep(0, nrow(bg_coords)))
+    myXY <- rbind(as.data.frame(pres_coords), as.data.frame(bg_coords)) # Ensure data.frames
+    colnames(myXY) <- c('x', 'y') 
+    
+    myBiomodData <- biomod2::BIOMOD_FormatingData(
+      resp.var = myResp,
+      expl.var = env_stack,
+      resp.xy = myXY,
+      resp.name = species_name_for_biomod, # Name BIOMOD2 will use internally
+      PA.nb.rep = 0 
+    )
+    b2_hlog_fmt("INFO", "BIOMOD_FormatingData successful.")
+    return(myBiomodData)
+  }, error = function(e) {
+    b2_hlog_fmt("ERROR", paste("Error in BIOMOD_FormatingData:", e$message))
+    return(NULL)
+  })
+}
+
+#' Create Spatial CV Folds Table for BIOMOD2 using blockCV
+#' (Placeholder - to be implemented based on vignette when ready)
+#' For now, this function will return NULL, causing BIOMOD_Modeling to use its internal random CV.
+create_biomod2_block_cv_table <- function(biomod_formatted_data, predictor_stack, config, species_log_file = NULL) {
+  log_prefix_b2_cv <- paste(Sys.time(), "[BIOMOD2_BlockCV_Placeholder]")
+  cat(log_prefix_b2_cv, "INFO: Placeholder for blockCV table generation. Returning NULL for now (will use random CV in BIOMOD_Modeling).\n")
+  return(NULL) 
+  # --- Actual implementation would be similar to what we discussed previously ---
+  # ... using blockCV::cv_spatial with biomod2 = TRUE ...
+  # ... and then renaming columns of scv_results$biomodTable ...
+}
+
+#' Run Basic BIOMOD2 Modeling (e.g., MAXNET with 'bigboss' defaults)
+#'
+#' @param biomod_formatted_data Output from `format_data_for_biomod2`.
+#' @param biomod_cv_table Optional output from `create_biomod2_block_cv_table`. If NULL, random CV is used.
+#' @param model_to_run Character, e.g., 'MAXNET'.
+#' @param species_name_for_files Sanitized species name with underscores for file/dir paths.
+#' @param predictor_type_suffix Suffix for model output directory.
+#' @param group_name_for_paths Group name for path construction.
+#' @param config Project configuration.
+#' @param species_log_file Optional path to species-specific log file.
+#' @return A BIOMOD.models.out object or NULL on error.
+run_biomod2_models_basic <- function(biomod_formatted_data, biomod_cv_table,
+                                     model_to_run = 'MAXNET',
+                                     species_name_for_files, predictor_type_suffix,
+                                     group_name_for_paths,
+                                     config, species_log_file = NULL) {
+  log_prefix_b2_run <- paste(Sys.time(), paste0("[", species_name_for_files, "]"))
+  b2_hlog_run <- function(level, ...) { 
+    msg_content <- paste0(..., collapse = " ")
+    full_msg <- paste(log_prefix_b2_run, paste0("[BIOMOD2_RunBasic:", model_to_run, "]"), level, "-", msg_content)
+    if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
+  }
+  
+  b2_hlog_run("INFO", "Running basic BIOMOD2 modeling...")
+  
+  myBiomodOptions <- biomod2::bm_ModelingOptions(
+    data.type = 'binary',
+    models = c(model_to_run), 
+    strategy = 'bigboss', # Use 'bigboss' for robust defaults
+    bm.format = biomod_formatted_data,
+    calib.lines = biomod_cv_table 
+  )
+  
+  species_biomod_run_dir <- file.path(config$sdm_output_dir_intermediate, "biomod2_outputs", 
+                                      paste0(group_name_for_paths, predictor_type_suffix), 
+                                      species_name_for_files) 
+  dir.create(species_biomod_run_dir, recursive = TRUE, showWarnings = FALSE)
+  
+  current_wd_b2 <- getwd()
+  setwd(species_biomod_run_dir) 
+  b2_hlog_run("DEBUG", paste("Temp WD for BIOMOD_Modeling:", getwd()))
+  
+  myBiomodModelOut <- NULL
+  tryCatch({
+    myBiomodModelOut <- biomod2::BIOMOD_Modeling(
+      bm.format = biomod_formatted_data,
+      modeling.id = paste0(model_to_run, '_BasicRun_', format(Sys.time(), "%Y%m%d%H%M%S")),
+      models = c(model_to_run), 
+      bm.options = myBiomodOptions,
+      CV.strategy = if (is.null(biomod_cv_table)) 'random' else 'user.defined',
+      CV.nb.rep = if (is.null(biomod_cv_table)) config$sdm_n_folds %||% 2 else ncol(biomod_cv_table), # Use sdm_n_folds from config
+      CV.perc = if (is.null(biomod_cv_table)) 0.8 else NULL,
+      CV.user.table = biomod_cv_table, 
+      var.import = 0, 
+      metric.eval = c('ROC', 'TSS'), 
+      do.full.models = TRUE, 
+      seed.val = config$AphiaID_for_seed %||% 42 # AphiaID should be in config or passed
+    )
+  }, error = function(e) {
+    b2_hlog_run("ERROR", paste("Error in BIOMOD_Modeling:", e$message))
+  }, finally = {
+    setwd(current_wd_b2) 
+    b2_hlog_run("DEBUG", paste("Restored WD to:", current_wd_b2))
+  })
+  
+  if (!is.null(myBiomodModelOut)) b2_hlog_run("INFO", "BIOMOD_Modeling completed.")
+  else b2_hlog_run("ERROR", "BIOMOD_Modeling failed.")
+  return(myBiomodModelOut)
+}
+
+
+#' Project BIOMOD2 Models to Current Scenario (Simplified for basic run)
+#'
+#' @param biomod_model_out The `BIOMOD.models.out` object from `BIOMOD_Modeling`.
+#' @param env_stack_current `SpatRaster` stack for the current scenario.
+#' @param species_name_for_saving Sanitized species name (underscores) for logging.
+#' @param predictor_type_suffix Suffix indicating model type (e.g., "_pca").
+#' @param algo_to_project Short name of the algorithm, e.g., 'MAXNET'.
+#' @param config The project configuration list.
+#' @param species_log_file Optional path to species-specific log file.
+#' @return A `SpatRaster` of the projection (scaled 0-1), or NULL on error.
+project_biomod2_models_current <- function(biomod_model_out, env_stack_current,
+                                           species_name_for_saving, predictor_type_suffix, 
+                                           algo_to_project, 
+                                           config, species_log_file = NULL) {
+  log_prefix_b2_proj <- paste(Sys.time(), paste0("[", species_name_for_saving, "]"))
+  b2_hlog_proj <- function(level, ...) {
+    msg_content <- paste0(..., collapse = " ")
+    full_msg <- paste(log_prefix_b2_proj, paste0("[BIOMOD2_Project:", algo_to_project, "]"), level, "-", msg_content)
+    if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
+  }
+  
+  b2_hlog_proj("INFO", "Attempting to project model for current scenario...")
+  if (is.null(biomod_model_out) || !inherits(biomod_model_out, "BIOMOD.models.out")) { b2_hlog_proj("ERROR", "Invalid biomod_model_out."); return(NULL) }
+  if (is.null(env_stack_current) || !inherits(env_stack_current, "SpatRaster")) { b2_hlog_proj("ERROR", "Invalid env_stack_current."); return(NULL) }
+  
+  biomod_internal_resp_name <- biomod_model_out@sp.name # Changed from resp.name to sp.name based on typical biomod2 object structure
+  
+  # Construct full model name (e.g., Radianthus.magnifica_allData_allRun_MAXNET)
+  target_full_model_name <- paste0(biomod_internal_resp_name, "_allData_allRun_", algo_to_project)
+  model_to_project_path <- NULL
+  
+  if (target_full_model_name %in% biomod_model_out@models.computed) {
+    model_to_project_path <- target_full_model_name
+    b2_hlog_proj("INFO", paste("Identified full model for projection:", model_to_project_path))
+  } else {
+    available_models_for_algo <- grep(paste0("_", algo_to_project, "$"), biomod_model_out@models.computed, value = TRUE)
+    if (length(available_models_for_algo) > 0) {
+      model_to_project_path <- available_models_for_algo[1]
+      b2_hlog_proj("WARN", paste0("'_allData_allRun_' model for ", algo_to_project, " not found. Using first available: ", model_to_project_path))
+    } else {
+      b2_hlog_proj("ERROR", paste("No models found for algorithm:", algo_to_project, ". Available:", paste(biomod_model_out@models.computed, collapse=", ")))
+      return(NULL)
+    }
+  }
+  
+  projection_run_name <- paste0("CurrentProjection_", algo_to_project, "_", format(Sys.time(), "%Y%m%d%H%M%S"))
+  
+  # WD management for BIOMOD_Projection
+  # group_name is from the calling scope of process_species_biomod2
+  # species_name_for_saving is passed
+  expected_biomod_run_wd <- file.path(config$sdm_output_dir_intermediate, "biomod2_outputs",
+                                      paste0(config$group_name_for_biomod_output %||% "unknown_group", predictor_type_suffix), # Use the one set in tweaking script
+                                      species_name_for_saving) 
+  
+  if (!dir.exists(expected_biomod_run_wd)) { b2_hlog_proj("ERROR", paste("Expected BIOMOD_Modeling WD does not exist:", expected_biomod_run_wd)); return(NULL) }
+  
+  original_wd_proj <- getwd()
+  setwd(expected_biomod_run_wd)
+  b2_hlog_proj("DEBUG", paste("Temp WD for BIOMOD_Projection:", getwd()))
+  
+  biomod_projection_obj <- NULL; projected_raster <- NULL
+  tryCatch({
+    biomod_projection_obj <- biomod2::BIOMOD_Projection(
+      bm.mod = biomod_model_out, proj.name = projection_run_name, new.env = env_stack_current,
+      models.chosen = model_to_project_path, metric.binary = NULL, compress = TRUE,
+      build.clamping.mask = FALSE, output.format = ".tif"
+    )
+    projected_raster_raw <- biomod2::get_predictions(biomod_projection_obj)
+    if (!is.null(projected_raster_raw) && inherits(projected_raster_raw, "SpatRaster") && terra::nlyr(projected_raster_raw) > 0) {
+      projected_raster <- projected_raster_raw / 1000
+      names(projected_raster) <- paste0("suitability_", algo_to_project, "_current")
+      b2_hlog_proj("INFO", "Projection created and scaled to 0-1.")
+    } else { b2_hlog_proj("ERROR", "get_predictions returned invalid raster.") }
+  }, error = function(e) {
+    b2_hlog_proj("ERROR", paste("Error in BIOMOD_Projection/get_predictions:", e$message))
+  }, finally = {
+    setwd(original_wd_proj)
+    b2_hlog_proj("DEBUG", paste("Restored WD to:", original_wd_proj))
+  })
+  return(projected_raster)
+}
+
+#' Save BIOMOD2 Projection Raster using SDMtune Naming Convention
+#'
+#' @param prediction_raster The SpatRaster from `project_biomod2_models_current`.
+#' @param species_name_sanitized_for_files Species name with underscores for filename.
+#' @param scenario_name Scenario name (e.g., "current").
+#' @param model_type_suffix_for_saving Full suffix for the filename (e.g., "_pca_biomod2_MAXNET_default").
+#' @param config Project configuration list.
+#' @param logger (Not used, kept for signature consistency if desired later).
+#' @param species_log_file Optional path to species-specific log file.
+#' @return TRUE on success, FALSE on failure.
+save_biomod2_projection <- function(prediction_raster, species_name_sanitized_for_files, scenario_name, 
+                                    model_type_suffix_for_saving, 
+                                    config, logger, species_log_file = NULL) {
+  log_prefix_b2_save <- paste(Sys.time(), paste0("[", species_name_sanitized_for_files, "]"))
+  b2_hlog_save <- function(level, ...) {
+    msg_content <- paste0(..., collapse = " ")
+    full_msg <- paste(log_prefix_b2_save, paste0("[SaveBIOMOD2Pred]"), level, "-", msg_content)
+    if (!is.null(species_log_file)) cat(full_msg, "\n", file = species_log_file, append = TRUE) else cat(full_msg, "\n")
+  }
+  
+  if (is.null(prediction_raster) || !inherits(prediction_raster, "SpatRaster")) { b2_hlog_save("ERROR", "Invalid raster."); return(FALSE) }
+  
+  # Use the existing SDMtune construct_prediction_filename helper for consistent naming
+  # The model_type_suffix_for_saving should be constructed to include "_biomod2_ALGO_OPT"
+  pred_file_path <- construct_prediction_filename(
+    species_name_sanitized_for_files, # This is the Genus_species version
+    scenario_name, 
+    model_type_suffix_for_saving, # e.g., "_pca_biomod2_MAXNET_default"
+    config
+  )
+  
+  if (is.null(pred_file_path)) { b2_hlog_save("ERROR", "Failed to construct BIOMOD2 target prediction path."); return(FALSE) }
+  
+  target_dir <- dirname(pred_file_path)
+  dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+  
+  tryCatch({
+    terra::writeRaster(prediction_raster, filename = pred_file_path, overwrite = TRUE, gdal=c("COMPRESS=LZW", "TFW=YES"))
+    b2_hlog_save("DEBUG", paste("BIOMOD2 Projection raster saved:", basename(pred_file_path), "to", target_dir))
+    TRUE
+  }, error = function(e) {
+    b2_hlog_save("ERROR", paste("Failed save BIOMOD2 prediction raster:", e$message))
+    FALSE
+  })
+}
