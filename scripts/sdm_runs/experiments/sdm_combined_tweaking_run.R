@@ -1,29 +1,10 @@
 # scripts/sdm_runs/experiments/sdmtune_biomod2_combined_run.R
 #-------------------------------------------------------------------------------
-# Combined Tweaking Script: Runs SDMtune, then BIOMOD2 with SDMtune hypers
-# For a single species and current scenario.
+# Combined Tweaking Script: Runs SDMtune, then BIOMOD2 (MAXNET only) 
+# with SDMtune hypers. For a single species and current scenario.
 #-------------------------------------------------------------------------------
 
-cat("--- Running Script sdm_combined_tweaking_run.R ---\n")
-
-# --- Path to maxent.jar (USER MUST SET THIS IF USING MAXENT.Phillips) ---
-# Example: path_to_maxent_jar_local <- "/path/to/your/dismo/java/maxent.jar"
-# Or from dismo package if available:
-path_to_maxent_jar_local <- "/home/bi-server-kyoto/R/x86_64-pc-linux-gnu-library/4.4/dismo/java/maxent.jar" # Initialize
-if (requireNamespace("dismo", quietly = TRUE)) {
-  jar_path_dismo <- file.path(system.file(package="dismo"), "java", "maxent.jar")
-  if (file.exists(jar_path_dismo)) {
-    path_to_maxent_jar_local <- jar_path_dismo
-    cat("Found maxent.jar via dismo at:", path_to_maxent_jar_local, "\n")
-  } else {
-    cat("WARNING: maxent.jar not found in dismo package. MAXENT.Phillips (Java) will be skipped if no other path is provided.\n")
-  }
-} else {
-  cat("WARNING: dismo package not installed. Cannot automatically find maxent.jar. MAXENT.Phillips (Java) will be skipped if no other path is provided.\n")
-}
-# If you have maxent.jar elsewhere, set path_to_maxent_jar_local manually here:
-# path_to_maxent_jar_local <- "/your/manual/path/to/maxent.jar"
-
+cat("--- Running Script sdm_combined_tweaking_run.R (MAXNET focused) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
 if (file.exists("scripts/config.R")) {
@@ -39,7 +20,8 @@ if (file.exists("scripts/config.R")) {
 if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
 pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools, stringr, # SDMtune needs
                biomod2, maxnet, blockCV, # BIOMOD2 and its dependencies
-               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost # Other BIOMOD2 algos
+               # Other BIOMOD2 algos (for future additions, keep dependencies)
+               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
 )
 
 # --- 3. Source Helper Functions ---
@@ -47,7 +29,7 @@ source(file.path(config$helpers_dir, "env_processing_helpers.R"))
 source(file.path(config$helpers_dir, "sdm_modeling_helpers.R"))
 
 # --- 4. Define Group Specifics & Predictor Type ---
-cat(paste(Sys.time(), "[INFO] --- Starting Script sdm_combined_tweaking_run.R ---\n"))
+cat(paste(Sys.time(), "[INFO] --- Starting Script sdm_combined_tweaking_run.R (MAXNET focused) ---\n"))
 
 group_name <- "anemone" 
 species_list_file <- config$anemone_species_list_file
@@ -60,13 +42,13 @@ cat(paste(Sys.time(), "[INFO] --- Using Predictors:", ifelse(use_pca, "PCA Compo
 
 # --- 5. Load Predictor Information (for the 'current' scenario) ---
 current_scenario_name <- "current"
-env_predictor_stack_current <- NULL # This will be the GLOBAL stack for SDMtune BG and BIOMOD2 proj
-predictor_paths_or_list_sdmtune <- NULL # For SDMtune general predictor access
+env_predictor_stack_current <- NULL 
+predictor_paths_or_list_sdmtune <- NULL 
 
 if(use_pca) {
   pca_paths_rds <- config$pca_raster_paths_rds_path
   if (!file.exists(pca_paths_rds)) stop("PCA raster paths RDS file not found.")
-  predictor_paths_or_list_sdmtune <- readRDS(pca_paths_rds) # Load the list for SDMtune
+  predictor_paths_or_list_sdmtune <- readRDS(pca_paths_rds) 
   current_pca_path <- predictor_paths_or_list_sdmtune[[current_scenario_name]]
   if (is.null(current_pca_path) || !file.exists(current_pca_path)) stop("PCA stack for 'current' scenario not found.")
   env_predictor_stack_current <- tryCatch(terra::rast(current_pca_path), error = function(e) {
@@ -74,7 +56,7 @@ if(use_pca) {
   })
 } else {
   core_vif_vars <- config$final_vars_vif_anemone 
-  predictor_paths_or_list_sdmtune <- core_vif_vars # For SDMtune
+  predictor_paths_or_list_sdmtune <- core_vif_vars 
   scenario_vif_vars <- generate_scenario_variable_list(core_vif_vars, current_scenario_name, config)
   if(length(scenario_vif_vars) < 1) stop("No VIF variables defined for current scenario.")
   env_predictor_stack_current <- load_selected_env_data(current_scenario_name, scenario_vif_vars, config)
@@ -83,21 +65,18 @@ if(is.null(env_predictor_stack_current)) stop("Failed to load 'current' environm
 cat(paste(Sys.time(), "[INFO] Loaded 'current' env stack for SDMtune & BIOMOD2. Layers:", paste(names(env_predictor_stack_current), collapse=", "), "\n"))
 
 # --- 6. Create Intermediate Output Dirs (Shared and BIOMOD2 specific) ---
-# SDMtune intermediate dirs
 sdmtune_intermediate_models_dir_path <- file.path(config$models_dir_intermediate, paste0(group_name, predictor_type_suffix_sdmtune))
 sdmtune_intermediate_results_dir_path <- file.path(config$results_dir_intermediate, paste0(group_name, predictor_type_suffix_sdmtune))
 dir.create(sdmtune_intermediate_models_dir_path, recursive = TRUE, showWarnings = FALSE)
 dir.create(sdmtune_intermediate_results_dir_path, recursive = TRUE, showWarnings = FALSE)
-dir.create(config$species_log_dir, recursive = TRUE, showWarnings = FALSE) # General species log dir
+dir.create(config$species_log_dir, recursive = TRUE, showWarnings = FALSE) 
 cat(paste(Sys.time(), "[INFO] SDMtune intermediate dirs checked/created for:", group_name, predictor_type_suffix_sdmtune, "\n"))
 
-# BIOMOD2 intermediate dirs
 biomod2_intermediate_base_dir <- file.path(config$sdm_output_dir_intermediate, "biomod2_outputs")
 biomod2_folder_suffix <- paste0(predictor_type_suffix_sdmtune, "_biomod2") 
 biomod2_species_group_dir_path <- file.path(biomod2_intermediate_base_dir, paste0(group_name, biomod2_folder_suffix))
 dir.create(biomod2_species_group_dir_path, recursive = TRUE, showWarnings = FALSE)
 cat(paste(Sys.time(), "[INFO] BIOMOD2 intermediate output base for this run type:", biomod2_species_group_dir_path, "\n"))
-
 
 # --- 7. Load Species List & Select One Species for Tweaking ---
 species_df <- readr::read_csv(species_list_file, show_col_types = FALSE)
@@ -107,18 +86,17 @@ species_name_actual <- species_row_to_process$scientificName
 species_name_sanitized_for_files <- gsub(" ", "_", species_name_actual) 
 species_name_for_biomod_resp <- gsub(" ", ".", species_name_sanitized_for_files) 
 species_aphia_id <- species_row_to_process$AphiaID
-config$AphiaID_for_seed <- species_aphia_id # For seed setting in helpers
+config$AphiaID_for_seed <- species_aphia_id 
 
 cat(paste(Sys.time(), "[INFO] --- Processing Species:", species_name_actual, "(AphiaID:", species_aphia_id, ") ---\n"))
 
 # --- 8. Define Combined SDMtune + BIOMOD2 Processing Function ---
 process_species_combined_sdm_and_biomod2 <- function(
     sp_row, cfg, 
-    env_pred_paths_or_list, # For SDMtune, to get paths for all scenarios for projection
-    global_current_env_stack, # The loaded 'current' stack for BIOMOD2 and SDMtune BG/SAC
+    env_pred_paths_or_list, 
+    global_current_env_stack, 
     grp_name, pred_suffix_sdmtune, use_pca_flag, occ_dir_sp, 
-    tuning_scenario_sdmtune = "current", # SDMtune usually tunes on current
-    path_to_maxent_jar_arg # Pass the jar path
+    tuning_scenario_sdmtune = "current"
 ) {
   
   sp_name <- sp_row$scientificName
@@ -127,29 +105,24 @@ process_species_combined_sdm_and_biomod2 <- function(
   sp_aphia <- sp_row$AphiaID
   
   log_prefix <- paste(Sys.time(), paste0("[", sp_name, "]"))
-  cat(log_prefix, "INFO --- Starting COMBINED SDMtune & BIOMOD2 processing ---\n")
+  cat(log_prefix, "INFO --- Starting COMBINED SDMtune & BIOMOD2 (MAXNET) processing ---\n")
   
-  # --- Intermediate Paths for SDMtune ---
   sdmtune_model_file_path <- file.path(cfg$models_dir_intermediate, paste0(grp_name, pred_suffix_sdmtune), paste0("sdm_model_", sp_name_sanitized_files, pred_suffix_sdmtune, ".rds"))
   sdmtune_tuning_rds_path <- file.path(cfg$results_dir_intermediate, paste0(grp_name, pred_suffix_sdmtune), paste0("sdm_tuning_", sp_name_sanitized_files, pred_suffix_sdmtune, "_object.rds"))
   
-  # --- Load & Prepare Occurrences (Common for both) ---
   cat(log_prefix, "DEBUG Loading and cleaning occurrences...\n")
   cfg_occ_load <- cfg; cfg_occ_load$thinning_method <- NULL 
   occ_data_raw_list <- load_clean_individual_occ_coords(sp_aphia, occ_dir_sp, cfg_occ_load, logger=NULL, species_log_file=NULL)
   if (is.null(occ_data_raw_list) || is.null(occ_data_raw_list$coords) || occ_data_raw_list$count < cfg$min_occurrences_sdm) {
     cat(log_prefix, "ERROR Insufficient occurrences after basic cleaning:", occ_data_raw_list$count %||% 0, "\n"); return(list(status="skipped_occurrences_initial"))
   }
-  occs_coords_cleaned <- occ_data_raw_list$coords # Matrix
-  
+  occs_coords_cleaned <- occ_data_raw_list$coords 
   cat(log_prefix, "INFO Occurrences after basic cleaning:", nrow(occs_coords_cleaned), "\n")
   
-  # --- SAC Thinning (Common for both) ---
   occs_coords_thinned_sac <- occs_coords_cleaned
   occurrence_count_final <- nrow(occs_coords_thinned_sac)
   if (cfg$apply_sac_thinning) {
     cat(log_prefix, "DEBUG Applying SAC thinning...\n")
-    # tuning_predictor_stack_global for SAC is the global_current_env_stack
     sac_result <- thin_occurrences_by_sac(occs_coords_cleaned, global_current_env_stack, cfg, logger=NULL, species_log_file=NULL)
     if (!is.null(sac_result) && !is.null(sac_result$coords_thinned)) {
       occs_coords_thinned_sac <- sac_result$coords_thinned
@@ -159,7 +132,6 @@ process_species_combined_sdm_and_biomod2 <- function(
     } else { cat(log_prefix, "WARN SAC thinning failed or no change, using pre-SAC coords.\n") }
   } else { cat(log_prefix, "INFO SAC thinning disabled.\n") }
   
-  # Final coords to use for modeling
   final_occs_coords <- occs_coords_thinned_sac
   final_occs_sf <- sf::st_as_sf(as.data.frame(final_occs_coords), coords=c("longitude","latitude"), crs=cfg$occurrence_crs)
   final_occs_sf$AphiaID <- sp_aphia
@@ -176,9 +148,10 @@ process_species_combined_sdm_and_biomod2 <- function(
     cat(log_prefix, "INFO [SDMtune] Loading existing model:", basename(sdmtune_model_file_path), "\n")
     sdmtune_model_obj <- readRDS(sdmtune_model_file_path)
     if (file.exists(sdmtune_tuning_rds_path)) sdmtune_tuning_obj <- readRDS(sdmtune_tuning_rds_path)
-    if (!is.null(sdmtune_tuning_obj) && !is.null(attr(sdmtune_tuning_obj, "best_hypers"))) sdmtune_best_hypers_obj <- attr(sdmtune_tuning_obj, "best_hypers")
+    if (!is.null(sdmtune_tuning_obj) && inherits(sdmtune_tuning_obj, "SDMtune") && !is.null(attr(sdmtune_tuning_obj, "best_hypers"))) {
+      sdmtune_best_hypers_obj <- attr(sdmtune_tuning_obj, "best_hypers")
+    }
     
-    # Regenerate bg and stack for VI/metrics and BIOMOD2
     bg_ret_sdm <- generate_sdm_background_obis(final_occs_sf, global_current_env_stack, cfg, NULL, NULL, sp_aphia)
     if(!is.null(bg_ret_sdm)) { 
       sdmtune_bg_pts <- bg_ret_sdm$background_points
@@ -203,7 +176,9 @@ process_species_combined_sdm_and_biomod2 <- function(
     if(is.null(sdmtune_spatial_folds)) { cat(log_prefix, "ERROR [SDMtune] Spatial folds failed.\n"); return(list(status="error_sdmtune_folds"))}
     
     sdmtune_tuning_obj <- run_sdm_tuning_scv(final_occs_coords, sdmtune_spec_stack, sdmtune_bg_pts, cfg, NULL, sp_name, NULL)
-    if(is.null(sdmtune_tuning_obj) || is.null(attr(sdmtune_tuning_obj, "best_hypers"))) { cat(log_prefix, "ERROR [SDMtune] Tuning failed.\n"); return(list(status="error_sdmtune_tuning"))}
+    if(is.null(sdmtune_tuning_obj) || !inherits(sdmtune_tuning_obj, "SDMtune") || is.null(attr(sdmtune_tuning_obj, "best_hypers"))) { 
+      cat(log_prefix, "ERROR [SDMtune] Tuning failed or did not produce best_hypers attribute.\n"); return(list(status="error_sdmtune_tuning"))
+    }
     sdmtune_best_hypers_obj <- attr(sdmtune_tuning_obj, "best_hypers")
     save_tuning_results(sdmtune_tuning_obj, sp_name_sanitized_files, pred_suffix_sdmtune, cfg, NULL, NULL)
     
@@ -211,7 +186,7 @@ process_species_combined_sdm_and_biomod2 <- function(
     if(is.null(sdmtune_model_obj)) { cat(log_prefix, "ERROR [SDMtune] Training failed.\n"); return(list(status="error_sdmtune_train"))}
     save_final_model(sdmtune_model_obj, sp_name_sanitized_files, pred_suffix_sdmtune, grp_name, cfg, NULL, NULL)
   }
-  # SDMtune Metrics & VI
+  
   if (!is.null(sdmtune_model_obj) && !is.null(sdmtune_spec_stack)) {
     log_final_model_metrics(sdmtune_model_obj, sdmtune_swd, sdmtune_spec_stack, sdmtune_tuning_obj, sp_name_sanitized_files, grp_name, pred_suffix_sdmtune, cfg, NULL, NULL)
     if(!is.null(sdmtune_swd)) calculate_and_save_vi(sdmtune_model_obj, sdmtune_swd, sp_name_sanitized_files, grp_name, pred_suffix_sdmtune, cfg, NULL, NULL)
@@ -219,9 +194,9 @@ process_species_combined_sdm_and_biomod2 <- function(
   cat(log_prefix, "INFO --- Finished SDMtune Workflow ---\n")
   
   # ===========================================================================
-  # --- BIOMOD2 Workflow ---
+  # --- BIOMOD2 Workflow (MAXNET Only) ---
   # ===========================================================================
-  cat(log_prefix, "INFO --- Starting BIOMOD2 Workflow ---\n")
+  cat(log_prefix, "INFO --- Starting BIOMOD2 Workflow (MAXNET Only) ---\n")
   if (is.null(sdmtune_bg_pts) || is.null(sdmtune_spec_stack)) {
     cat(log_prefix, "ERROR [BIOMOD2] Missing background points or species stack from SDMtune. Skipping BIOMOD2.\n")
   } else {
@@ -230,86 +205,78 @@ process_species_combined_sdm_and_biomod2 <- function(
     else {
       cat(log_prefix, "INFO [BIOMOD2] Data formatted.\n")
       myBiomodCVTable <- create_biomod2_block_cv_table(myBiomodData, sdmtune_spec_stack, cfg, NULL)
-      if (is.null(myBiomodCVTable)) cat(log_prefix, "WARN [BIOMOD2] blockCV table failed. Using random CV.\n")
+      if (is.null(myBiomodCVTable)) cat(log_prefix, "WARN [BIOMOD2] blockCV table failed. Using random CV for BIOMOD2.\n")
       
-      models_to_run_in_biomod2 <- c('MAXNET') # Always run R-based maxnet with bigboss/defaults
-      user_options_list <- list() # For MAXENT.Phillips
+      models_to_run_in_biomod2 <- c('MAXNET')
+      user_options_list_maxnet <- list()
+      maxnet_args_for_biomod <- list() # To store params for MAXNET
       
-      if (!is.null(sdmtune_best_hypers_obj)) {
-        cat(log_prefix, "INFO [BIOMOD2] Preparing user values for MAXENT.Phillips (Java).\n")
-        maxent_p_params <- prepare_biomod2_maxent_phillips_user_val(sdmtune_best_hypers_obj, NULL)
-        if (!is.null(maxent_p_params)) {
-          user_options_list[['MAXNET.binary.maxnet.maxnet']] <- maxent_p_params # Correct key
-          models_to_run_in_biomod2 <- c(models_to_run_in_biomod2, 'MAXNET')
+      if (!is.null(sdmtune_best_hypers_obj) && inherits(sdmtune_best_hypers_obj, "data.frame") && nrow(sdmtune_best_hypers_obj) == 1) {
+        cat(log_prefix, "INFO [BIOMOD2] Preparing MAXNET parameters from SDMtune best_hypers.\n")
+        if ("reg" %in% names(sdmtune_best_hypers_obj)) {
+          maxnet_args_for_biomod$regmult <- as.numeric(sdmtune_best_hypers_obj$reg)
         }
-      } else { cat(log_prefix, "WARN [BIOMOD2] Not configuring MAXENT.Phillips (Java): SDMtune hypers or JAR missing.\n") }
-      models_to_run_in_biomod2 <- unique(models_to_run_in_biomod2)
-      # 
-      cat(log_prefix, "INFO [BIOMOD2] Models to attempt:", paste(models_to_run_in_biomod2, collapse=", "), "\n")
+        if ("fc" %in% names(sdmtune_best_hypers_obj)) {
+          maxnet_args_for_biomod$classes <- as.character(sdmtune_best_hypers_obj$fc)
+        }
+        # Add other maxnet specific arguments if SDMtune provides them, e.g.
+        # maxnet_args_for_biomod$addsamplestobackground <- TRUE # Maxnet default
+        
+        if (length(maxnet_args_for_biomod) > 0) {
+          user_options_list_maxnet[['MAXNET.binary.maxnet.maxnet']] <- list('_allData_allRun' = maxnet_args_for_biomod)
+          cat(log_prefix, "INFO [BIOMOD2] MAXNET parameters prepared:", paste(names(maxnet_args_for_biomod), unlist(maxnet_args_for_biomod), collapse=", "), "\n")
+        } else {
+          cat(log_prefix, "WARN [BIOMOD2] No usable hyperparameters (reg, fc) found in sdmtune_best_hypers_obj for MAXNET. MAXNET will use 'bigboss' defaults.\n")
+        }
+      } else {
+        cat(log_prefix, "WARN [BIOMOD2] SDMtune best_hypers not available or invalid. MAXNET will use 'bigboss' defaults.\n")
+      }
       
-      # This needs to be available for the helper
-      cfg$group_name_for_biomod_output <- grp_name 
+      cat(log_prefix, "INFO [BIOMOD2] Model to run:", paste(models_to_run_in_biomod2, collapse=", "), "\n")
       
+      cfg$group_name_for_biomod_output <- grp_name # For helper path construction
       
-      
-      
-      
-      
-      # user.MAXENT <- list("_allData_allRun" = list(
-      #   memory_allocated = 1024
-      # ))
-      # 
-      # user_options_list <- list(MAXNET.binary.maxnet.maxnet = user.MAXENT)
-      
-      # Create the BIOMOD.modeling.options object
-      # For models in user_options_list, their params will be used.
-      # For other models in models_to_run_in_biomod2 (i.e., MAXNET), 'bigboss' will be used.
       biomod_options_obj <- biomod2::bm_ModelingOptions(
         data.type = 'binary',
-        models = models_to_run_in_biomod2, # Inform which models options are for
-        strategy = 'user.defined',
-        user.val = if(length(user_options_list) > 0) user_options_list else list(),
-        user.base = 'bigboss', # Fallback for models not in user.val (i.e. MAXNET)
+        models = models_to_run_in_biomod2,
+        strategy = if (length(user_options_list_maxnet) > 0) 'user.defined' else 'bigboss',
+        user.val = if (length(user_options_list_maxnet) > 0) user_options_list_maxnet else list(),
+        user.base = 'bigboss', 
         bm.format = myBiomodData 
       )
       
-      myBiomodModelOut <- run_biomod2_models_with_blockcv( # Renamed helper
+      myBiomodModelOut <- run_biomod2_models_with_blockcv(
         myBiomodData, biomod_options_obj, models_to_run_in_biomod2, myBiomodCVTable,
-        sp_name_sanitized_files, pred_suffix_sdmtune, # Using SDMtune suffix for BIOMOD2 folder structure for now
+        sp_name_sanitized_files, pred_suffix_sdmtune, 
         grp_name, cfg, NULL
       )
       
       if (!is.null(myBiomodModelOut) && length(myBiomodModelOut@models.computed) > 0) {
-        cat(log_prefix, "INFO [BIOMOD2] Modeling completed. Projecting current scenario...\n")
-        for (algo_fullname in myBiomodModelOut@models.computed) {
-          algo_shortname <- tail(strsplit(algo_fullname, "_")[[1]], 1)
-          if (algo_shortname %in% models_to_run_in_biomod2) { # Project only what we intended to run
-            proj <- project_biomod2_models_current(myBiomodModelOut, sdmtune_spec_stack, sp_name_sanitized_files, pred_suffix_sdmtune, algo_shortname, cfg, NULL)
-            if(!is.null(proj)) {
-              # Suffix indicates it's from BIOMOD2, the algo, and if it used SDMtune hypers (for MAXENT.Phillips) or defaults (for MAXNET)
-              projection_suffix <- if(algo_shortname == "MAXENT" && !is.null(sdmtune_best_hypers_obj)) {
-                paste0(pred_suffix_sdmtune, "_biomod2_", algo_shortname, "_tuned")
-              } else {
-                paste0(pred_suffix_sdmtune, "_biomod2_", algo_shortname, "_default")
-              }
-              save_biomod2_projection(proj, sp_name_sanitized_files, tuning_scenario_sdmtune, projection_suffix, cfg, NULL, NULL)
-            }
+        cat(log_prefix, "INFO [BIOMOD2] Modeling completed. Projecting current scenario for MAXNET...\n")
+        # We know only MAXNET was run
+        algo_shortname <- "MAXNET"
+        proj <- project_biomod2_models_current(myBiomodModelOut, sdmtune_spec_stack, sp_name_sanitized_files, pred_suffix_sdmtune, algo_shortname, cfg, NULL)
+        if(!is.null(proj)) {
+          projection_suffix_biomod2 <- if (length(maxnet_args_for_biomod) > 0) {
+            paste0(pred_suffix_sdmtune, "_biomod2_MAXNET_tuned")
+          } else {
+            paste0(pred_suffix_sdmtune, "_biomod2_MAXNET_default")
           }
+          save_biomod2_projection(proj, sp_name_sanitized_files, tuning_scenario_sdmtune, projection_suffix_biomod2, cfg, NULL, NULL)
         }
-      } else { cat(log_prefix, "ERROR [BIOMOD2] Modeling failed or no models computed.\n")}
+      } else { cat(log_prefix, "ERROR [BIOMOD2] Modeling failed or no MAXNET models computed.\n")}
     }
   }
-  cat(log_prefix, "INFO --- Finished BIOMOD2 Workflow ---\n")
+  cat(log_prefix, "INFO --- Finished BIOMOD2 Workflow (MAXNET Only) ---\n")
   
-  # --- SDMtune Prediction Loop (remains for SDMtune model outputs) ---
-  # (This part is unchanged and will predict using the sdmtune_final_model)
-  cat(log_prefix, "INFO [SDMtune] Starting SDMtune predictions...\n")
-  # ... (Your existing SDMtune prediction loop using sdmtune_final_model and env_pred_paths_or_list) ...
-  # For brevity, I'll assume this part is copied from your original tweaking_base_run.R
+  cat(log_prefix, "INFO [SDMtune] Starting SDMtune predictions (if applicable/remaining from original script logic)...\n")
+  # ... (Your existing SDMtune prediction loop using sdmtune_model_obj and env_pred_paths_or_list would go here if needed) ...
+  # For this combined script, the primary output might be the BIOMOD2 projection.
+  # If SDMtune's own projections are also required, that loop should be added.
+  # For now, focusing on BIOMOD2 part.
   
   cat(log_prefix, "INFO --- Combined processing finished ---\n")
-  # Modify return status as needed to reflect both SDMtune and BIOMOD2 outcomes
-  return(list(status = "success_combined", species = sp_name, occ_count = occurrence_count_final, message = "SDMtune and BIOMOD2 steps completed."))
+  return(list(status = "success_combined_maxnet", species = sp_name, occ_count = occurrence_count_final, message = "SDMtune and BIOMOD2 (MAXNET) steps completed."))
 } # End process_species_combined_sdm_and_biomod2
 
 
@@ -317,21 +284,20 @@ process_species_combined_sdm_and_biomod2 <- function(
 config$use_parallel <- FALSE; config$num_cores <- 1
 if(exists("future")) future::plan(future::sequential)
 
-cat(paste(Sys.time(), "[INFO] --- Calling COMBINED SDMtune & BIOMOD2 processing for species:", species_name_actual, "---\n"))
+cat(paste(Sys.time(), "[INFO] --- Calling COMBINED SDMtune & BIOMOD2 (MAXNET) processing for species:", species_name_actual, "---\n"))
 combined_run_result <- process_species_combined_sdm_and_biomod2(
   sp_row = species_row_to_process,
   cfg = config,
-  env_pred_paths_or_list = predictor_paths_or_list, # For SDMtune projections
-  global_current_env_stack = env_predictor_stack_current, # For BG, SAC, BIOMOD2 data & proj
+  env_pred_paths_or_list = predictor_paths_or_list_sdmtune, 
+  global_current_env_stack = env_predictor_stack_current, 
   grp_name = group_name,
-  pred_suffix_sdmtune = predictor_type_suffix_sdmtune, # e.g., "_pca"
+  pred_suffix_sdmtune = predictor_type_suffix_sdmtune, 
   use_pca_flag = use_pca,
-  occ_dir_sp = occurrence_dir,
-  path_to_maxent_jar_arg = path_to_maxent_jar_local
+  occ_dir_sp = occurrence_dir
 )
 
 # --- 10. Process Results (Simplified for Tweaking) ---
-cat(paste(Sys.time(), "[INFO]--- Combined SDMtune & BIOMOD2 Tweaking Run Result ---\n"))
+cat(paste(Sys.time(), "[INFO]--- Combined SDMtune & BIOMOD2 (MAXNET) Tweaking Run Result ---\n"))
 if (!is.null(combined_run_result)) {
   cat(paste(Sys.time(), "[STATUS:", combined_run_result$status, "]", combined_run_result$species, "-", combined_run_result$message %||% "Completed.", "\n"))
 } else {
@@ -339,5 +305,5 @@ if (!is.null(combined_run_result)) {
 }
 
 gc(full=TRUE)
-cat(paste(Sys.time(), "[INFO]--- Script sdm_combined_tweaking_run.R finished. ---\n"))
+cat(paste(Sys.time(), "[INFO]--- Script sdm_combined_tweaking_run.R (MAXNET focused) finished. ---\n"))
 #-------------------------------------------------------------------------------
