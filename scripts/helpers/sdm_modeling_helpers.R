@@ -1269,12 +1269,11 @@ create_biomod2_block_cv_table <- function(biomod_formatted_data, predictor_stack
 
 #' Prepare User-Defined Options for BIOMOD2's MAXENT.Phillips (Java version)
 #' (Keep this function as defined in the previous response)
-prepare_biomod2_maxent_phillips_user_val <- function(sdmtune_maxnet_hypers, path_to_maxent_jar, species_log_file = NULL) {
+prepare_biomod2_maxent_phillips_user_val <- function(sdmtune_maxnet_hypers, species_log_file = NULL) {
   hlog_b2 <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BIOMOD2_PrepOpt_MP]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else cat(msg, "\n")}
   hlog_b2("INFO", "Preparing user-defined options for BIOMOD2 MAXENT.Phillips (Java)...")
   if (is.null(sdmtune_maxnet_hypers)) { hlog_b2("WARN", "SDMtune hypers NULL. Cannot prepare MAXENT.Phillips options."); return(NULL) }
-  if (is.null(path_to_maxent_jar) || !file.exists(path_to_maxent_jar)) { hlog_b2("WARN", "maxent.jar path invalid. Cannot prepare MAXENT.Phillips options."); return(NULL) }
-  maxent_phillips_args <- list(path_to_maxent.jar = path_to_maxent_jar, memory_allocated = NULL, betamultiplier = 1, linear = TRUE, quadratic = TRUE, product = TRUE, threshold = TRUE, hinge = TRUE, maximumiterations = 200, visible = FALSE, lq2lqptthreshold = 80, l2lqthreshold = 10, hingethreshold = 15, defaultprevalence = 0.5)
+  maxent_phillips_args <- list(memory_allocated = NULL, betamultiplier = 1, linear = TRUE, quadratic = TRUE, product = TRUE, threshold = TRUE, hinge = TRUE, maximumiterations = 200, visible = FALSE, lq2lqptthreshold = 80, l2lqthreshold = 10, hingethreshold = 15, defaultprevalence = 0.5)
   if ("reg" %in% names(sdmtune_maxnet_hypers)) { maxent_phillips_args$betamultiplier <- as.numeric(sdmtune_maxnet_hypers$reg); hlog_b2("DEBUG", paste("  Set MAXENT.Phillips betamultiplier to:", maxent_phillips_args$betamultiplier)) } else { hlog_b2("WARN", "  'reg' not found. Using default betamultiplier.") }
   if ("fc" %in% names(sdmtune_maxnet_hypers)) { fc_string <- tolower(as.character(sdmtune_maxnet_hypers$fc)); maxent_phillips_args$linear <- grepl("l", fc_string); maxent_phillips_args$quadratic <- grepl("q", fc_string); maxent_phillips_args$product <- grepl("p", fc_string); maxent_phillips_args$threshold <- grepl("t", fc_string); maxent_phillips_args$hinge <- grepl("h", fc_string); hlog_b2("DEBUG", paste0("  Set MAXENT.Phillips features: L=", maxent_phillips_args$linear, ", Q=", maxent_phillips_args$quadratic, ", P=", maxent_phillips_args$product, ", T=", maxent_phillips_args$threshold, ", H=", maxent_phillips_args$hinge)) } else { hlog_b2("WARN", "  'fc' not found. Using default features (all TRUE).") }
   return(list('_allData_allRun' = maxent_phillips_args))

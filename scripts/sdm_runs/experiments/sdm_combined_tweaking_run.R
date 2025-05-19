@@ -235,16 +235,16 @@ process_species_combined_sdm_and_biomod2 <- function(
       models_to_run_in_biomod2 <- c('MAXNET') # Always run R-based maxnet with bigboss/defaults
       user_options_list <- list() # For MAXENT.Phillips
       
-      if (!is.null(sdmtune_best_hypers_obj) && !is.null(path_to_maxent_jar_arg) && file.exists(path_to_maxent_jar_arg)) {
+      if (!is.null(sdmtune_best_hypers_obj)) {
         cat(log_prefix, "INFO [BIOMOD2] Preparing user values for MAXENT.Phillips (Java).\n")
-        maxent_p_params <- prepare_biomod2_maxent_phillips_user_val(sdmtune_best_hypers_obj, path_to_maxent_jar_arg, NULL)
+        maxent_p_params <- prepare_biomod2_maxent_phillips_user_val(sdmtune_best_hypers_obj, NULL)
         if (!is.null(maxent_p_params)) {
-          user_options_list[['MAXENT.binary.MAXENT.MAXENT']] <- maxent_p_params # Correct key
-          models_to_run_in_biomod2 <- c(models_to_run_in_biomod2, 'MAXENT')
+          user_options_list[['MAXNET.binary.maxnet.maxnet']] <- maxent_p_params # Correct key
+          models_to_run_in_biomod2 <- c(models_to_run_in_biomod2, 'MAXNET')
         }
       } else { cat(log_prefix, "WARN [BIOMOD2] Not configuring MAXENT.Phillips (Java): SDMtune hypers or JAR missing.\n") }
       models_to_run_in_biomod2 <- unique(models_to_run_in_biomod2)
-      
+      # 
       cat(log_prefix, "INFO [BIOMOD2] Models to attempt:", paste(models_to_run_in_biomod2, collapse=", "), "\n")
       
       # This needs to be available for the helper
@@ -255,11 +255,11 @@ process_species_combined_sdm_and_biomod2 <- function(
       
       
       
-      user.MAXENT <- list("for_all_datasets" = list(
-        memory_allocated = 1024
-      ))
-      
-      user_options_list <- list(MAXENT.binary.MAXENT.MAXENT = user.MAXENT)
+      # user.MAXENT <- list("_allData_allRun" = list(
+      #   memory_allocated = 1024
+      # ))
+      # 
+      # user_options_list <- list(MAXNET.binary.maxnet.maxnet = user.MAXENT)
       
       # Create the BIOMOD.modeling.options object
       # For models in user_options_list, their params will be used.
