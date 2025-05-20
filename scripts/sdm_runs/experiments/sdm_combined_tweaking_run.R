@@ -1,11 +1,13 @@
-# scripts/sdm_runs/experiments/sdmtune_biomod2_combined_run.R
+# scripts/sdm_runs/experiments/sdmtune__combined_tweatking_run.R
 #-------------------------------------------------------------------------------
-# Combined Tweaking Script: Runs SDMtune, then BIOMOD2.
-# MAXNET uses SDMtune hypers if available. Other algos use 'bigboss' defaults.
+# Combined Tweaking Script: Runs SDMtune, then BIOMOD2 with multiple algorithms.
+# - MAXNET uses SDMtune hyperparameters if available.
+# - Other algorithms use 'bigboss' defaults.
+# - Builds an ensemble model from best individual models.
 # For a single species and current scenario.
 #-------------------------------------------------------------------------------
 
-cat("--- Running Script sdm_combined_tweaking_run.R (MAXNET tuned + Other Algos default) ---\n")
+cat("--- Running Script sdm_combined_tweaking_run.R (Multi-Algo Ensemble) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
 if (file.exists("scripts/config.R")) {
@@ -19,9 +21,8 @@ if (file.exists("scripts/config.R")) {
 
 # --- 2. Load Required Packages ---
 if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
-pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools, stringr, # SDMtune needs
-               biomod2, maxnet, blockCV, # BIOMOD2 and its dependencies
-               # Dependencies for other BIOMOD2 algorithms
+pacman::p_load(terra, sf, dplyr, readr, SDMtune, tools, stringr, 
+               biomod2, maxnet, blockCV, 
                presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
 )
 
@@ -30,7 +31,7 @@ source(file.path(config$helpers_dir, "env_processing_helpers.R"))
 source(file.path(config$helpers_dir, "sdm_modeling_helpers.R"))
 
 # --- 4. Define Group Specifics & Predictor Type ---
-cat(paste(Sys.time(), "[INFO] --- Starting Script sdm_combined_tweaking_run.R (Multi-Algo) ---\n"))
+cat(paste(Sys.time(), "[INFO] --- Starting Script sdm_combined_tweaking_run.R (Multi-Algo Ensemble) ---\n"))
 
 group_name <- "anemone" 
 species_list_file <- config$anemone_species_list_file
@@ -82,7 +83,7 @@ cat(paste(Sys.time(), "[INFO] BIOMOD2 intermediate output base for this run type
 # --- 7. Load Species List & Select One Species for Tweaking ---
 species_df <- readr::read_csv(species_list_file, show_col_types = FALSE)
 if(nrow(species_df) == 0) stop("Species list is empty.")
-species_row_to_process <- species_df[1, ] # Tweak with the first species
+species_row_to_process <- species_df[1, ] 
 species_name_actual <- species_row_to_process$scientificName
 species_name_sanitized_for_files <- gsub(" ", "_", species_name_actual) 
 species_name_for_biomod_resp <- gsub(" ", ".", species_name_sanitized_for_files) 
@@ -94,7 +95,7 @@ cat(paste(Sys.time(), "[INFO] --- Processing Species:", species_name_actual, "(A
 # --- 8. Define Combined SDMtune + BIOMOD2 Processing Function ---
 process_species_combined_sdm_and_biomod2 <- function(
     sp_row, cfg, 
-    env_pred_paths_or_list_sdmtune_arg, # Renamed to avoid conflict with global
+    env_pred_paths_or_list_sdmtune_arg,
     global_current_env_stack, 
     grp_name, pred_suffix_sdmtune, use_pca_flag, occ_dir_sp, 
     tuning_scenario_sdmtune = "current"
@@ -102,11 +103,11 @@ process_species_combined_sdm_and_biomod2 <- function(
   
   sp_name <- sp_row$scientificName
   sp_name_sanitized_files <- gsub(" ", "_", sp_name)
-  sp_name_biomod <- gsub(" ", ".", sp_name_sanitized_files) # For BIOMOD_FormatingData
+  sp_name_biomod <- gsub(" ", ".", sp_name_sanitized_files)
   sp_aphia <- sp_row$AphiaID
   
   log_prefix <- paste(Sys.time(), paste0("[", sp_name, "]"))
-  cat(log_prefix, "INFO --- Starting COMBINED SDMtune & BIOMOD2 (Multi-Algo) processing ---\n")
+  cat(log_prefix, "INFO --- Starting COMBINED SDMtune & BIOMOD2 (Multi-Algo Ensemble) processing ---\n")
   
   sdmtune_model_file_path <- file.path(cfg$models_dir_intermediate, paste0(grp_name, pred_suffix_sdmtune), paste0("sdm_model_", sp_name_sanitized_files, pred_suffix_sdmtune, ".rds"))
   sdmtune_tuning_rds_path <- file.path(cfg$results_dir_intermediate, paste0(grp_name, pred_suffix_sdmtune), paste0("sdm_tuning_", sp_name_sanitized_files, pred_suffix_sdmtune, "_object.rds"))
@@ -195,9 +196,11 @@ process_species_combined_sdm_and_biomod2 <- function(
   cat(log_prefix, "INFO --- Finished SDMtune Workflow ---\n")
   
   # ===========================================================================
-  # --- BIOMOD2 Workflow (MAXNET Tuned + Other Algos Default) ---
+  # --- BIOMOD2 Workflow (Multi-Algo Ensemble) ---
   # ===========================================================================
-  cat(log_prefix, "INFO --- Starting BIOMOD2 Workflow (Multi-Algo) ---\n")
+  cat(log_prefix, "INFO --- Starting BIOMOD2 Workflow (Multi-Algo Ensemble) ---\n")
+  myBiomodEM <- NULL # Initialize Ensemble Model object
+  
   if (is.null(sdmtune_bg_pts) || is.null(sdmtune_spec_stack)) {
     cat(log_prefix, "ERROR [BIOMOD2] Missing background points or species stack from SDMtune. Skipping BIOMOD2.\n")
   } else {
@@ -206,15 +209,13 @@ process_species_combined_sdm_and_biomod2 <- function(
     else {
       cat(log_prefix, "INFO [BIOMOD2] Data formatted.\n")
       myBiomodCVTable <- create_biomod2_block_cv_table(myBiomodData, sdmtune_spec_stack, cfg, NULL)
-      if (is.null(myBiomodCVTable)) cat(log_prefix, "WARN [BIOMOD2] blockCV table failed. Using random CV for BIOMOD2.\n")
+      if (is.null(myBiomodCVTable)) cat(log_prefix, "WARN [BIOMOD2] blockCV table failed. BIOMOD_Modeling will use internal random CV.\n")
       
-      # Define all algorithms to attempt
-      # Note: For GAM, BIOMOD2 can use different backends (mgcv, gam package). 'GAM' often defaults to mgcv.
-      # 'bigboss' strategy will handle appropriate defaults for these.
       all_algos_to_run <- c('GLM', 'GBM', 'GAM', 'CTA', 'ANN', 'SRE', 'FDA', 'RF', 'MAXNET', 'XGBOOST', 'MARS')
+      # all_algos_to_run <- c('RF', 'MAXNET')
       
       user_options_for_maxnet <- list()
-      maxnet_args_for_biomod_run <- list() # To track if MAXNET was tuned
+      maxnet_args_for_biomod_run <- list() 
       
       if (!is.null(sdmtune_best_hypers_obj) && inherits(sdmtune_best_hypers_obj, "data.frame") && nrow(sdmtune_best_hypers_obj) == 1) {
         cat(log_prefix, "INFO [BIOMOD2] Preparing MAXNET parameters from SDMtune best_hypers.\n")
@@ -224,16 +225,14 @@ process_species_combined_sdm_and_biomod2 <- function(
         if ("fc" %in% names(sdmtune_best_hypers_obj)) {
           maxnet_args_for_biomod_run$classes <- as.character(sdmtune_best_hypers_obj$fc)
         }
-        # Example: maxnet_args_for_biomod_run$addsamplestobackground <- TRUE # Default for maxnet R package
-        
         if (length(maxnet_args_for_biomod_run) > 0) {
           user_options_for_maxnet[['MAXNET.binary.maxnet.maxnet']] <- list('_allData_allRun' = maxnet_args_for_biomod_run)
           cat(log_prefix, "INFO [BIOMOD2] Tuned MAXNET parameters prepared:", paste(names(maxnet_args_for_biomod_run), unlist(maxnet_args_for_biomod_run), collapse=", "), "\n")
         } else {
-          cat(log_prefix, "WARN [BIOMOD2] No usable hyperparameters (reg, fc) found in sdmtune_best_hypers_obj for MAXNET.\n")
+          cat(log_prefix, "WARN [BIOMOD2] No usable hyperparameters (reg, fc) found for MAXNET.\n")
         }
       } else {
-        cat(log_prefix, "WARN [BIOMOD2] SDMtune best_hypers not available or invalid. MAXNET will use 'bigboss' defaults if run.\n")
+        cat(log_prefix, "WARN [BIOMOD2] SDMtune best_hypers not available for MAXNET. It will use 'bigboss' defaults.\n")
       }
       
       cat(log_prefix, "INFO [BIOMOD2] Models to attempt:", paste(all_algos_to_run, collapse=", "), "\n")
@@ -242,9 +241,9 @@ process_species_combined_sdm_and_biomod2 <- function(
       biomod_options_obj <- biomod2::bm_ModelingOptions(
         data.type = 'binary',
         models = all_algos_to_run,
-        strategy = 'user.defined', # Allows mixing user.val and user.base
-        user.val = user_options_for_maxnet, # Provide tuned MAXNET params if available
-        user.base = 'bigboss', # Fallback for MAXNET (if not tuned) AND for all other algos
+        strategy = 'user.defined',
+        user.val = user_options_for_maxnet, 
+        user.base = 'bigboss', 
         bm.format = myBiomodData 
       )
       
@@ -254,44 +253,136 @@ process_species_combined_sdm_and_biomod2 <- function(
         grp_name, cfg, NULL
       )
       
+      # TODO: Skip single algo projections for now
+      # --- Individual Model Projections (Current Scenario) ---
       if (!is.null(myBiomodModelOut) && length(myBiomodModelOut@models.computed) > 0) {
-        cat(log_prefix, "INFO [BIOMOD2] Modeling completed. Projecting current scenario for all computed models...\n")
+        cat(log_prefix, "INFO [BIOMOD2] Individual modeling completed. Projecting current scenario for all computed models...\n")
+        cat("INFO SKIPPING SINGLE PROJECTIONS")
+        # for (algo_fullname_computed in myBiomodModelOut@models.computed) {
+        #   algo_shortname_computed <- tail(strsplit(algo_fullname_computed, "_")[[1]], 1)
+        #   if (algo_shortname_computed %in% all_algos_to_run) {
+        #     cat(log_prefix, "DEBUG [BIOMOD2] Projecting individual model:", algo_shortname_computed, "\n")
+        #     proj <- project_biomod2_models_current(myBiomodModelOut, sdmtune_spec_stack,
+        #                                            sp_name_sanitized_files, pred_suffix_sdmtune,
+        #                                            algo_shortname_computed, cfg, NULL)
+        #     if(!is.null(proj)) {
+        #       projection_suffix_indiv <- ""
+        #       if (algo_shortname_computed == "MAXNET") {
+        #         projection_suffix_indiv <- if (length(maxnet_args_for_biomod_run) > 0 && "MAXNET.binary.maxnet.maxnet" %in% names(user_options_for_maxnet)) {
+        #           paste0(pred_suffix_sdmtune, "_biomod2_MAXNET_tuned")
+        #         } else {
+        #           paste0(pred_suffix_sdmtune, "_biomod2_MAXNET_default")
+        #         }
+        #       } else {
+        #         projection_suffix_indiv <- paste0(pred_suffix_sdmtune, "_biomod2_", algo_shortname_computed, "_default")
+        #       }
+        #       save_biomod2_projection(proj, sp_name_sanitized_files, tuning_scenario_sdmtune, projection_suffix_indiv, cfg, NULL, NULL)
+        #     } else {
+        #       cat(log_prefix, "WARN [BIOMOD2] Projection failed for individual model", algo_shortname_computed, "\n")
+        #     }
+        #   }
+        # }
         
-        for (algo_fullname_computed in myBiomodModelOut@models.computed) {
-          algo_shortname_computed <- tail(strsplit(algo_fullname_computed, "_")[[1]], 1)
+        # --- Ensemble Modeling ---
+        cat(log_prefix, "INFO [BIOMOD2] Building ensemble model...\n")
+        
+        
+        
+        # current_wd_b2 <- getwd()
+        # setwd(config$species_biomod_run_dir)
+        get_built_models(myBiomodModelOut , full.name = NULL, PA = NULL, run = NULL, algo = c('RF', 'MAXNET'))
+        
+        cat("INFO PRINTING ALL MODEL RESULTS\n")
+        all_evaluations <- get_evaluations(myBiomodModelOut)
+        print(all_evaluations)
+        cat("INFO END PRINTING ALL MODEL RESULTS END\n")
+        
+        myBiomodEM <- tryCatch({
+          biomod2::BIOMOD_EnsembleModeling(
+            bm.mod = myBiomodModelOut,
+            models.chosen = 'all', # Let metric.select and metric.select.thresh filter
+            em.by = 'all', # Use full models for ensembling
+            em.algo = c('EMmean'), # As per paper's implication of equal weighting
+            metric.select = c('TSS', 'ROC'),
+            metric.select.thresh = c(0.7, 0.8), # TSS > 0.7 AND ROC > 0.8
+            metric.eval = c('TSS', 'ROC'), # Metrics to evaluate the ensemble model
+            var.import = 0, # No VI for ensemble for now
+            seed.val = cfg$AphiaID_for_seed %||% 4242 
+          )
+        }, error = function(e) {
+          cat(log_prefix, "ERROR [BIOMOD2] BIOMOD_EnsembleModeling failed:", e$message, "\n")
+          return(NULL)
+        })
+        
+        cat("INFO PRINTING ENSEMBLE MODEL RESULTS\n")
+        ensemble_evaluations <- get_evaluations(myBiomodModelOut)
+        print(ensemble_evaluations)
+        cat("INFO END PRINTING ENSEMBLE MODEL RESULTS END\n")
+        
+        if (!is.null(myBiomodEM) && length(myBiomodEM@em.models_kept) > 0) {
+          cat(log_prefix, "INFO [BIOMOD2] Ensemble model built. Models kept:", paste(myBiomodEM@em.models_kept, collapse=", "), "\n")
           
-          # Check if this computed model is one we intended to run (should always be true here)
-          if (algo_shortname_computed %in% all_algos_to_run) { 
-            cat(log_prefix, "DEBUG [BIOMOD2] Projecting:", algo_shortname_computed, "\n")
-            proj <- project_biomod2_models_current(myBiomodModelOut, sdmtune_spec_stack, 
-                                                   sp_name_sanitized_files, pred_suffix_sdmtune, 
-                                                   algo_shortname_computed, cfg, NULL)
-            if(!is.null(proj)) {
-              projection_suffix_b2 <- ""
-              if (algo_shortname_computed == "MAXNET") {
-                projection_suffix_b2 <- if (length(maxnet_args_for_biomod_run) > 0 && "MAXNET.binary.maxnet.maxnet" %in% names(user_options_for_maxnet)) {
-                  paste0(pred_suffix_sdmtune, "_biomod2_MAXNET_tuned")
-                } else {
-                  paste0(pred_suffix_sdmtune, "_biomod2_MAXNET_default")
-                }
-              } else { # For all other algorithms
-                projection_suffix_b2 <- paste0(pred_suffix_sdmtune, "_biomod2_", algo_shortname_computed, "_default")
+          # --- Ensemble Model Projection ---
+          cat(log_prefix, "INFO [BIOMOD2] Projecting ensemble model to current scenario...\n")
+          myBiomodEMProj <- tryCatch({
+            biomod2::BIOMOD_EnsembleForecasting(
+              bm.em = myBiomodEM,
+              proj.name = paste0("Ensemble_Current_", format(Sys.time(), "%Y%m%d%H%M%S")),
+              new.env = global_current_env_stack, # Project to full current extent
+              models.chosen = get_built_models(myBiomodEM), # Project only the successfully built ensemble(s)
+              metric.binary = NULL, # Keep continuous
+              compress = TRUE,
+              output.format = ".tif"
+            )
+          }, error = function(e) {
+            cat(log_prefix, "ERROR [BIOMOD2] BIOMOD_EnsembleForecasting failed:", e$message, "\n")
+            return(NULL)
+          })
+          
+          if (!is.null(myBiomodEMProj)) {
+            ens_proj_raster_raw <- biomod2::get_predictions(myBiomodEMProj)
+            if (!is.null(ens_proj_raster_raw) && inherits(ens_proj_raster_raw, "SpatRaster") && terra::nlyr(ens_proj_raster_raw) > 0) {
+              ens_proj_raster <- ens_proj_raster_raw / 1000 # Scale to 0-1
+              names(ens_proj_raster) <- paste0("suitability_EnsembleMean_filtered_current")
+              
+              ensemble_projection_suffix <- paste0(pred_suffix_sdmtune, "_biomod2_EnsembleMean_filtered")
+              save_biomod2_projection(ens_proj_raster, sp_name_sanitized_files, tuning_scenario_sdmtune, ensemble_projection_suffix, cfg, NULL, NULL)
+              
+              # --- Log Ensemble Metrics ---
+              ensemble_evals_df <- biomod2::get_evaluations(myBiomodEM, as.data.frame = TRUE)
+              if (!is.null(ensemble_evals_df) && nrow(ensemble_evals_df) > 0) {
+                cat(log_prefix, "INFO [BIOMOD2] Ensemble Model Evaluations:\n")
+                print(ensemble_evals_df)
+                # TODO: Could add a more structured logging for ensemble metrics here if needed
+              } else {
+                cat(log_prefix, "WARN [BIOMOD2] Could not retrieve evaluations for the ensemble model.\n")
               }
-              save_biomod2_projection(proj, sp_name_sanitized_files, tuning_scenario_sdmtune, projection_suffix_b2, cfg, NULL, NULL)
             } else {
-              cat(log_prefix, "WARN [BIOMOD2] Projection failed for", algo_shortname_computed, "\n")
+              cat(log_prefix, "ERROR [BIOMOD2] get_predictions for ensemble returned invalid raster.\n")
             }
           }
+        } else {
+          cat(log_prefix, "WARN [BIOMOD2] Ensemble modeling resulted in no models being kept or failed.\n")
         }
-      } else { cat(log_prefix, "ERROR [BIOMOD2] Modeling failed or no models computed.\n")}
+      } else { 
+        cat(log_prefix, "ERROR [BIOMOD2] Individual modeling failed or no models computed. Cannot proceed to ensembling.\n")
+      }
     }
   }
-  cat(log_prefix, "INFO --- Finished BIOMOD2 Workflow (Multi-Algo) ---\n")
+  cat(log_prefix, "INFO --- Finished BIOMOD2 Workflow (Multi-Algo Ensemble) ---\n")
+  # setwd(current_wd_b2)
   
   cat(log_prefix, "INFO [SDMtune] SDMtune predictions are not run by default in this combined script. Focus is on BIOMOD2 outputs.\n")
   
   cat(log_prefix, "INFO --- Combined processing finished ---\n")
-  return(list(status = "success_combined_multi_algo", species = sp_name, occ_count = occurrence_count_final, message = "SDMtune and BIOMOD2 (Multi-Algo) steps completed."))
+  # Return the main BIOMOD_Modeling output and the EnsembleModeling output for inspection
+  return(list(status = "success_combined_multi_algo_ensemble", 
+              species = sp_name, 
+              occ_count = occurrence_count_final, 
+              message = "SDMtune and BIOMOD2 (Multi-Algo Ensemble) steps completed.",
+              biomod_model_out = myBiomodModelOut, # Return individual models object
+              biomod_ensemble_model_out = myBiomodEM # Return ensemble object
+  ))
 } # End process_species_combined_sdm_and_biomod2
 
 
@@ -299,7 +390,7 @@ process_species_combined_sdm_and_biomod2 <- function(
 config$use_parallel <- FALSE; config$num_cores <- 1
 if(exists("future")) future::plan(future::sequential)
 
-cat(paste(Sys.time(), "[INFO] --- Calling COMBINED SDMtune & BIOMOD2 (Multi-Algo) processing for species:", species_name_actual, "---\n"))
+cat(paste(Sys.time(), "[INFO] --- Calling COMBINED SDMtune & BIOMOD2 (Multi-Algo Ensemble) processing for species:", species_name_actual, "---\n"))
 combined_run_result <- process_species_combined_sdm_and_biomod2(
   sp_row = species_row_to_process,
   cfg = config,
@@ -312,13 +403,21 @@ combined_run_result <- process_species_combined_sdm_and_biomod2(
 )
 
 # --- 10. Process Results (Simplified for Tweaking) ---
-cat(paste(Sys.time(), "[INFO]--- Combined SDMtune & BIOMOD2 (Multi-Algo) Tweaking Run Result ---\n"))
+cat(paste(Sys.time(), "[INFO]--- Combined SDMtune & BIOMOD2 (Multi-Algo Ensemble) Tweaking Run Result ---\n"))
 if (!is.null(combined_run_result)) {
   cat(paste(Sys.time(), "[STATUS:", combined_run_result$status, "]", combined_run_result$species, "-", combined_run_result$message %||% "Completed.", "\n"))
+  if (!is.null(combined_run_result$biomod_model_out)) {
+    cat("  Individual models computed:", paste(combined_run_result$biomod_model_out@models.computed, collapse=", "),"\n")
+  }
+  if (!is.null(combined_run_result$biomod_ensemble_model_out)) {
+    cat("  Ensemble models built:", paste(get_built_models(combined_run_result$biomod_ensemble_model_out), collapse=", "),"\n")
+    cat("  Ensemble evaluations:\n")
+    print(get_evaluations(combined_run_result$biomod_ensemble_model_out))
+  }
 } else {
   cat(paste(Sys.time(), "[ERROR] Combined processing returned NULL overall.\n"))
 }
 
 gc(full=TRUE)
-cat(paste(Sys.time(), "[INFO]--- Script sdm_combined_tweaking_run.R (Multi-Algo) finished. ---\n"))
+cat(paste(Sys.time(), "[INFO]--- Script sdm_combined_tweaking_run.R (Multi-Algo Ensemble) finished. ---\n"))
 #-------------------------------------------------------------------------------

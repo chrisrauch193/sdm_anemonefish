@@ -2,6 +2,9 @@
 #-------------------------------------------------------------------------------
 # Configuration Settings for Anemone/Anemonefish SDM Project (v5 - Correct Path Definitions)
 #-------------------------------------------------------------------------------
+
+setwd("~/a0236995/sdm_anemonefish")
+
 # Using pacman for streamlined package management
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, readxl,
@@ -161,6 +164,8 @@ autocor_signif <- 0.05      # Significance level for non-correlation
 sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on BlockCV results)
 
 
+species_biomod_run_dir <- "/home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output_intermediate/biomod2_outputs/anemone_pca_biomod2/Radianthus_magnifica"
+
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
 config <- list(
@@ -238,7 +243,9 @@ config <- list(
   autocor_classdist = autocor_classdist,
   autocor_maxdist = autocor_maxdist,
   autocor_signif = autocor_signif,
-  sac_prune_threshold = sac_prune_threshold
+  sac_prune_threshold = sac_prune_threshold,
+  
+  species_biomod_run_dir = species_biomod_run_dir
 )
 
 

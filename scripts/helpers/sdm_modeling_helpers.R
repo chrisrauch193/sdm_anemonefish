@@ -1323,10 +1323,13 @@ run_biomod2_models_with_blockcv <- function(biomod_formatted_data, biomod_model_
   species_biomod_run_dir <- file.path(config$sdm_output_dir_intermediate, "biomod2_outputs", 
                                       paste0(group_name_for_paths, predictor_type_suffix, "_biomod2"), 
                                       species_name_for_files) 
+  
+  #TODO: Experiment with this!!
+  config$species_biomod_run_dir <- species_biomod_run_dir
   dir.create(species_biomod_run_dir, recursive = TRUE, showWarnings = FALSE)
   
-  current_wd_b2 <- getwd()
-  setwd(species_biomod_run_dir) 
+  # current_wd_b2 <- getwd()
+  # setwd(species_biomod_run_dir) 
   b2_hlog_run("DEBUG", paste("Temp WD for BIOMOD_Modeling:", getwd()))
   
   myBiomodModelOut <- NULL
@@ -1352,8 +1355,8 @@ run_biomod2_models_with_blockcv <- function(biomod_formatted_data, biomod_model_
       b2_hlog_run("ERROR", "This error might be related to MAXENT.Phillips. Ensure it's fully removed if only MAXNET is intended.")
     }
   }, finally = {
-    setwd(current_wd_b2) 
-    b2_hlog_run("DEBUG", paste("Restored WD to:", current_wd_b2))
+    # setwd(current_wd_b2) 
+    # b2_hlog_run("DEBUG", paste("Restored WD to:", current_wd_b2))
   })
   
   if (!is.null(myBiomodModelOut)) b2_hlog_run("INFO", "BIOMOD_Modeling completed.")
@@ -1409,8 +1412,8 @@ project_biomod2_models_current <- function(biomod_model_out, env_stack_current,
                                 "Cannot perform projection as BIOMOD_Projection needs to run in that directory.")); return(NULL)
   }
   
-  original_wd_proj <- getwd()
-  setwd(expected_biomod_run_wd)
+  # original_wd_proj <- getwd()
+  # setwd(expected_biomod_run_wd)
   b2_hlog_proj("DEBUG", paste("Temp WD for BIOMOD_Projection:", getwd()))
   
   biomod_projection_obj <- NULL
@@ -1438,7 +1441,7 @@ project_biomod2_models_current <- function(biomod_model_out, env_stack_current,
   }, error = function(e) {
     b2_hlog_proj("ERROR", paste("Error in BIOMOD_Projection/get_predictions:", e$message))
   }, finally = {
-    setwd(original_wd_proj)
+    # setwd(original_wd_proj)
     b2_hlog_proj("DEBUG", paste("Restored WD to:", original_wd_proj))
   })
   
