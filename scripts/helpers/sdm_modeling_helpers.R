@@ -1300,7 +1300,134 @@ create_biomod2_block_cv_table <- function(biomod_formatted_data, predictor_stack
   })
 }
 
-# REMOVED: prepare_biomod2_maxent_phillips_user_val function
+
+
+#' Prepare User-Defined Options for BIOMOD2's MAXNET (R version)
+#' Translates SDMtune Maxnet hyperparameters to BIOMOD2 MAXNET format.
+#' @param sdmtune_maxnet_hypers Data frame of best hyperparameters from SDMtune for Maxnet.
+#' @param species_log_file Optional path to species-specific log file.
+#' @return A list formatted for `bm_ModelingOptions(user.val = ...)` for MAXNET.
+prepare_biomod2_maxnet_user_val <- function(sdmtune_maxnet_hypers, species_log_file = NULL) {
+  hlog_b2 <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BIOMOD2_PrepOpt_MAXNET]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else cat(msg, "\n")}
+  
+  if (is.null(sdmtune_maxnet_hypers) || !inherits(sdmtune_maxnet_hypers, "data.frame") || nrow(sdmtune_maxnet_hypers) != 1) {
+    hlog_b2("WARN", "SDMtune Maxnet hypers NULL or invalid. Cannot prepare MAXNET user options."); return(NULL)
+  }
+  hlog_b2("INFO", "Preparing user-defined options for BIOMOD2 MAXNET (R)...")
+  
+  maxnet_r_args <- list()
+  if ("reg" %in% names(sdmtune_maxnet_hypers)) {
+    maxnet_r_args$regmult <- as.numeric(sdmtune_maxnet_hypers$reg)
+  }
+  if ("fc" %in% names(sdmtune_maxnet_hypers)) {
+    maxnet_r_args$classes <- as.character(sdmtune_maxnet_hypers$fc)
+  }
+  
+  if (length(maxnet_r_args) > 0) {
+    hlog_b2("DEBUG", paste("  MAXNET params:", paste(names(maxnet_r_args), unlist(maxnet_r_args), collapse=", ")))
+    return(list('_allData_allRun' = maxnet_r_args))
+  } else {
+    hlog_b2("WARN", "No 'reg' or 'fc' found in SDMtune Maxnet hypers. MAXNET will use defaults."); return(NULL)
+  }
+}
+
+#' Prepare User-Defined Options for BIOMOD2's RF (Random Forest)
+#' Translates SDMtune RF hyperparameters to BIOMOD2 RF format.
+#' @param sdmtune_rf_hypers Data frame of best hyperparameters from SDMtune for RF.
+#' @param species_log_file Optional path to species-specific log file.
+#' @return A list formatted for `bm_ModelingOptions(user.val = ...)` for RF.
+prepare_biomod2_rf_user_val <- function(sdmtune_rf_hypers, species_log_file = NULL) {
+  hlog_b2 <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BIOMOD2_PrepOpt_RF]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else cat(msg, "\n")}
+  
+  if (is.null(sdmtune_rf_hypers) || !inherits(sdmtune_rf_hypers, "data.frame") || nrow(sdmtune_rf_hypers) != 1) {
+    hlog_b2("WARN", "SDMtune RF hypers NULL or invalid. Cannot prepare RF user options."); return(NULL)
+  }
+  hlog_b2("INFO", "Preparing user-defined options for BIOMOD2 RF...")
+  
+  rf_args <- list()
+  if ("mtry" %in% names(sdmtune_rf_hypers)) {
+    rf_args$mtry <- as.integer(sdmtune_rf_hypers$mtry)
+  }
+  # Add other RF parameters if tuned, e.g., ntree
+  # rf_args$ntree <- 500 # Default for biomod2 RF if not specified
+  
+  if (length(rf_args) > 0) {
+    hlog_b2("DEBUG", paste("  RF params:", paste(names(rf_args), unlist(rf_args), collapse=", ")))
+    return(list('_allData_allRun' = rf_args))
+  } else {
+    hlog_b2("WARN", "No 'mtry' found in SDMtune RF hypers. RF will use defaults."); return(NULL)
+  }
+}
+
+#' Prepare User-Defined Options for BIOMOD2's ANN (nnet)
+#' Translates SDMtune ANN hyperparameters to BIOMOD2 ANN format.
+#' @param sdmtune_ann_hypers Data frame of best hyperparameters from SDMtune for ANN.
+#' @param species_log_file Optional path to species-specific log file.
+#' @return A list formatted for `bm_ModelingOptions(user.val = ...)` for ANN.
+prepare_biomod2_ann_user_val <- function(sdmtune_ann_hypers, species_log_file = NULL) {
+  hlog_b2 <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BIOMOD2_PrepOpt_ANN]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else cat(msg, "\n")}
+  
+  if (is.null(sdmtune_ann_hypers) || !inherits(sdmtune_ann_hypers, "data.frame") || nrow(sdmtune_ann_hypers) != 1) {
+    hlog_b2("WARN", "SDMtune ANN hypers NULL or invalid. Cannot prepare ANN user options."); return(NULL)
+  }
+  hlog_b2("INFO", "Preparing user-defined options for BIOMOD2 ANN (nnet)...")
+  
+  ann_args <- list()
+  if ("size" %in% names(sdmtune_ann_hypers)) {
+    ann_args$size <- as.integer(sdmtune_ann_hypers$size)
+  }
+  if ("decay" %in% names(sdmtune_ann_hypers)) {
+    ann_args$decay <- as.numeric(sdmtune_ann_hypers$decay)
+  }
+  # ann_args$maxit <- 100 # Default for biomod2 ANN if not specified
+  # ann_args$MaxNWts <- 10000 # Default in biomod2
+  
+  if (length(ann_args) > 0) {
+    hlog_b2("DEBUG", paste("  ANN params:", paste(names(ann_args), unlist(ann_args), collapse=", ")))
+    return(list('_allData_allRun' = ann_args))
+  } else {
+    hlog_b2("WARN", "No 'size' or 'decay' found in SDMtune ANN hypers. ANN will use defaults."); return(NULL)
+  }
+}
+
+#' Prepare User-Defined Options for BIOMOD2's GBM (Boosted Regression Trees)
+#' Translates SDMtune BRT hyperparameters to BIOMOD2 GBM format.
+#' @param sdmtune_brt_hypers Data frame of best hyperparameters from SDMtune for BRT.
+#' @param species_log_file Optional path to species-specific log file.
+#' @return A list formatted for `bm_ModelingOptions(user.val = ...)` for GBM.
+prepare_biomod2_gbm_user_val <- function(sdmtune_brt_hypers, species_log_file = NULL) {
+  hlog_b2 <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BIOMOD2_PrepOpt_GBM]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else cat(msg, "\n")}
+  
+  if (is.null(sdmtune_brt_hypers) || !inherits(sdmtune_brt_hypers, "data.frame") || nrow(sdmtune_brt_hypers) != 1) {
+    hlog_b2("WARN", "SDMtune BRT hypers NULL or invalid. Cannot prepare GBM user options."); return(NULL)
+  }
+  hlog_b2("INFO", "Preparing user-defined options for BIOMOD2 GBM...")
+  
+  gbm_args <- list()
+  if ("interaction.depth" %in% names(sdmtune_brt_hypers)) {
+    gbm_args$interaction.depth <- as.integer(sdmtune_brt_hypers$interaction.depth)
+  }
+  if ("n.trees" %in% names(sdmtune_brt_hypers)) {
+    gbm_args$n.trees <- as.integer(sdmtune_brt_hypers$n.trees)
+  }
+  if ("shrinkage" %in% names(sdmtune_brt_hypers)) {
+    gbm_args$shrinkage <- as.numeric(sdmtune_brt_hypers$shrinkage)
+  }
+  if ("bag.fraction" %in% names(sdmtune_brt_hypers)) {
+    gbm_args$bag.fraction <- as.numeric(sdmtune_brt_hypers$bag.fraction)
+  }
+  # gbm_args$distribution <- "bernoulli" # Default for binary data in biomod2
+  
+  if (length(gbm_args) > 0) {
+    hlog_b2("DEBUG", paste("  GBM params:", paste(names(gbm_args), unlist(gbm_args), collapse=", ")))
+    return(list('_allData_allRun' = gbm_args))
+  } else {
+    hlog_b2("WARN", "No relevant hypers found in SDMtune BRT results. GBM will use defaults."); return(NULL)
+  }
+}
+
+
+
 
 #' Run BIOMOD2 Modeling with Specified Algorithms and Options
 run_biomod2_models_with_blockcv <- function(biomod_formatted_data, biomod_model_options, models_to_run, biomod_cv_table,
