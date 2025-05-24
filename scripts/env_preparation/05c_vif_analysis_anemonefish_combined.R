@@ -1,4 +1,4 @@
-# scripts/05c_vif_analysis_anemonefish_combined.R
+# scripts/env_preparation/05c_vif_analysis_anemonefish_combined.R
 #-------------------------------------------------------------------------------
 # INTERACTIVE VIF/Correlation Analysis Script for ANEMONEFISH (Combined Env + Host)
 # Analyzes collinearity for the 'current' scenario including host predictor(s).
