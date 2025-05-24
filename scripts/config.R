@@ -164,51 +164,6 @@ autocor_signif <- 0.05      # Significance level for non-correlation
 sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on BlockCV results)
 
 
-species_biomod_run_dir <- "/home/bi-server-kyoto/a0236995/sdm_anemonefish/data/sdm_output_intermediate/biomod2_outputs/anemone_pca_biomod2/Radianthus_magnifica"
-
-
-
-
-
-
-
-
-# SDM Settings
-sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5 # Default, will be overridden in loop
-
-# Hyperparameter grids for SDMtune
-# Maxnet (existing)
-sdm_tune_grid_maxnet <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
-
-# Random Forest (RF)
-sdm_tune_grid_rf <- list(mtry = c(1, 2, 3, 4)) # Adjust based on typical number of predictors (e.g., num PCA components)
-
-# Boosted Regression Trees (BRT/GBM) - Example grid, can be extensive
-sdm_tune_grid_brt <- list(
-  interaction.depth = c(1, 3, 5),
-  n.trees = c(500, 1000, 1500), # Number of trees
-  shrinkage = c(0.001, 0.01), # Learning rate
-  bag.fraction = c(0.5, 0.75)  # Stochasticity
-)
-# Note for BRT: n.minobsinnode is also a key param, SDMtune default is 10.
-
-# Artificial Neural Network (ANN) - Example grid
-sdm_tune_grid_ann <- list(
-  size = c(2, 4, 6, 8),       # Number of units in the hidden layer
-  decay = c(0.001, 0.01, 0.1) # Weight decay
-)
-
-sdm_tune_grids <- list( # Store all grids in config
-  Maxnet = sdm_tune_grid_maxnet,
-  RF = sdm_tune_grid_rf,
-  BRT = sdm_tune_grid_brt,
-  ANN = sdm_tune_grid_ann
-)
-
-sdm_evaluation_metric <- "auc"; # ... rest of your SDM settings ...
-
-
-
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
 config <- list(
@@ -286,36 +241,7 @@ config <- list(
   autocor_classdist = autocor_classdist,
   autocor_maxdist = autocor_maxdist,
   autocor_signif = autocor_signif,
-  sac_prune_threshold = sac_prune_threshold,
-  
-  species_biomod_run_dir = species_biomod_run_dir,
-  
-  
-  
-  
-  
-  # SDM Settings
-  sdm_method = sdm_method,
-  sdm_partitions = sdm_partitions,
-  sdm_n_folds = sdm_n_folds,
-  
-  # Hyperparameter grids for SDMtune
-  # Maxnet (existing)
-  sdm_tune_grid_maxnet = sdm_tune_grid_maxnet,
-  
-  # Random Forest (RF)
-  sdm_tune_grid_rf = sdm_tune_grid_rf,
-  
-  # Boosted Regression Trees (BRT/GBM) - Example grid, can be extensive
-  sdm_tune_grid_brt = sdm_tune_grid_brt,
-  # Note for BRT: n.minobsinnode is also a key param, SDMtune default is 10.
-  
-  # Artificial Neural Network (ANN) - Example grid
-  sdm_tune_grid_ann = sdm_tune_grid_ann,
-  
-  sdm_tune_grids = sdm_tune_grids,
-  
-  sdm_evaluation_metric = sdm_evaluation_metric
+  sac_prune_threshold = sac_prune_threshold
 )
 
 
