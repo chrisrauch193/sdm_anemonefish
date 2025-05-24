@@ -1,329 +1,301 @@
 ---
-title: "Results"
+title: "Anemonefish-Host Mutualism: Climate Change Impacts and Distributional Relationships"
 format: html
 editor: visual
+execute:
+  echo: true
+  warning: false
+  message: false
 ---
 
-# Modelling Anemonefish and Sea Anemone Hosts
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.width=9, fig.height=7, fig.align = 'center')
 
-This document outlines the process of downloading and preparing occurrence data for anemonefish and their host sea anemones. This data is crucial for building species distribution models (SDMs) and understanding the ecological relationships between these species.
+# Load necessary packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(terra, sf, dplyr, tidyr, ggplot2, readr,
+               vegan, # For varpart
+               glmmTMB, emmeans, # For LMMs
+               ENMeval, # For Schoener's D
+               corrplot, # For correlation matrices
+               phytools, picante, # For phylogenetic analyses
+               ENMTools, # For niche breadth
+               stringr, tools, # General utilities
+               log4r # For logging if desired, though direct cat() is also used here
+)
 
-# Script Overview
+# Load your project configuration
+source("scripts/config.R")
+if (!exists("config")) stop("Configuration file 'config.R' not found or 'config' object not created.")
 
-The data acquisition process is orchestrated through a series of R scripts. Here's a summary of each script:
+# Source post-analysis helpers
+source("scripts/helpers/post_analysis_helpers.R")
 
--   `00_run_all_scripts.R`: This script acts as the main entry point, executing all other scripts in the correct sequence.
--   `01_install_requirements.R`: Ensures all necessary R packages are installed before proceeding with data acquisition.
--   `02_get_species_metadata.R`: Downloads and processes species metadata (scientific names, AphiaIDs, etc.) for both anemones and anemonefish from online databases like WoRMS and GBIF.
--   `03_download_occurrence_data.R`: Downloads occurrence data (location records) for anemones and anemonefish from OBIS and GBIF, using the species metadata obtained in the previous step.
 
-# 1. Install Requirements
+# Define consistent species group names for plot labels etc.
+host_group_label <- "Host Anemones"
+fish_group_label <- "Anemonefish"
 
-The `01_install_requirements.R` script installs the necessary R packages for the entire workflow. This ensures that all dependencies are met before running the data acquisition and processing scripts.
+# Species lists
+host_species_df <- readr::read_csv(config$anemone_species_list_file)
+fish_species_df <- readr::read_csv(config$anemonefish_species_list_file)
+fish_species_sanitized_names <- gsub(" ", "_", fish_species_df$scientificName) # Used often
 
-```{r}
-#| echo: true
-#| eval: false
-# Install all requirements for scripts
-# install.packages(c("dplyr", "devtools", "sf", "wk", "worrms", "here", "httr2", "tidyr", "ggplot2", "readr", "rfishbase", "rnaturalearth", "robis", "rgbif", "stringr", "ggtext"))
-# devtools::install_github("ropensci/mregions2", build_vignettes = TRUE)
-# devtools::install_github("bio-oracle/biooracler")
-library(biooracler)
-library(dplyr)
-library(sf)
-library(wk)
-library(worrms)
-library(here)
-library(httr2)
-library(tidyr)
-library(ggplot2)
-library(readr)
-library(rfishbase)
-library(rnaturalearth)
-library(robis)
-library(rgbif)
-library(stringr)
-library(ggtext)
+# Association data
+associations_df <- readr::read_csv(config$anemone_fish_association_file)
+
+# Get current climate PCA rasters (used in multiple sections)
+pca_paths_list <- readRDS(config$pca_raster_paths_rds_path)
+current_pca_rasters <- terra::rast(pca_paths_list[["current"]])
+num_pcs_to_use <- min(config$n_pca_components, terra::nlyr(current_pca_rasters))
+names(current_pca_rasters) <- paste0("PC", 1:terra::nlyr(current_pca_rasters))
+current_pca_rasters_subset <- current_pca_rasters[[1:num_pcs_to_use]]
+
+# Path for saving plots from this analysis (optional, can also just display inline)
+analysis_plot_dir <- file.path(config$log_dir_base, "post_analysis_plots_and_tables")
+dir.create(analysis_plot_dir, showWarnings = FALSE, recursive = TRUE)
+
+# Common Indo-Pacific extent for plotting if needed (from config)
+ip_bbox <- sf::st_bbox(c(xmin=config$indo_pacific_bbox[1], ymin=config$indo_pacific_bbox[3],
+                         xmax=config$indo_pacific_bbox[2], ymax=config$indo_pacific_bbox[4]),
+                       crs = "EPSG:4326")
+ip_poly_sf <- sf::st_as_sfc(ip_bbox)
+
+cat("Setup complete. Analysis outputs will be generated.\n")
 ```
 
-# 2. Download Species Metadata
+## Distributional Relationship between Anemonefish and Host Sea Anemones
 
-The `02_get_species_metadata.R` script retrieves species metadata for both anemones and anemonefish. This script is crucial for obtaining the correct scientific names and identification codes (AphiaIDs) needed for querying occurrence databases.
+This section explores the spatial correlation and shared environmental drivers between anemonefish and their host sea anemones under current climatic conditions.
 
-## 2.1 Processed Species Lists
+```{r richness-stacking-and-correlation}
+cat("\n--- Section: Distributional Relationship ---\n")
 
-Species lists for both anemones and anemonefish, stored in separate Excel files (`Anemone List.xlsx` and `Anemonefish List.xlsx`), are read into R. The script then performs the following steps:
+# Suffix for host models (assuming PCA was used for hosts in 06a)
+host_model_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif") 
 
-1.  **Read Species Lists:** Reads species lists from Excel files, ensuring correct column names.
-2.  **Match Scientific Names:** Uses `obistools::match_taxa` to match original scientific names with the accepted names in WoRMS. This ensures that the most up-to-date taxonomic information is used.
-3.  **Combine Data:** Combines the original species list with the WoRMS-matched names and AphiaIDs.
-4.  **Add GBIF Information:** Queries GBIF for additional species information, including GBIF species keys and match types.
-5.  **Save Species Lists:** Saves the processed species lists to CSV files (`final_anemone_species_list.csv` and `final_anemonefish_species_list.csv`). These files contain the scientific names, AphiaIDs, and GBIF species keys, which are used in the next step to download occurrence data.
+# Stack Current Host Anemone Predictions for Richness
+host_richness_sum_current <- stack_richness(
+  species_df = host_species_df,
+  base_pred_dir = config$target_predictions_current_dir, # Prediction rasters are directly here
+  scenario_name = "current",
+  model_suffix = host_model_suffix,
+  config = config,
+  log_func = cat
+)
+if (is.null(host_richness_sum_current)) stop("Failed to create current host richness layer.")
+names(host_richness_sum_current) <- "HostRichness"
+# plot(host_richness_sum_current, main = "Host Anemone Richness (Current)")
 
-```{r}
-#| echo: true
-#| eval: false
-# Download species metadata from WoRMS and GBIF for anemones and anemonefish.
-# Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
+# Suffix for anemonefish env-only models (from 06b)
+fish_env_only_model_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
 
-# Anemone species list:
-# Original:
-# Entacmaea quadricolor
-# Radianthus crispa (formerly Heteractis crispa)
-# Radianthus magnifica (formerly Heteractis magnifica)
-# Stichodactyla gigantea
-# Cryptodendrum adhaesivum
-# Macrodactyla doreensis
-# Stichodactyla mertensii
+# Stack Current Anemonefish Predictions for Richness (Env-Only Models from 06b)
+fish_richness_sum_current_env_only <- stack_richness(
+  species_df = fish_species_df,
+  base_pred_dir = config$target_predictions_current_dir, # Prediction rasters are directly here
+  scenario_name = "current",
+  model_suffix = fish_env_only_model_suffix,
+  config = config,
+  log_func = cat
+)
+if (is.null(fish_richness_sum_current_env_only)) stop("Failed to create current anemonefish (env-only) richness layer.")
+names(fish_richness_sum_current_env_only) <- "FishRichnessEnvOnly"
+# plot(fish_richness_sum_current_env_only, main = "Anemonefish Richness (Current, Env-Only)")
 
-# Extra:
-# Stichodactyla haddoni
-# Radianthus malu (formerly Heteractis malu)
-# Radianthus aurora (formerly Heteractis aurora)
-
-# Anemonefish species list:
-# Generalist
-# Original:
-# Amphiprion clarkii
-# Amphiprion ocellaris
-# Amphiprion perideraion
-
-# Extra:
-# Amphiprion bicinctus
-# Amphiprion chrysopterus
-# Amphiprion akindynos
-# Amphiprion melanopus
-# Amphiprion leucokranos
-# Amphiprion percula
-# Amphiprion omanensis
-# Amphiprion tricinctus
-# Amphiprion allardi
-# Amphiprion chrysogaster
-# Amphiprion latifasciatus (double check, it might be some sort of specialist)
-
-
-# Specialist
-# Original:
-# Amphiprion frenatus
-# Amphiprion sandaracinos
-# Amphiprion polymnus
-
-# Extra:
-# Amphiprion akallopisos
-# Amphiprion ephippium
-# Amphiprion sebae
-# Amphiprion chagosensis
-# Amphiprion nigripes
-# Amphiprion latezonatus
-# Amphiprion biaculeatus
-# Amphiprion mccullochi
-# Amphiprion rubrocinctus
-# Amphiprion barberi
-# Amphiprion fuscocaudatus
-
-# Function to process species list
-process_species_list <- function(file_path, output_file_path) {
-  # Read in species list from xlsx file
-  species_list <- readxl::read_excel(file_path)
-  colnames(species_list) <- c(
-    "vernacularName",
-    "scientificNameOriginal",
-    "rank"
-  )
-
-  # Match original Scientific Names with correct WoRMS ACCEPTED Scientific Names
-  new_names <- obistools::match_taxa(species_list$scientificNameOriginal)
-
-  # Bind new names
-  final_list <- bind_cols(new_names, species_list)
-
-  final_list <- final_list %>%
-    mutate(AphiaID = acceptedNameUsageID) %>%
-    relocate(AphiaID, scientificName)
-
-  print(final_list)
-
-  # Print the number of species
-  print(paste("Number of species:", nrow(final_list)))
-
-  # Add GBIF information
-  gbif_names <- lapply(final_list$scientificName, rgbif::name_backbone)
-  gbif_names <- bind_rows(gbif_names)
-  gbif_names <- gbif_names %>%
-    select(gbif_speciesKey = usageKey, gbif_scientificName = scientificName, gbif_matchType = matchType)
-
-  final_list <- final_list %>% bind_cols(gbif_names)
-
-  # Display the first few rows of the combined data frame
-  print(head(final_list))
-
-  # Add taxonID column (same as AphiaID)
-  final_list$taxonID <- final_list$AphiaID
-
-  # Save the species list to a CSV file
-  write.csv(final_list, output_file_path, row.names = FALSE)
-
-  return(final_list) # Return the processed dataframe
+# --- Combine for Analysis & Resample if necessary ---
+# Ensure all rasters for combined analysis are aligned
+# Use host richness as the reference geometry
+ref_geom <- host_richness_sum_current 
+if (!terra::compareGeom(fish_richness_sum_current_env_only, ref_geom, stopOnError=FALSE, res=TRUE)) {
+  cat("Resampling anemonefish richness to match host richness geometry.\n")
+  fish_richness_sum_current_env_only <- terra::resample(fish_richness_sum_current_env_only, ref_geom)
+}
+if (!terra::compareGeom(current_pca_rasters_subset, ref_geom, stopOnError=FALSE, res=TRUE)) {
+  cat("Resampling PCA rasters to match host richness geometry.\n")
+  current_pca_rasters_subset <- terra::resample(current_pca_rasters_subset, ref_geom)
 }
 
-# Process anemone species list
-final_anemone_list <- process_species_list("Anemone List.xlsx", "final_anemone_species_list.csv")
+combined_analysis_stack <- c(host_richness_sum_current, fish_richness_sum_current_env_only, current_pca_rasters_subset)
+# plot(combined_analysis_stack, nc = 3) # Quick check
 
-# Process anemonefish species list
-final_anemonefish_list <- process_species_list("Anemonefish List.xlsx", "final_anemonefish_species_list.csv")
+# --- Sample Points & Extract Values ---
+cat("Sampling points and extracting values for richness correlation and variance partitioning...\n")
+set.seed(123)
+sample_points_df <- terra::spatSample(ref_geom, size = 5000, method = "random", na.rm = TRUE, xy = TRUE)
+sampled_values_df <- terra::extract(combined_analysis_stack, sample_points_df[, c("x","y")], ID = FALSE)
+sampled_values_df <- na.omit(sampled_values_df)
+
+if(nrow(sampled_values_df) < 10) stop("Less than 10 valid sampled points for analysis.")
+cat("  Number of points for analysis:", nrow(sampled_values_df), "\n")
+
+# --- Pearson Correlation ---
+richness_cor_test <- cor.test(sampled_values_df$FishRichnessEnvOnly, sampled_values_df$HostRichness)
+cat("\nPearson Correlation between Anemonefish Richness (Env-Only) and Host Richness (Current):\n")
+print(richness_cor_test)
+
+# --- Variance Partitioning ---
+climate_df_for_varpart <- sampled_values_df[, paste0("PC", 1:num_pcs_to_use)]
+var_part_result <- tryCatch({
+  vegan::varpart(sampled_values_df$FishRichnessEnvOnly, 
+                 sampled_values_df$HostRichness, 
+                 climate_df_for_varpart)
+}, error = function(e) {
+  cat("ERROR in varpart:", e$message, "\n"); NULL
+})
+
+if (!is.null(var_part_result)) {
+  cat("\nVariance Partitioning for Anemonefish Richness (Env-Only) explained by Host Richness and Climate (PCs):\n")
+  print(var_part_result)
+  
+  png(file.path(analysis_plot_dir, "varpart_fish_host_climate.png"), width=7, height=7, units="in", res=300)
+  plot(var_part_result, 
+       bg = c("skyblue", "lightcoral"), 
+       Xnames = c("Host Anemone\nRichness", paste0("Climate\n(PC1-PC", num_pcs_to_use, ")")),
+       main = "Variance Partitioning: Anemonefish Richness"
+       )
+  dev.off()
+  cat("Variance partitioning plot saved.\n")
+}
+
+# Clean up
+rm(host_richness_sum_current, fish_richness_sum_current_env_only, sample_points_df, sampled_values_df, climate_df_for_varpart)
+gc()
 ```
 
-## 2.2 Anemone Species List
+## Anemonefish SDM Performance with Host Information
 
-A species list of anemones is compiled from online resources, this is used to download occurence data in the next script.
+This section evaluates whether incorporating host sea anemone distribution data (as a richness layer) improves the predictive performance of Species Distribution Models (SDMs) for anemonefish, compared to models based solely on environmental variables or solely on host distribution.
 
-## 2.3 Anemonefish Species List
+**NOTE:** For the "Host Only" models, ensure that script `06c_run_sdm_anemonefish_biotic_only.R` was correctly modified and run to produce models using *only* the host suitability layer as a predictor. The results here depend on that.
 
-A species list of anemonefish is compiled from online resources, this is used to download occurence data in the next script.
+```{r sdm-performance-comparison}
+cat("\n--- Section: Anemonefish SDM Performance Comparison ---\n")
 
-# 3. Download Occurrence Data
+# Suffixes and path patterns for different model types
+fish_env_only_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
+fish_host_only_suffix <- "_host_only" # Make sure this matches your modified 06c output
+fish_combined_suffix <- "_combined_pca"
 
-The `03_download_occurrence_data.R` script downloads occurrence data for the anemone and anemonefish species. This script uses the AphiaIDs from the processed species lists to query OBIS and GBIF for occurrence records.
-
-## 3.1 Download Sea Anemone Occurence Data
-
-This downloads all the sea anemone occurence data for the species in teh species list in section 2.1 and saves it to the data/occurence/anemone directory. The species list it reads in is the final_anemone_species_list.csv. The script merges the GBIF and OBIS datsets for each species. The datasets are deduplicated before saving.
-
-```{r}
-#| echo: true
-#| eval: false
-
-# Download occurrence data from OBIS and GBIF for anemones and anemonefish.
-# Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
-
-source("helpers/occurrence_helpers.R")
-
-# Run the function for anemones and anemonefish
-download_occurrence_data("final_anemone_species_list.csv", "data/occurrence/anemone")
-# download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence/anemonefish")
-```
-
-## 3.2 Download Anemonefish Occurence Data
-
-This downloads all the anemonefish occurence data for the species in teh species list in section 2.1 and saves it to the data/occurence/anemonefish directory. The species list it reads in is the final_anemonefish_species_list.csv. The script merges the GBIF and OBIS datsets for each species. The datasets are deduplicated before saving.
-
-```{r}
-#| echo: true
-#| eval: false
-
-# Download occurrence data from OBIS and GBIF for anemones and anemonefish.
-# Based on the following guide: https://www.gbif.us/post/2024/searching-with-aphiaids/
-
-source("helpers/occurrence_helpers.R")
-
-# Run the function for anemones and anemonefish
-# download_occurrence_data("final_anemone_species_list.csv", "data/occurrence/anemone")
-download_occurrence_data("final_anemonefish_species_list.csv", "data/occurrence/anemonefish")
-```
-
-## 3.3 Download Environmental Data
-
-This downloads environmental data from Bio-Oracle to be used as predictors in the species distribution models. The environmental layers are downloaded for current conditions and future climate scenarios.
-
-```{r}
-#| echo: true
-#| eval: false
-
-# Download all environmental data form Bio-Oracle using obissdm library
-# List datasets to download
-datasets <- c(
-  "thetao_baseline_2000_2019_depthsurf",
-  "so_baseline_2000_2019_depthsurf",
-  "PAR_mean_baseline_2000_2020_depthsurf",
-  "phyc_baseline_2000_2020_depthsurf",
-  "ph_baseline_2000_2018_depthsurf",
-  "sws_baseline_2000_2019_depthsurf",
-  "o2_baseline_2000_2018_depthsurf",
-  "KDPAR_mean_baseline_2000_2020_depthsurf",
-  "no3_baseline_2000_2018_depthsurf",
-  "chl_baseline_2000_2018_depthsurf",
-  "tas_baseline_2000_2020_depthsurf",
-  "si_baseline_2000_2018_depthsurf",
-  "mlotst_baseline_2000_2019_depthsurf"
+model_types_info_fish <- list(
+  EnvOnly = list(
+    label = "Environment Only",
+    suffix = fish_env_only_suffix,
+    path_subdir = paste0("anemonefish", fish_env_only_suffix)
+  ),
+  HostOnly = list( # Ensure 06c was run with this suffix and actual host-only predictors
+    label = "Host Suitability Only",
+    suffix = fish_host_only_suffix,
+    path_subdir = paste0("anemonefish", fish_host_only_suffix) 
+  ),
+  EnvPlusHost = list(
+    label = "Environment + Host",
+    suffix = fish_combined_suffix,
+    path_subdir = paste0("anemonefish", fish_combined_suffix)
+  )
 )
 
-datasets <- c(datasets,
-              gsub("depthsurf", "depthmean", datasets))
+all_fish_cv_results_list <- list()
+
+for (type_key in names(model_types_info_fish)) {
+  info <- model_types_info_fish[[type_key]]
+  target_cv_dir <- file.path(config$target_results_base, info$path_subdir)
+  cat("Looking for CV results in:", target_cv_dir, "for type:", info$label, "\n")
+  
+  for (sp_sanitized in fish_species_sanitized_names) {
+    # CV files are named CV_Results_SpeciesName.csv in the respective subdirectories
+    cv_file <- file.path(target_cv_dir, paste0("CV_Results_", sp_sanitized, ".csv"))
+    
+    if (file.exists(cv_file)) {
+      df_cv <- tryCatch(readr::read_csv(cv_file, show_col_types = FALSE), error = function(e){
+        warning("Failed to read CV file: ", cv_file, " Error: ", e$message); NULL
+      })
+      if(is.null(df_cv)) next
+      
+      # Each row in SDMtune CV results is a hyperparameter combination.
+      # For this comparison, we use all folds' test_AUC for each species's model type.
+      # The PDF paper's Fig 2 shows boxplots of 40 model runs per species per type.
+      # Your current setup with SDMtune likely has fewer 'runs' per se in the CV_results file,
+      # but multiple folds for hyperparameter tuning. We'll use the test_AUC from each fold.
+      
+      if ("test_AUC" %in% names(df_cv)) {
+        df_cv_select <- df_cv %>% 
+          dplyr::select(test_AUC) %>% 
+          dplyr::mutate(species = sp_sanitized, type = info$label)
+        all_fish_cv_results_list[[length(all_fish_cv_results_list) + 1]] <- df_cv_select
+      } else {
+        warning(paste("Column 'test_AUC' not found in", cv_file))
+      }
+    } else {
+      warning("CV results file not found for '", sp_sanitized, "' type '", info$label, "': ", cv_file)
+    }
+  }
+}
+
+if (length(all_fish_cv_results_list) > 0) {
+  combined_fish_cv_df <- dplyr::bind_rows(all_fish_cv_results_list)
+  
+  if (nrow(combined_fish_cv_df) > 0 && "test_AUC" %in% names(combined_fish_cv_df)) {
+    combined_fish_cv_df$type <- factor(combined_fish_cv_df$type, levels = c("Environment Only", "Host Suitability Only", "Environment + Host"))
+    combined_fish_cv_df$species_short <- gsub("Amphiprion_", "A._", combined_fish_cv_df$species) # For plotting
+    
+    # --- LMM Comparison (similar to PDF) ---
+    # The PDF used coef = 0.014 for EFN+Climate vs Climate, and -0.04 for EFN-only vs Climate
+    # This implies a baseline model (Climate-Only) and then testing addition/replacement.
+    
+    # Model 1: Environment + Host vs Environment Only
+    df_env_combined <- combined_fish_cv_df %>% dplyr::filter(type %in% c("Environment Only", "Environment + Host"))
+    if(nrow(df_env_combined) > 0 && length(unique(df_env_combined$type)) == 2) {
+      lmm_auc_env_vs_combined <- tryCatch({
+        glmmTMB::glmmTMB(test_AUC ~ type + (1|species), data = df_env_combined, na.action = na.omit,
+                         control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS"))) # Added optimizer for potential convergence
+      }, error = function(e){warning("LMM for Env vs Combined AUC failed: ", e$message); NULL})
+      if(!is.null(lmm_auc_env_vs_combined)){
+        cat("\nLMM Results: Env-Only vs Env+Host (Anemonefish SDMs):\n")
+        print(summary(lmm_auc_env_vs_combined))
+      }
+    } else { cat("Not enough data for LMM: Env-Only vs Env+Host.\n") }
+
+    # Model 2: Environment Only vs Host Only (if HostOnly data exists)
+    df_env_hostonly <- combined_fish_cv_df %>% dplyr::filter(type %in% c("Environment Only", "Host Suitability Only"))
+     if(nrow(df_env_hostonly) > 0 && length(unique(df_env_hostonly$type)) == 2) {
+      lmm_auc_env_vs_hostonly <- tryCatch({
+        glmmTMB::glmmTMB(test_AUC ~ type + (1|species), data = df_env_hostonly, na.action = na.omit,
+                         control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+      }, error = function(e){warning("LMM for Env vs Host-Only AUC failed: ", e$message); NULL})
+        if(!is.null(lmm_auc_env_vs_hostonly)){
+        cat("\nLMM Results: Env-Only vs Host-Only (Anemonefish SDMs):\n")
+        print(summary(lmm_auc_env_vs_hostonly))
+      }
+    } else { cat("Not enough data for LMM: Env-Only vs Host-Only. Ensure 'Host Suitability Only' models ran and results exist.\n") }
 
 
-# List scenarios to download
-# Most optimistic and least optimistic scenarios
-future_scenarios <- c("ssp245", "ssp370")
+    # --- Boxplot (PDF Figure 2 adaptation) ---
+    fish_auc_comparison_plot <- ggplot(combined_fish_cv_df, aes(x = reorder(species_short, test_AUC, FUN = median, na.rm=TRUE), y = test_AUC, fill = type)) +
+      geom_boxplot(position = position_dodge(0.9), outlier.size = 0.5) +
+      stat_summary(fun = mean, geom = "point", shape = 23, size = 2, fill = "red", 
+                   position = position_dodge(0.9), aes(group = type), show.legend = FALSE) +
+      labs(title = "Anemonefish SDM Performance: Test AUC by Model Type",
+           x = "Anemonefish Species",
+           y = "Test AUC (Predictive Accuracy)") +
+      scale_fill_manual(name = "Model Predictors", 
+                        values = c("Environment Only" = "grey80", "Host Suitability Only" = "lightpink", "Environment + Host" = "lightblue"),
+                        labels = c("Climate PCA", "Max Host Suitability Only", "Climate PCA + Max Host Suitability")) +
+      theme_bw(base_size = 10) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8),
+            legend.position = "top",
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank()) +
+      coord_cartesian(ylim = c(min(0.5, min(combined_fish_cv_df$test_AUC, na.rm=TRUE)), 1.0)) # Set y-axis limits
 
+    print(fish_auc_comparison_plot)
+    ggsave(file.path(analysis_plot_dir, "anemonefish_sdm_auc_comparison_fig2_style.png"), fish_auc_comparison_plot, width = 14, height = 8, dpi = 300)
+    cat("Anemonefish AUC comparison plot saved.\n")
 
-# Define time steps
-time_steps <- list(
-  current = c("2000-01-01T00:00:00Z", "2010-01-01T00:00:00Z"), #2000-2010/2010-2020
-  dec50 = c("2030-01-01", "2040-01-01"), #2030-2040/2040-2050
-  dec100 = c("2080-01-01", "2090-01-01") #2080-2090/2090-2100
-)
-
-# Define variables to be downloaded
-variables <- c("min", "mean", "max")
-
-obissdm::get_env_data(datasets = datasets, future_scenarios = future_scenarios,
-             time_steps = time_steps, variables = variables,
-             terrain_vars = c(
-               "bathymetry_mean",
-               "slope",
-               "terrain_ruggedness_index"
-             ), average_time = T)
-
-# For just temperature, download also the range, ltmin and ltmax
-obissdm::get_env_data(datasets = "thetao_baseline_2000_2019_depthsurf",
-             future_scenarios = future_scenarios,
-             time_steps = time_steps, variables = c("range", "ltmin", "ltmax"),
-             average_time = T)
-
-# For Chlorophyll-a we remove the depthmean and depthmax, as for the future is
-# not available
-to_remove <- list.files("data/env/current", full.names = T)
-to_remove <- to_remove[grepl("chl", to_remove)]
-to_remove <- to_remove[grepl("depthmean|depthmax", to_remove)]
-fs::file_delete(to_remove)
-
-# Rename KDPAR for kd
-to_rename <- list.files("data/env", recursive = T, full.names = T)
-to_rename <- to_rename[grepl("kdpar", to_rename)]
-new_names <- gsub("kdpar", "kd", to_rename)
-file.rename(to_rename, new_names)
-
-# Rename terrain_ruggedness
-to_rename <- list.files("data/env/terrain/", recursive = T, full.names = T)
-to_rename <- to_rename[grepl("rugg", to_rename)]
-to_rename <- to_rename[!grepl("aux", to_rename)]
-new_names <- gsub("terrain_ruggedness_index", "rugosity", to_rename)
-edit_r <- terra::rast(to_rename)
-names(edit_r) <- "rugosity"
-terra::writeRaster(edit_r, new_names, overwrite = T)
-fs::file_delete(to_rename)
-```
-
-# 4. Data Standardisation
-
-```{r}
-
-```
-
-# 5. PCA
-
-```{r}
-
-```
-
-# 6. Run SDMs
-
-```{r}
-
-```
-
-# 7. Post Analysis
-
-```{r}
-
+  } else {
+    warning("Column 'test_AUC' not found in combined CV results for LMM or plotting.")
+  }
+} else {
+  warning("No CV results were successfully gathered for anemonefish model comparison. Check paths and ensure model outputs (CV_results_*.csv) exist for all types in the `target_results_base` subdirectories.")
+}
 ```

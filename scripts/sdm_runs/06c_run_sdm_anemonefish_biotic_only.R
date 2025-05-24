@@ -46,7 +46,7 @@ host_group_name <- "anemone"
 # NOTE: The logic below currently uses PCA env predictors due to copying from 06d.
 # User will tweak this script to remove env predictors for a true biotic-only model.
 if(!config$use_pca_predictors) { log4r::fatal(logger, "Script 06c (currently based on 06d logic) requires config$use_pca_predictors=TRUE."); stop("This script (currently based on 06d logic) requires PCA env predictors.") }
-predictor_type_suffix <- "_biotic_pc4" # Original 06c naming for outputs
+predictor_type_suffix <- "_biotic_only" # Original 06c naming for outputs
 host_predictor_type_suffix <- "_pca" # Suffix of host predictions to load (from 06a)
 
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
@@ -165,9 +165,24 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     max_host_suitability_tuning <- terra::app(host_stack_tuning, fun = "max", na.rm = TRUE); names(max_host_suitability_tuning) <- "host_suitability_max"
     slog("DEBUG", "Max host suitability layer created for tuning scenario.")
     
-    # Combine Env PC4 + Max Host
-    # TODO: Convert to faked env layer
-    tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
+    # # Combine Env PC4 + Max Host
+    # # TODO: Convert to faked env layer
+    # tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
+    
+    # --- Create Dummy Environmental Layer with Random Noise ---
+    slog("DEBUG", "Creating dummy environmental layer (random noise) for host-only model.")
+    dummy_env_layer_noise <- max_host_suitability_tuning
+    # Generate random noise with a very small range (e.g., 0 to 0.01)
+    set.seed(123) # For reproducibility
+    noise_values <- runif(ncell(dummy_env_layer_noise), min = 0, max = 0.001)
+    dummy_env_layer_noise[] <- noise_values
+    # Mask it by the valid cells of the host suitability layer
+    dummy_env_layer_noise[is.na(max_host_suitability_tuning)] <- NA 
+    names(dummy_env_layer_noise) <- "PC4"
+    
+    # Combine for prediction
+    tuning_predictor_stack_global <- c(dummy_env_layer_noise, max_host_suitability_tuning)
+    
     slog("INFO", paste("GLOBAL Tuning predictor stack (06d logic: Env PCA + Host) created:", paste(names(tuning_predictor_stack_global), collapse=", ")))
     rm(tuning_env_stack, host_stack_tuning, max_host_suitability_tuning, host_rasters_tuning_list); gc()
     
