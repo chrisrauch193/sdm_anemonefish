@@ -132,7 +132,7 @@ thin_occurrences_by_sac <- function(occs_coords, predictor_stack, config, logger
   # Limit points for correlogram calculation if dataset is very large
   if (nrow(pts_df) > 1000) {
     hlog("DEBUG", "Subsampling to 1000 points for Mantel correlogram calculation.")
-    set.seed(123) # for reproducibility of subsampling
+    set.seed(config$global_seed) # for reproducibility of subsampling
     pts_for_mantel <- pts_df[sample(1:nrow(pts_df), 1000, replace = FALSE), ]
   } else {
     pts_for_mantel <- pts_df
@@ -499,8 +499,8 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
   # --- 5. Sample Background Points ---
   hlog("INFO", "Generating background points using OBIS Part2 logic & stack...\n")
   # Ensure seed includes species ID and offset for reproducibility
-  seed_value <- config$background_seed %||% 111
-  set.seed(seed_value + species_aphia_id_internal + seed_offset)
+  seed_value <- config$global_seed
+  set.seed(config$global_seed)
   
   bg_obis_part2_df <- tryCatch({
     terra::spatSample(predictor_stack_obis_part2, size = quad_n_final, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
@@ -647,7 +647,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       # For consistency, let SDMtune handle random k-fold by returning NULL here.
       # SDMtune will use its default random k-fold when `folds` is NULL in `train`.
       # However, the tuning function expects folds. Let's create standard random folds.
-      set.seed(123) # for reproducibility
+      set.seed(config$global_seed) # for reproducibility
       n_pts <- nrow(swd_sf)
       fold_indices <- sample(rep(1:nfolds, length.out = n_pts))
       # Create the list structure SDMtune expects for folds
@@ -1043,6 +1043,15 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   
   # --- Initialize Metrics List ---
   metrics <- list(
+    nrowrep = config$global_seed,
+    AUC_train = NA_real_,
+    TSS_train = NA_real_,
+    AUC_test_CV = NA_real_, # Mean test AUC from CV tuning results
+    TSS_test_CV = NA_real_, # Mean test TSS from CV tuning results
+    AICc = NA_real_
+  )
+  
+  metrics <- list(
     Timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
     GroupName = group_name,
     SpeciesName = species_name_sanitized,
@@ -1116,13 +1125,40 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   metrics_df[numeric_cols] <- lapply(metrics_df[numeric_cols], round, digits = 4) # Round numerics
   if("AICc" %in% names(metrics_df)) metrics_df$AICc <- round(metrics_df$AICc, 2) # Different rounding for AICc
   
+  hlog("INFO", "WOW WE GOT HERasdadasdasE")
+  
+  # Determine target subdirectory using the map from config
+  subdir_name <- paste0(group_name, config$model_output_subdir_map[[predictor_type_suffix]])
+  if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
+  target_subdir <- file.path(config$target_results_base, subdir_name)
+  dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
+  
+  # Construct filenames matching the target repo style
+  target_base_name <- paste0("CV_Results_", species_name_sanitized) # Using sanitized name
+  
+  
+  hlog("INFO", "WOW WE GOasdasdasdasdasdasdasdasdasdT HERE")
+
+  # 2. Save results table (CSV - for target analysis mirroring target)
+  csv_file <- file.path(target_subdir, paste0(target_base_name, ".csv"))
+  results_df <- tuning_output@results
+  if (is.null(results_df) || nrow(results_df) == 0) { hlog("WARN", "No results table found in tuning object."); return(TRUE) } # Return TRUE as RDS might have saved
+  
+  # tryCatch({ readr::write_csv(results_df, file = csv_file); hlog("DEBUG", "Tuning results table saved (CSV to target):", basename(csv_file)); TRUE },
+  #          error = function(e) { hlog("ERROR", paste("Failed save tuning CSV:", e$message)); FALSE })
+  # 
+  
+  
+  hlog("INFO", "WOasdasdasdasdasdasdasdasdasdasasdasdasdasdasdasdasdW WE GOT HERE")
+  
+  # return(TRUE)
   tryCatch({
-    write_headers <- !file.exists(output_log_file)
-    readr::write_csv(metrics_df, output_log_file, append = !write_headers, col_names = write_headers)
+    write_headers <- !file.exists(csv_file)
+    readr::write_csv(metrics_df, csv_file, append = !write_headers, col_names = write_headers)
     hlog("INFO", paste("Successfully logged final model metrics for", species_name_sanitized))
     return(TRUE)
   }, error = function(e) {
-    hlog("ERROR", paste("Failed to write metrics to log file:", output_log_file, "Error:", e$message))
+    hlog("ERROR", paste("Failed to write metrics to log file:", csv_file, "Error:", e$message))
     return(FALSE)
   })
 }
@@ -1473,7 +1509,7 @@ run_biomod2_models_with_blockcv <- function(biomod_formatted_data, biomod_model_
       var.import = 0, # Set to >0 if you want BIOMOD2's VI
       metric.eval = c('ROC', 'TSS'), 
       do.full.models = TRUE, 
-      seed.val = config$AphiaID_for_seed %||% 42 
+      seed.val = config$global_seed
     )
   }, error = function(e) {
     b2_hlog_run("ERROR", paste("Error in BIOMOD_Modeling:", e$message))

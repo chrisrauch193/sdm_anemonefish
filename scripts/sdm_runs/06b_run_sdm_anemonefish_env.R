@@ -170,7 +170,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
       slog("INFO", "Successfully loaded existing final model. Skipping tuning/training.")
       load_existing_model <- TRUE
       slog("DEBUG", "Regenerating background points and species stack for loaded model VI/Eval...")
-      background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+      background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
       if(!is.null(background_return_eval) && !is.null(background_return_eval$background_points) && !is.null(background_return_eval$species_specific_stack)) {
         background_points_eval <- background_return_eval$background_points
         species_specific_stack <- background_return_eval$species_specific_stack
@@ -191,7 +191,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   if (!load_existing_model) {
     slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points and species stack for training...")
-    background_return <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+    background_return <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
     if (is.null(background_return) || is.null(background_return$background_points) || is.null(background_return$species_specific_stack)) {
       msg <- paste0("Skipping: Failed background point/stack generation for training."); slog("ERROR", msg);
       return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
@@ -221,10 +221,10 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     }
     best_hypers <- attr(tuning_output, "best_hypers")
     
-    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file, group_name=group_name)) {
-      rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc();
-      return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
-    }
+    # if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file, group_name=group_name)) {
+    #   rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc();
+    #   return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
+    # }
     
     slog("INFO", "Starting final model training.")
     final_model <- train_final_sdm(occs_coords, species_specific_stack, background_points, best_hypers, config, logger=NULL, species_name, species_log_file=species_log_file)
