@@ -1,5 +1,5 @@
 ---
-title: "Anemonefish-Host Mutualism: Climate Change Impacts and Distributional Relationships"
+title: "Anemonefish Mutualism Analysis Results"
 format: html
 editor: visual
 execute:
@@ -8,294 +8,2118 @@ execute:
   message: false
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.width=9, fig.height=7, fig.align = 'center')
+# Drivers of Host Sea Anemone and Anemonefish Richness
 
-# Load necessary packages
+This section replicates the initial data loading and processing steps from the desert ant paper's results section, adapted for the anemonefish-anemone mutualism. We load the current predicted suitability rasters for host sea anemones and anemonefish (environmental-only models), calculate community richness, and crop them to the Indo-Pacific study area.
+
+```{r setup-libraries-and-config}
+#| label: setup-libraries-and-config
+#| message: false
+#| warning: false
+
+# Using pacman for streamlined package management
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(terra, sf, dplyr, tidyr, ggplot2, readr,
-               vegan, # For varpart
-               glmmTMB, emmeans, # For LMMs
-               ENMeval, # For Schoener's D
-               corrplot, # For correlation matrices
-               phytools, picante, # For phylogenetic analyses
-               ENMTools, # For niche breadth
-               stringr, tools, # General utilities
-               log4r # For logging if desired, though direct cat() is also used here
-)
+pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, tools)
 
-# Load your project configuration
-source("scripts/config.R")
-if (!exists("config")) stop("Configuration file 'config.R' not found or 'config' object not created.")
+# Load project configuration
+# Ensure your working directory is the root of your sdm_anemonefish project
+if (file.exists("scripts/config.R")) {
+  source("scripts/config.R")
+} else if (file.exists(here::here("scripts/config.R"))) {
+  source(here::here("scripts/config.R"))
+} else {
+  stop("FATAL: Configuration file 'scripts/config.R' not found. Please set your working directory to the project root.")
+}
+if (!exists("config")) stop("FATAL: 'config' list not found after sourcing config.R")
 
-# Source post-analysis helpers
-source("scripts/helpers/post_analysis_helpers.R")
-
-
-# Define consistent species group names for plot labels etc.
-host_group_label <- "Host Anemones"
-fish_group_label <- "Anemonefish"
-
-# Species lists
-host_species_df <- readr::read_csv(config$anemone_species_list_file)
-fish_species_df <- readr::read_csv(config$anemonefish_species_list_file)
-fish_species_sanitized_names <- gsub(" ", "_", fish_species_df$scientificName) # Used often
-
-# Association data
-associations_df <- readr::read_csv(config$anemone_fish_association_file)
-
-# Get current climate PCA rasters (used in multiple sections)
-pca_paths_list <- readRDS(config$pca_raster_paths_rds_path)
-current_pca_rasters <- terra::rast(pca_paths_list[["current"]])
-num_pcs_to_use <- min(config$n_pca_components, terra::nlyr(current_pca_rasters))
-names(current_pca_rasters) <- paste0("PC", 1:terra::nlyr(current_pca_rasters))
-current_pca_rasters_subset <- current_pca_rasters[[1:num_pcs_to_use]]
-
-# Path for saving plots from this analysis (optional, can also just display inline)
-analysis_plot_dir <- file.path(config$log_dir_base, "post_analysis_plots_and_tables")
-dir.create(analysis_plot_dir, showWarnings = FALSE, recursive = TRUE)
-
-# Common Indo-Pacific extent for plotting if needed (from config)
-ip_bbox <- sf::st_bbox(c(xmin=config$indo_pacific_bbox[1], ymin=config$indo_pacific_bbox[3],
-                         xmax=config$indo_pacific_bbox[2], ymax=config$indo_pacific_bbox[4]),
-                       crs = "EPSG:4326")
-ip_poly_sf <- sf::st_as_sfc(ip_bbox)
-
-cat("Setup complete. Analysis outputs will be generated.\n")
+# Helper function for constructing prediction filenames (already in your sdm_modeling_helpers.R)
+# Make sure this helper is sourced or defined if not running the full pipeline before this
+# source(file.path(config$helpers_dir, "sdm_modeling_helpers.R")) # If needed
 ```
 
-## Distributional Relationship between Anemonefish and Host Sea Anemones
+```{r load-and-process-rasters}
+#| label: load-and-process-rasters
+#| fig-width: 10
+#| fig-height: 8
 
-This section explores the spatial correlation and shared environmental drivers between anemonefish and their host sea anemones under current climatic conditions.
+# --- Define Parameters ---
+current_scenario_name <- "current"
+# Determine the suffix based on config (assuming this is for env-only models)
+predictor_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
 
-```{r richness-stacking-and-correlation}
-cat("\n--- Section: Distributional Relationship ---\n")
-
-# Suffix for host models (assuming PCA was used for hosts in 06a)
-host_model_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif") 
-
-# Stack Current Host Anemone Predictions for Richness
-host_richness_sum_current <- stack_richness(
-  species_df = host_species_df,
-  base_pred_dir = config$target_predictions_current_dir, # Prediction rasters are directly here
-  scenario_name = "current",
-  model_suffix = host_model_suffix,
-  config = config,
-  log_func = cat
-)
-if (is.null(host_richness_sum_current)) stop("Failed to create current host richness layer.")
-names(host_richness_sum_current) <- "HostRichness"
-# plot(host_richness_sum_current, main = "Host Anemone Richness (Current)")
-
-# Suffix for anemonefish env-only models (from 06b)
-fish_env_only_model_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
-
-# Stack Current Anemonefish Predictions for Richness (Env-Only Models from 06b)
-fish_richness_sum_current_env_only <- stack_richness(
-  species_df = fish_species_df,
-  base_pred_dir = config$target_predictions_current_dir, # Prediction rasters are directly here
-  scenario_name = "current",
-  model_suffix = fish_env_only_model_suffix,
-  config = config,
-  log_func = cat
-)
-if (is.null(fish_richness_sum_current_env_only)) stop("Failed to create current anemonefish (env-only) richness layer.")
-names(fish_richness_sum_current_env_only) <- "FishRichnessEnvOnly"
-# plot(fish_richness_sum_current_env_only, main = "Anemonefish Richness (Current, Env-Only)")
-
-# --- Combine for Analysis & Resample if necessary ---
-# Ensure all rasters for combined analysis are aligned
-# Use host richness as the reference geometry
-ref_geom <- host_richness_sum_current 
-if (!terra::compareGeom(fish_richness_sum_current_env_only, ref_geom, stopOnError=FALSE, res=TRUE)) {
-  cat("Resampling anemonefish richness to match host richness geometry.\n")
-  fish_richness_sum_current_env_only <- terra::resample(fish_richness_sum_current_env_only, ref_geom)
+# --- 1. Load Host Sea Anemone Data ---
+cat("--- Loading Host Sea Anemone Predictions (Current Scenario) ---\n")
+if (!file.exists(config$anemone_species_list_file)) {
+  stop("Anemone species list CSV not found: ", config$anemone_species_list_file)
 }
-if (!terra::compareGeom(current_pca_rasters_subset, ref_geom, stopOnError=FALSE, res=TRUE)) {
-  cat("Resampling PCA rasters to match host richness geometry.\n")
-  current_pca_rasters_subset <- terra::resample(current_pca_rasters_subset, ref_geom)
-}
+anemone_species_df <- readr::read_csv(config$anemone_species_list_file, show_col_types = FALSE)
 
-combined_analysis_stack <- c(host_richness_sum_current, fish_richness_sum_current_env_only, current_pca_rasters_subset)
-# plot(combined_analysis_stack, nc = 3) # Quick check
+host_raster_files <- c()
+host_short_names <- c()
 
-# --- Sample Points & Extract Values ---
-cat("Sampling points and extracting values for richness correlation and variance partitioning...\n")
-set.seed(123)
-sample_points_df <- terra::spatSample(ref_geom, size = 5000, method = "random", na.rm = TRUE, xy = TRUE)
-sampled_values_df <- terra::extract(combined_analysis_stack, sample_points_df[, c("x","y")], ID = FALSE)
-sampled_values_df <- na.omit(sampled_values_df)
-
-if(nrow(sampled_values_df) < 10) stop("Less than 10 valid sampled points for analysis.")
-cat("  Number of points for analysis:", nrow(sampled_values_df), "\n")
-
-# --- Pearson Correlation ---
-richness_cor_test <- cor.test(sampled_values_df$FishRichnessEnvOnly, sampled_values_df$HostRichness)
-cat("\nPearson Correlation between Anemonefish Richness (Env-Only) and Host Richness (Current):\n")
-print(richness_cor_test)
-
-# --- Variance Partitioning ---
-climate_df_for_varpart <- sampled_values_df[, paste0("PC", 1:num_pcs_to_use)]
-var_part_result <- tryCatch({
-  vegan::varpart(sampled_values_df$FishRichnessEnvOnly, 
-                 sampled_values_df$HostRichness, 
-                 climate_df_for_varpart)
-}, error = function(e) {
-  cat("ERROR in varpart:", e$message, "\n"); NULL
-})
-
-if (!is.null(var_part_result)) {
-  cat("\nVariance Partitioning for Anemonefish Richness (Env-Only) explained by Host Richness and Climate (PCs):\n")
-  print(var_part_result)
-  
-  png(file.path(analysis_plot_dir, "varpart_fish_host_climate.png"), width=7, height=7, units="in", res=300)
-  plot(var_part_result, 
-       bg = c("skyblue", "lightcoral"), 
-       Xnames = c("Host Anemone\nRichness", paste0("Climate\n(PC1-PC", num_pcs_to_use, ")")),
-       main = "Variance Partitioning: Anemonefish Richness"
-       )
-  dev.off()
-  cat("Variance partitioning plot saved.\n")
-}
-
-# Clean up
-rm(host_richness_sum_current, fish_richness_sum_current_env_only, sample_points_df, sampled_values_df, climate_df_for_varpart)
-gc()
-```
-
-## Anemonefish SDM Performance with Host Information
-
-This section evaluates whether incorporating host sea anemone distribution data (as a richness layer) improves the predictive performance of Species Distribution Models (SDMs) for anemonefish, compared to models based solely on environmental variables or solely on host distribution.
-
-**NOTE:** For the "Host Only" models, ensure that script `06c_run_sdm_anemonefish_biotic_only.R` was correctly modified and run to produce models using *only* the host suitability layer as a predictor. The results here depend on that.
-
-```{r sdm-performance-comparison}
-cat("\n--- Section: Anemonefish SDM Performance Comparison ---\n")
-
-# Suffixes and path patterns for different model types
-fish_env_only_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
-fish_host_only_suffix <- "_host_only" # Make sure this matches your modified 06c output
-fish_combined_suffix <- "_combined_pca"
-
-model_types_info_fish <- list(
-  EnvOnly = list(
-    label = "Environment Only",
-    suffix = fish_env_only_suffix,
-    path_subdir = paste0("anemonefish", fish_env_only_suffix)
-  ),
-  HostOnly = list( # Ensure 06c was run with this suffix and actual host-only predictors
-    label = "Host Suitability Only",
-    suffix = fish_host_only_suffix,
-    path_subdir = paste0("anemonefish", fish_host_only_suffix) 
-  ),
-  EnvPlusHost = list(
-    label = "Environment + Host",
-    suffix = fish_combined_suffix,
-    path_subdir = paste0("anemonefish", fish_combined_suffix)
+for (i in 1:nrow(anemone_species_df)) {
+  sp_name_sanitized <- gsub(" ", "_", anemone_species_df$scientificName[i])
+  # Use the construct_prediction_filename helper if it's available and loaded
+  # Otherwise, construct manually (ensure it matches your file naming)
+  pred_file_path <- construct_prediction_filename(
+    species_name_sanitized = sp_name_sanitized,
+    scenario_name = current_scenario_name,
+    predictor_type_suffix = predictor_suffix, # Suffix for anemone env-only models
+    config = config
   )
+  
+  if (file.exists(pred_file_path)) {
+    host_raster_files <- c(host_raster_files, pred_file_path)
+    host_short_names <- c(host_short_names, sp_name_sanitized) # Or create 2-letter codes
+  } else {
+    cat("Warning: Host prediction file not found for", sp_name_sanitized, "at", pred_file_path, "\n")
+  }
+}
+
+host_pred_stack <- NULL
+if (length(host_raster_files) > 0) {
+  host_pred_stack <- terra::rast(host_raster_files)
+  names(host_pred_stack) <- host_short_names
+  cat("Loaded", terra::nlyr(host_pred_stack), "host anemone prediction rasters.\n")
+  
+  host_richness_sum <- sum(host_pred_stack, na.rm = TRUE)
+  names(host_richness_sum) <- "HostAnemoneRichness"
+  cat("Calculated host anemone summed richness.\n")
+  
+  # Optional: Plot individual host rasters and summed richness before cropping
+  # plot(host_pred_stack, main = "Individual Host Anemone Suitability (Current)")
+  # plot(host_richness_sum, main = "Summed Host Anemone Richness (Current - Uncropped)")
+  
+} else {
+  cat("Error: No host anemone prediction rasters found. Cannot proceed with host richness.\n")
+  host_richness_sum <- NULL # Ensure it's NULL if no files found
+}
+
+
+# --- 2. Load Anemonefish (Environmental-Only Models) Data ---
+cat("\n--- Loading Anemonefish (Env-Only) Predictions (Current Scenario) ---\n")
+if (!file.exists(config$anemonefish_species_list_file)) {
+  stop("Anemonefish species list CSV not found: ", config$anemonefish_species_list_file)
+}
+anemonefish_species_df <- readr::read_csv(config$anemonefish_species_list_file, show_col_types = FALSE)
+
+fish_raster_files <- c()
+fish_short_names <- c()
+
+for (i in 1:nrow(anemonefish_species_df)) {
+  sp_name_sanitized <- gsub(" ", "_", anemonefish_species_df$scientificName[i])
+  # Suffix for anemonefish env-only models (from 06b)
+  pred_file_path <- construct_prediction_filename(
+    species_name_sanitized = sp_name_sanitized,
+    scenario_name = current_scenario_name,
+    predictor_type_suffix = predictor_suffix, # Same suffix if using same method (PCA/VIF)
+    config = config
+  )
+  
+  if (file.exists(pred_file_path)) {
+    fish_raster_files <- c(fish_raster_files, pred_file_path)
+    fish_short_names <- c(fish_short_names, sp_name_sanitized)
+  } else {
+    cat("Warning: Anemonefish (env-only) prediction file not found for", sp_name_sanitized, "at", pred_file_path, "\n")
+  }
+}
+
+fish_pred_stack <- NULL
+if (length(fish_raster_files) > 0) {
+  fish_pred_stack <- terra::rast(fish_raster_files)
+  names(fish_pred_stack) <- fish_short_names
+  cat("Loaded", terra::nlyr(fish_pred_stack), "anemonefish (env-only) prediction rasters.\n")
+
+  fish_richness_sum <- sum(fish_pred_stack, na.rm = TRUE)
+  names(fish_richness_sum) <- "AnemonefishRichness_EnvOnly"
+  cat("Calculated anemonefish (env-only) summed richness.\n")
+  
+  # Optional: Plot individual fish rasters and summed richness before cropping
+  # plot(fish_pred_stack, main = "Individual Anemonefish Suitability (Current, Env-Only)")
+  # plot(fish_richness_sum, main = "Summed Anemonefish Richness (Current, Env-Only - Uncropped)")
+
+} else {
+  cat("Error: No anemonefish (env-only) prediction rasters found. Cannot proceed with fish richness.\n")
+  fish_richness_sum <- NULL # Ensure it's NULL
+}
+
+
+# --- 3. Crop to Indo-Pacific Extent (if rasters were successfully loaded) ---
+cat("\n--- Cropping Rasters to Indo-Pacific Extent ---\n")
+if (config$apply_indo_pacific_crop) {
+  ip_extent <- terra::ext(config$indo_pacific_bbox)
+  cat("Using Indo-Pacific Bounding Box for cropping:", 
+      paste(config$indo_pacific_bbox, collapse=", "), "\n")
+
+  if (!is.null(host_pred_stack)) {
+    host_pred_stack_cropped <- tryCatch({
+      terra::crop(host_pred_stack, ip_extent)
+    }, error = function(e) {
+      cat("Warning: Failed to crop host_pred_stack:", e$message, "\n"); host_pred_stack
+    })
+  } else { host_pred_stack_cropped <- NULL }
+  
+  if (!is.null(host_richness_sum)) {
+    host_richness_sum_cropped <- tryCatch({
+      terra::crop(host_richness_sum, ip_extent)
+    }, error = function(e) {
+      cat("Warning: Failed to crop host_richness_sum:", e$message, "\n"); host_richness_sum
+    })
+  } else { host_richness_sum_cropped <- NULL }
+
+  if (!is.null(fish_pred_stack)) {
+    fish_pred_stack_cropped <- tryCatch({
+      terra::crop(fish_pred_stack, ip_extent)
+    }, error = function(e) {
+      cat("Warning: Failed to crop fish_pred_stack:", e$message, "\n"); fish_pred_stack
+    })
+  } else { fish_pred_stack_cropped <- NULL }
+  
+  if (!is.null(fish_richness_sum)) {
+    fish_richness_sum_cropped <- tryCatch({
+      terra::crop(fish_richness_sum, ip_extent)
+    }, error = function(e) {
+      cat("Warning: Failed to crop fish_richness_sum:", e$message, "\n"); fish_richness_sum
+    })
+  } else { fish_richness_sum_cropped <- NULL }
+  
+  cat("Cropping complete.\n")
+} else {
+  cat("Skipping Indo-Pacific cropping based on config.\n")
+  host_pred_stack_cropped <- host_pred_stack
+  host_richness_sum_cropped <- host_richness_sum
+  fish_pred_stack_cropped <- fish_pred_stack
+  fish_richness_sum_cropped <- fish_richness_sum
+}
+
+# --- 4. Plot Cropped Richness Maps ---
+cat("\n--- Plotting Cropped Richness Maps ---\n")
+if (!is.null(host_richness_sum_cropped)) {
+  plot(host_richness_sum_cropped, main = "Summed Host Anemone Richness (Current - Cropped)")
+}
+if (!is.null(fish_richness_sum_cropped)) {
+  plot(fish_richness_sum_cropped, main = "Summed Anemonefish Richness (Current, Env-Only - Cropped)")
+}
+
+# Optional: Plot cropped individual stacks if needed for visual check
+# if (!is.null(host_pred_stack_cropped)) {
+#   plot(host_pred_stack_cropped, main = "Individual Host Anemone Suitability (Cropped)")
+# }
+# if (!is.null(fish_pred_stack_cropped)) {
+#   plot(fish_pred_stack_cropped, main = "Individual Anemonefish (Env-Only) Suitability (Cropped)")
+# }
+
+cat("\n--- First section of results processing finished. ---\n")
+# The objects host_pred_stack_cropped, host_richness_sum_cropped, 
+# fish_pred_stack_cropped, and fish_richness_sum_cropped are now available.
+```
+
+## Evaluate models
+
+This section loads the cross-validation (CV) results from the various SDM runs for host sea anemones and different types of anemonefish models (environmental-only, biotic-only, and combined environmental + biotic), focusing on AUC.
+
+```{r load-cv-results-auc-only}
+#| label: load-cv-results-auc-only
+#| message: false
+#| warning: false
+
+library(purrr) # For map_df
+library(dplyr) # For data manipulation
+library(readr) # For read_csv
+
+# --- 1. Load Host Sea Anemone CV Results ("Plants" equivalent) ---
+# Determine suffix based on config (assuming this matches what was used for 06a)
+host_predictor_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
+host_cv_results_dir <- file.path(config$target_results_base, paste0("anemone", host_predictor_suffix))
+
+cat("Loading Host Sea Anemone CV results from:", host_cv_results_dir, "\n")
+host_cv_files <- list.files(host_cv_results_dir,
+                            pattern = "^CV_Results_.*\\.csv$", # Files start with CV_Results_
+                            full.names = TRUE)
+
+if (length(host_cv_files) > 0) {
+  host_cv_data <- purrr::map_df(host_cv_files, 
+                ~readr::read_csv(.x, show_col_types = FALSE) %>% 
+                   mutate(filename_full = .x, 
+                          filename = basename(.x)))
+
+  host_model_evals <- host_cv_data %>%
+    group_by(filename) %>%
+    summarise(
+      mean_test_auc = mean(test_AUC, na.rm = TRUE), # SDMtune output column is test_AUC
+      sd_test_auc = sd(test_AUC, na.rm = TRUE)
+      # mean_test_tss = mean(test_TSS, na.rm = TRUE), # SDMtune output column is test_TSS
+      # sd_test_tss = sd(test_TSS, na.rm = TRUE)
+    ) %>%
+    mutate(across(where(is.numeric), ~round(., 3))) 
+
+  cat("\nFirst few rows of Host Sea Anemone Model Evaluations (AUC only):\n")
+  print(head(host_model_evals))
+  
+  host_cv_summary_path <- file.path(config$base_dir, "outputs_for_analysis", "host_anemone_CV_summary_auc_only.csv")
+  dir.create(dirname(host_cv_summary_path), recursive = TRUE, showWarnings = FALSE)
+  write.csv(host_model_evals, host_cv_summary_path, row.names = FALSE)
+  cat("\nHost Sea Anemone CV summary (AUC only) saved to:", host_cv_summary_path, "\n")
+  
+} else {
+  cat("Warning: No CV_Results CSV files found for host sea anemones in", host_cv_results_dir, "\n")
+  host_cv_data <- NULL 
+  host_model_evals <- NULL
+}
+
+
+# --- 2. Load Anemonefish Environmental-Only CV Results ("Ants Climate-Only" equivalent) ---
+fish_env_predictor_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
+fish_env_cv_results_dir <- file.path(config$target_results_base, paste0("anemonefish", fish_env_predictor_suffix))
+
+cat("\nLoading Anemonefish (Environmental-Only) CV results from:", fish_env_cv_results_dir, "\n")
+fish_env_cv_files <- list.files(fish_env_cv_results_dir,
+                                pattern = "^CV_Results_.*\\.csv$",
+                                full.names = TRUE)
+
+if (length(fish_env_cv_files) > 0) {
+  fish_env_cv_data <- purrr::map_df(fish_env_cv_files, 
+                  ~readr::read_csv(.x, show_col_types = FALSE) %>% 
+                     mutate(filename_full = .x,
+                            filename = basename(.x)))
+
+  cat("Loaded", nrow(fish_env_cv_data), "rows from", length(fish_env_cv_files), "anemonefish (env-only) CV files.\n")
+  print(head(fish_env_cv_data %>% dplyr::select(filename, test_AUC) %>% group_by(filename) %>% slice_head(n=1), n=3)) # Show a sample (test_TSS removed for now)
+} else {
+  cat("Warning: No CV_Results CSV files found for anemonefish (env-only) in", fish_env_cv_results_dir, "\n")
+  fish_env_cv_data <- NULL 
+}
+
+
+# --- 3. Load Anemonefish Biotic Model CV Results (Equivalent to "Ant Contrasts") ---
+
+#   3a. Biotic-Only CV Results (from 06c)
+fish_biotic_only_suffix_config <- "_biotic_only" 
+fish_biotic_only_cv_results_dir <- file.path(config$target_results_base, paste0("anemonefish", fish_biotic_only_suffix_config))
+
+cat("\nLoading Anemonefish (Biotic-Only) CV results from:", fish_biotic_only_cv_results_dir, "\n")
+fish_biotic_only_cv_files <- list.files(fish_biotic_only_cv_results_dir,
+                                        pattern = "^CV_Results_.*\\.csv$",
+                                        full.names = TRUE)
+
+if (length(fish_biotic_only_cv_files) > 0) {
+  anemonefish_biotic_cv_data <- purrr::map_df(fish_biotic_only_cv_files, 
+                ~readr::read_csv(.x, show_col_types = FALSE) %>% 
+                   mutate(filename_full = .x,
+                          filename = basename(.x)))
+  cat("Loaded", nrow(anemonefish_biotic_cv_data), "rows from", length(fish_biotic_only_cv_files), "anemonefish (biotic-only) CV files.\n")
+  print(head(anemonefish_biotic_cv_data %>% dplyr::select(filename, test_AUC) %>% group_by(filename) %>% slice_head(n=1), n=3)) # test_TSS removed for now
+} else {
+  cat("Warning: No CV_Results CSV files found for anemonefish (biotic-only) in", fish_biotic_only_cv_results_dir, "\n")
+  anemonefish_biotic_cv_data <- NULL
+}
+
+
+#   3b. Combined Env+Biotic CV Results (from 06d)
+fish_combined_suffix_config <- "_combined_pca" 
+fish_combined_cv_results_dir <- file.path(config$target_results_base, paste0("anemonefish", fish_combined_suffix_config))
+
+cat("\nLoading Anemonefish (Combined Env+Biotic) CV results from:", fish_combined_cv_results_dir, "\n")
+fish_combined_cv_files <- list.files(fish_combined_cv_results_dir,
+                                     pattern = "^CV_Results_.*\\.csv$",
+                                     full.names = TRUE)
+
+if (length(fish_combined_cv_files) > 0) {
+  anemonefish_combined_cv_data <- purrr::map_df(fish_combined_cv_files, 
+                ~readr::read_csv(.x, show_col_types = FALSE) %>% 
+                   mutate(filename_full = .x,
+                          filename = basename(.x)))
+  cat("Loaded", nrow(anemonefish_combined_cv_data), "rows from", length(fish_combined_cv_files), "anemonefish (combined) CV files.\n")
+  print(head(anemonefish_combined_cv_data %>% dplyr::select(filename, test_AUC) %>% group_by(filename) %>% slice_head(n=1), n=3)) # test_TSS removed for now
+} else {
+  cat("Warning: No CV_Results CSV files found for anemonefish (combined) in", fish_combined_cv_results_dir, "\n")
+  anemonefish_combined_cv_data <- NULL
+}
+
+# The data frames:
+# - host_cv_data (and host_model_evals)
+# - fish_env_cv_data
+# - anemonefish_biotic_cv_data
+# - anemonefish_combined_cv_data
+# are now available for the next steps.
+```
+
+## Collect and Prepare Anemonefish Model Evaluation Data
+
+This section gathers the CV results from the different anemonefish model types (environmental-only, biotic-only, and combined host+environment), cleans the species names, and standardizes a 'model_type' column for comparison.
+
+```{r collect-fish-model-data}
+#| label: collect-fish-model-data
+#| message: false
+#| warning: false
+
+library(tidyr) # For separate
+library(dplyr)
+library(stringr) # For string manipulation
+
+# --- 1. Prepare Anemonefish Environmental-Only Data ---
+if (!is.null(fish_env_cv_data) && nrow(fish_env_cv_data) > 0) {
+  fish_env_processed <- fish_env_cv_data %>%
+    mutate(
+      # Extract species name: Remove "CV_Results_" prefix and ".csv" suffix
+      species = str_remove(filename, "^CV_Results_"),
+      species = str_remove(species, "\\.csv$"),
+      # Add model type
+      model_type = "env_only" 
+    ) %>%
+    dplyr::select(species, model_type, test_AUC, filename_full) # Keep relevant columns, filename_full for debugging
+  cat("Processed anemonefish environmental-only CV data.\n")
+} else {
+  cat("Warning: fish_env_cv_data is empty or NULL. Cannot process environmental-only models.\n")
+  fish_env_processed <- NULL
+}
+
+
+# --- 2. Prepare Anemonefish Biotic-Only Data ---
+if (!is.null(anemonefish_biotic_cv_data) && nrow(anemonefish_biotic_cv_data) > 0) {
+  fish_biotic_processed <- anemonefish_biotic_cv_data %>%
+    mutate(
+      # Extract species name: Remove "CV_Results_" prefix and the known suffix "_biotic_only.csv" (or _biotic_pc4 if that was kept)
+      # Assuming filenames are like: CV_Results_Amphiprion_clarkii_biotic_only.csv or CV_Results_Amphiprion_clarkii_biotic_pc4.csv
+      # Adjust the str_remove pattern if your biotic_only filenames have a different consistent suffix
+      species = str_remove(filename, "^CV_Results_"),
+      species = str_remove(species, paste0(config$model_output_subdir_map[["_biotic_only"]] %||% "_biotic_only", "\\.csv$")), # Use suffix from map or default
+      species = str_remove(species, paste0(config$model_output_subdir_map[["_biotic_pc4"]] %||% "_biotic_pc4", "\\.csv$")), # If _biotic_pc4 was used
+      model_type = "biotic_only"
+    ) %>%
+    dplyr::select(species, model_type, test_AUC, filename_full)
+  cat("Processed anemonefish biotic-only CV data.\n")
+} else {
+  cat("Warning: anemonefish_biotic_cv_data is empty or NULL. Cannot process biotic-only models.\n")
+  fish_biotic_processed <- NULL
+}
+
+
+# --- 3. Prepare Anemonefish Combined (Host + Env) Data ---
+if (!is.null(anemonefish_combined_cv_data) && nrow(anemonefish_combined_cv_data) > 0) {
+  fish_combined_processed <- anemonefish_combined_cv_data %>%
+    mutate(
+      # Extract species name: Remove "CV_Results_" and the known suffix "_combined_pca.csv"
+      species = str_remove(filename, "^CV_Results_"),
+      species = str_remove(species, paste0(config$model_output_subdir_map[["_combined_pca"]] %||% "_combined_pca", "\\.csv$")), # Use suffix from map or default
+      model_type = "combined_host_env"
+    ) %>%
+    dplyr::select(species, model_type, test_AUC, filename_full)
+  cat("Processed anemonefish combined (host+env) CV data.\n")
+} else {
+  cat("Warning: anemonefish_combined_cv_data is empty or NULL. Cannot process combined models.\n")
+  fish_combined_processed <- NULL
+}
+
+
+# --- 4. Combine all processed anemonefish model data ---
+# Use bind_rows which handles NULL data frames gracefully
+df_fish_comparison <- bind_rows(
+  fish_env_processed,
+  fish_biotic_processed,
+  fish_combined_processed
 )
 
-all_fish_cv_results_list <- list()
-
-for (type_key in names(model_types_info_fish)) {
-  info <- model_types_info_fish[[type_key]]
-  target_cv_dir <- file.path(config$target_results_base, info$path_subdir)
-  cat("Looking for CV results in:", target_cv_dir, "for type:", info$label, "\n")
+if (!is.null(df_fish_comparison) && nrow(df_fish_comparison) > 0) {
+  # Optional: Filter out species that might have been excluded or problematic in the ant paper's example
+  # For now, we'll keep all successfully processed species.
+  # df_fish_comparison <- df_fish_comparison %>%
+  #   filter(!species %in% c("Problem_Species1", "Problem_Species2"))
   
-  for (sp_sanitized in fish_species_sanitized_names) {
-    # CV files are named CV_Results_SpeciesName.csv in the respective subdirectories
-    cv_file <- file.path(target_cv_dir, paste0("CV_Results_", sp_sanitized, ".csv"))
+  cat("\nCombined data frame 'df_fish_comparison' created with", nrow(df_fish_comparison), "rows.\n")
+  cat("Summary of model types and counts:\n")
+  print(table(df_fish_comparison$model_type))
+  cat("\nFirst few rows of combined data:\n")
+  print(head(df_fish_comparison))
+} else {
+  cat("Error: 'df_fish_comparison' is empty. No anemonefish CV data was successfully processed.\n")
+}
+```
+
+## Compare anemonefish model performance
+
+This section statistically compares the performance (test AUC) of the different anemonefish model types (environmental-only, biotic-only, combined host+environment) using a linear mixed model. It also visualizes these comparisons.
+
+```{r compare-fish-model-performance}
+#| label: compare-fish-model-performance
+#| message: false
+#| warning: false
+
+library(glmmTMB)
+library(ggplot2)
+# library(performance) # Optional, for model_performance() if needed later
+
+if (!is.null(df_fish_comparison) && nrow(df_fish_comparison) > 0 && "test_AUC" %in% names(df_fish_comparison)) {
+
+  # Ensure model_type is a factor for the GLMM
+  df_fish_comparison$model_type <- factor(df_fish_comparison$model_type, 
+                                          levels = c("env_only", "biotic_only", "combined_host_env"))
+
+  # --- Statistical Comparison using GLMM ---
+  cat("\n--- Fitting GLMM to compare test_AUC across model types ---\n")
+  # Model: test_AUC ~ model_type + (1|species)
+  # This tests if model_type has a significant effect on AUC, 
+  # accounting for random variation between species.
+  # 'env_only' will be the reference level by default due to factor level ordering.
+  m1_fish_auc <- tryCatch({
+    glmmTMB(test_AUC ~ model_type + (1|species), data = df_fish_comparison)
+  }, error = function(e) {
+    cat("Error fitting GLMM for AUC:", e$message, "\n")
+    NULL
+  })
+
+  if (!is.null(m1_fish_auc)) {
+    cat("\nSummary of GLMM for test_AUC:\n")
+    print(summary(m1_fish_auc))
     
-    if (file.exists(cv_file)) {
-      df_cv <- tryCatch(readr::read_csv(cv_file, show_col_types = FALSE), error = function(e){
-        warning("Failed to read CV file: ", cv_file, " Error: ", e$message); NULL
-      })
-      if(is.null(df_cv)) next
-      
-      # Each row in SDMtune CV results is a hyperparameter combination.
-      # For this comparison, we use all folds' test_AUC for each species's model type.
-      # The PDF paper's Fig 2 shows boxplots of 40 model runs per species per type.
-      # Your current setup with SDMtune likely has fewer 'runs' per se in the CV_results file,
-      # but multiple folds for hyperparameter tuning. We'll use the test_AUC from each fold.
-      
-      if ("test_AUC" %in% names(df_cv)) {
-        df_cv_select <- df_cv %>% 
-          dplyr::select(test_AUC) %>% 
-          dplyr::mutate(species = sp_sanitized, type = info$label)
-        all_fish_cv_results_list[[length(all_fish_cv_results_list) + 1]] <- df_cv_select
-      } else {
-        warning(paste("Column 'test_AUC' not found in", cv_file))
-      }
+    # Optional: Check model performance diagnostics if library(performance) is loaded
+    # cat("\nGLMM Performance Metrics (AUC model):\n")
+    # print(performance::model_performance(m1_fish_auc))
+    
+    # Optional: Plot residuals
+    # plot(resid(m1_fish_auc), main = "Residuals of GLMM for AUC")
+  }
+
+  # --- Visualization ---
+  cat("\n--- Generating boxplot of test_AUC by model type ---\n")
+  
+  # Basic boxplot comparing model types
+  plot_auc_comparison <- ggplot(df_fish_comparison, aes(x = model_type, y = test_AUC, fill = model_type)) +
+    geom_boxplot(alpha = 0.7) +
+    stat_summary(fun = mean, geom = "point", shape = 18, size = 3, color = "black",
+                 position = position_dodge(width = 0.75)) + # Add mean points
+    labs(
+      title = "Anemonefish Model Performance Comparison",
+      x = "Model Type",
+      y = "Test AUC (Predictive Accuracy)"
+    ) +
+    scale_fill_manual(
+      values = c("env_only" = "grey70", "biotic_only" = "skyblue", "combined_host_env" = "salmon"),
+      name = "Model Type",
+      labels = c("Environmental Only", "Biotic (Host) Only", "Combined (Host+Env)")
+    ) +
+    theme_bw(base_size = 12) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      legend.position = "bottom",
+      axis.text.x = element_text(angle = 45, hjust = 1) # Improve x-axis label readability
+    )
+  
+  print(plot_auc_comparison)
+  
+  # Detailed boxplot per species, similar to ant paper (Fig 2 in ant PDF)
+  # We need to make species names more readable for the plot
+  df_fish_comparison_plot <- df_fish_comparison %>%
+    mutate(species_display = str_replace(species, "_", " ")) # Replace underscore with space for display
+    
+  plot_auc_per_species <- ggplot(df_fish_comparison_plot, aes(x = species_display, y = test_AUC, fill = model_type)) +
+    geom_boxplot(position = position_dodge(preserve = "single")) + # preserve = "single" helps alignment
+    stat_summary(fun = mean, geom = "point", shape = 23, size = 2, fill = "red", color = "black",
+                 position = position_dodge(width = 0.75, preserve = "single"), 
+                 aes(group = model_type)) + # Add mean points as red diamonds
+    labs(
+      title = "Anemonefish Model Performance by Species and Type",
+      x = "Anemonefish Species",
+      y = "Test AUC (Predictive Accuracy)"
+    ) +
+    scale_fill_manual(
+      values = c("env_only" = "grey70", "biotic_only" = "skyblue", "combined_host_env" = "salmon"),
+      name = "Model Type:",
+      labels = c("Environmental Only", "Biotic (Host) Only", "Combined (Host+Env)")
+    ) +
+    theme_bw(base_size = 11) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.position = "top",
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 8), # Rotate and adjust x-axis labels
+      plot.title = element_text(hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5)
+    ) +
+    ylim(0, 1) # Ensure AUC scale is from 0 to 1
+
+  print(plot_auc_per_species)
+
+  # Print mean AUC per species per model type
+  cat("\nMean test_AUC per species and model type:\n")
+  print(
+    df_fish_comparison %>%
+      group_by(species, model_type) %>%
+      dplyr::summarize(mean_auc = mean(test_AUC, na.rm = TRUE), .groups = 'drop') %>%
+      arrange(species, model_type)
+  )
+
+} else {
+  cat("Skipping model comparison as 'df_fish_comparison' is empty or test_AUC is missing.\n")
+}
+
+# (TTS analysis section will be added here once TSS data is available)
+# ... (Code for GLMM and plots for TSS, similar to AUC, but commented out) ...
+```
+
+## Current Environmental Predictors (PCA)
+
+This section loads the Principal Component Analysis (PCA) rasters for the current environmental conditions. These PCA rasters were generated by script `05_preprocess_env_pca_only.R` (if PCA was used) and represent the primary environmental gradients used in the SDMs.
+
+```{r load-current-env-pca}
+#| label: load-current-env-pca
+#| fig-width: 10
+#| fig-height: 8
+
+if (config$use_pca_predictors) {
+  cat("--- Loading Current Environmental PCA Rasters ---\n")
+  # The rds file stores a list of paths, one for each scenario's PCA .tif file
+  if (!file.exists(config$pca_raster_paths_rds_path)) {
+    stop("PCA raster paths RDS file not found: ", config$pca_raster_paths_rds_path, 
+         "\nPlease ensure script 05 (PCA preprocessing) ran successfully.")
+  }
+  all_pca_raster_paths <- readRDS(config$pca_raster_paths_rds_path)
+  
+  current_pca_path <- all_pca_raster_paths[["current"]]
+  if (is.null(current_pca_path) || !file.exists(current_pca_path)) {
+    stop("Path for 'current' PCA raster not found in RDS or file does not exist: ", current_pca_path %||% "NULL")
+  }
+  
+  env_pca_current <- tryCatch({
+    terra::rast(current_pca_path)
+  }, error = function(e) {
+    cat("Error loading current PCA raster from:", current_pca_path, "\nError:", e$message, "\n")
+    NULL
+  })
+  
+  if (!is.null(env_pca_current)) {
+    names(env_pca_current) <- paste0("PC", 1:terra::nlyr(env_pca_current)) # Ensure standard names
+    cat("Loaded current environmental PCA rasters. Layers:", paste(names(env_pca_current), collapse=", "), "\n")
+    
+    # Crop if configured (should match how other current rasters were handled)
+    if (config$apply_indo_pacific_crop) {
+      ip_extent <- terra::ext(config$indo_pacific_bbox)
+      env_pca_current_cropped <- terra::crop(env_pca_current, ip_extent)
+      plot(env_pca_current_cropped, main = "Current Environmental PCA (Cropped)")
     } else {
-      warning("CV results file not found for '", sp_sanitized, "' type '", info$label, "': ", cv_file)
+      env_pca_current_cropped <- env_pca_current # Use uncropped if not configured
+      plot(env_pca_current_cropped, main = "Current Environmental PCA (Uncropped)")
+    }
+  } else {
+    cat("Error: Could not load current environmental PCA rasters.\n")
+    env_pca_current_cropped <- NULL
+  }
+} else {
+  cat("--- PCA predictors not used. Skipping loading of current PCA rasters. ---\n")
+  cat("    You might need to load your VIF-selected current environmental rasters here if needed for specific analyses.\n")
+  env_pca_current_cropped <- NULL # Ensure this object exists as NULL if PCA not used
+}
+```
+
+## Future Species Richness Projections
+
+This section loads the predicted future suitability rasters for host sea anemones and anemonefish (from environmental-only models) for each future scenario and time step, and calculates the summed richness.
+
+```{r load-future-species-predictions}
+#| label: load-future-species-predictions
+#| fig-width: 10
+#| fig-height: 10
+
+# Define the future scenarios and time steps from your config
+# Your config$env_scenarios already includes "current", so we filter that out
+future_scenarios_to_load <- config$env_scenarios[config$env_scenarios != "current"]
+if (length(future_scenarios_to_load) == 0) {
+  cat("No future scenarios defined in config$env_scenarios to load predictions for.\n")
+}
+
+# Lists to store the summed richness rasters for each future scenario
+host_richness_future_list <- list()
+fish_richness_future_list <- list() # For env-only fish models
+
+# Loop through each future scenario
+for (scenario_name in future_scenarios_to_load) {
+  cat("\n--- Processing Future Scenario:", scenario_name, "---\n")
+  
+  # --- 1. Load Host Sea Anemone Future Predictions ---
+  cat("  Loading Host Sea Anemone predictions for", scenario_name, "\n")
+  host_future_raster_files <- c()
+  for (i in 1:nrow(anemone_species_df)) { # Uses anemone_species_df from previous chunk
+    sp_name_sanitized <- gsub(" ", "_", anemone_species_df$scientificName[i])
+    pred_file_path <- construct_prediction_filename(
+      species_name_sanitized = sp_name_sanitized,
+      scenario_name = scenario_name,
+      predictor_type_suffix = predictor_suffix, # Suffix for anemone env-only models
+      config = config
+    )
+    if (file.exists(pred_file_path)) {
+      host_future_raster_files <- c(host_future_raster_files, pred_file_path)
+    } else {
+      cat("  Warning: Host prediction file not found for", sp_name_sanitized, "in", scenario_name, "at", pred_file_path, "\n")
+    }
+  }
+  
+  if (length(host_future_raster_files) > 0) {
+    host_pred_stack_future <- terra::rast(host_future_raster_files)
+    host_richness_sum_future <- sum(host_pred_stack_future, na.rm = TRUE)
+    names(host_richness_sum_future) <- paste0("HostAnemoneRichness_", scenario_name)
+    
+    # Crop to Indo-Pacific extent
+    if (config$apply_indo_pacific_crop) {
+      ip_extent <- terra::ext(config$indo_pacific_bbox)
+      host_richness_future_list[[scenario_name]] <- terra::crop(host_richness_sum_future, ip_extent)
+    } else {
+      host_richness_future_list[[scenario_name]] <- host_richness_sum_future
+    }
+    cat("  Processed host anemone richness for", scenario_name, "\n")
+    # plot(host_richness_future_list[[scenario_name]], main = paste("Host Richness -", scenario_name))
+  } else {
+    cat("  Warning: No host prediction files found for scenario", scenario_name, "\n")
+  }
+
+  # --- 2. Load Anemonefish (Environmental-Only) Future Predictions ---
+  cat("  Loading Anemonefish (Env-Only) predictions for", scenario_name, "\n")
+  fish_future_raster_files <- c()
+  for (i in 1:nrow(anemonefish_species_df)) { # Uses anemonefish_species_df from previous chunk
+    sp_name_sanitized <- gsub(" ", "_", anemonefish_species_df$scientificName[i])
+    pred_file_path <- construct_prediction_filename(
+      species_name_sanitized = sp_name_sanitized,
+      scenario_name = scenario_name,
+      predictor_type_suffix = predictor_suffix, # Suffix for anemonefish env-only models
+      config = config
+    )
+    if (file.exists(pred_file_path)) {
+      fish_future_raster_files <- c(fish_future_raster_files, pred_file_path)
+    } else {
+      cat("  Warning: Anemonefish (env-only) prediction file not found for", sp_name_sanitized, "in", scenario_name, "at", pred_file_path, "\n")
+    }
+  }
+  
+  if (length(fish_future_raster_files) > 0) {
+    fish_pred_stack_future <- terra::rast(fish_future_raster_files)
+    fish_richness_sum_future <- sum(fish_pred_stack_future, na.rm = TRUE)
+    names(fish_richness_sum_future) <- paste0("AnemonefishRichness_EnvOnly_", scenario_name)
+    
+    if (config$apply_indo_pacific_crop) {
+      ip_extent <- terra::ext(config$indo_pacific_bbox)
+      fish_richness_future_list[[scenario_name]] <- terra::crop(fish_richness_sum_future, ip_extent)
+    } else {
+      fish_richness_future_list[[scenario_name]] <- fish_richness_sum_future
+    }
+    cat("  Processed anemonefish (env-only) richness for", scenario_name, "\n")
+    # plot(fish_richness_future_list[[scenario_name]], main = paste("Anemonefish (Env-Only) Richness -", scenario_name))
+  } else {
+    cat("  Warning: No anemonefish (env-only) prediction files found for scenario", scenario_name, "\n")
+  }
+} # End loop through future scenarios
+
+# At this point, host_richness_future_list and fish_richness_future_list 
+# are lists of SpatRasters, named by scenario (e.g., host_richness_future_list[["ssp119_2050"]])
+
+# Example: Plot one of the future richness maps
+if (length(host_richness_future_list) > 0 && "ssp119_2050" %in% names(host_richness_future_list)) {
+  plot(host_richness_future_list[["ssp119_2050"]], main = "Host Richness - SSP1-1.9 (2050) - Cropped")
+}
+if (length(fish_richness_future_list) > 0 && "ssp585_2100" %in% names(fish_richness_future_list)) {
+  plot(fish_richness_future_list[["ssp585_2100"]], main = "Anemonefish (Env-Only) Richness - SSP5-8.5 (2100) - Cropped")
+}
+
+cat("\n--- Future species prediction loading and processing finished. ---\n")
+```
+
+## Future Environmental Predictors (PCA)
+
+This section loads the PCA rasters for the future environmental conditions, corresponding to each future scenario and time step.
+
+```{r load-future-env-pca}
+#| label: load-future-env-pca
+#| fig-width: 10
+#| fig-height: 10
+
+if (config$use_pca_predictors) {
+  cat("--- Loading Future Environmental PCA Rasters ---\n")
+  if (!exists("all_pca_raster_paths") || is.null(all_pca_raster_paths)) {
+    cat("Warning: 'all_pca_raster_paths' not found from previous chunk. Attempting to reload.\n")
+    if (!file.exists(config$pca_raster_paths_rds_path)) {
+      stop("PCA raster paths RDS file not found: ", config$pca_raster_paths_rds_path)
+    }
+    all_pca_raster_paths <- readRDS(config$pca_raster_paths_rds_path)
+  }
+  
+  env_pca_future_list <- list()
+  
+  for (scenario_name in future_scenarios_to_load) { # future_scenarios_to_load from previous chunk
+    cat("  Loading PCA for future scenario:", scenario_name, "\n")
+    future_pca_path <- all_pca_raster_paths[[scenario_name]]
+    
+    if (is.null(future_pca_path) || !file.exists(future_pca_path)) {
+      cat("  Warning: Path for PCA raster not found for scenario:", scenario_name, "Path:", future_pca_path %||% "NULL", "\n")
+      next
+    }
+    
+    env_pca_future_scenario <- tryCatch({
+      terra::rast(future_pca_path)
+    }, error = function(e) {
+      cat("  Error loading PCA raster for", scenario_name, "from:", future_pca_path, "\nError:", e$message, "\n")
+      NULL
+    })
+    
+    if (!is.null(env_pca_future_scenario)) {
+      names(env_pca_future_scenario) <- paste0("PC", 1:terra::nlyr(env_pca_future_scenario)) # Ensure standard names
+      
+      if (config$apply_indo_pacific_crop) {
+        ip_extent <- terra::ext(config$indo_pacific_bbox)
+        env_pca_future_list[[scenario_name]] <- terra::crop(env_pca_future_scenario, ip_extent)
+      } else {
+        env_pca_future_list[[scenario_name]] <- env_pca_future_scenario
+      }
+      cat("    Loaded and processed PCA for", scenario_name, ". Layers:", paste(names(env_pca_future_list[[scenario_name]]), collapse=", "), "\n")
+      # plot(env_pca_future_list[[scenario_name]], main = paste("Future Env PCA -", scenario_name))
+    }
+  }
+  
+  # Example: Plot one of the future PCA stacks
+  if (length(env_pca_future_list) > 0 && "ssp119_2050" %in% names(env_pca_future_list)) {
+    plot(env_pca_future_list[["ssp119_2050"]], main = "Future Env PCA - SSP1-1.9 (2050) - Cropped")
+  }
+  
+} else {
+  cat("--- PCA predictors not used. Skipping loading of future PCA rasters. ---\n")
+  cat("    You might need to load your VIF-selected future environmental rasters here if needed for specific analyses.\n")
+  env_pca_future_list <- NULL # Ensure this object exists as NULL
+}
+
+# The following objects are now available for subsequent analyses:
+# - env_pca_current_cropped: SpatRaster of current PCA env predictors
+# - host_richness_future_list: List of SpatRasters for host future richness, named by scenario
+# - fish_richness_future_list: List of SpatRasters for anemonefish (env-only) future richness, named by scenario
+# - env_pca_future_list: List of SpatRasters for future PCA env predictors, named by scenario
+```
+
+## Environmental Shifts (PCA Components)
+
+This section examines the projected changes in the principal environmental gradients (PCA components) between the current conditions and future climate scenarios. This helps understand how the fundamental environmental space is predicted to change.
+
+```{r plot-environmental-pca-shifts}
+#| label: plot-environmental-pca-shifts
+#| fig-width: 12
+#| fig-height: 10 
+#| message: false
+#| warning: false
+
+if (!config$use_pca_predictors) {
+  cat("PCA predictors not used in this configuration. Skipping PCA environmental shift analysis.\n")
+} else {
+  if (is.null(env_pca_current_cropped) || is.null(env_pca_future_list) || length(env_pca_future_list) == 0) {
+    cat("Warning: Current or future PCA environmental rasters are not available. Cannot calculate shifts.\n")
+  } else {
+    cat("--- Calculating and Plotting Shifts in PCA Environmental Gradients ---\n")
+    
+    # Ensure current PCA stack is SpatRaster for subtraction
+    current_pca_terra <- if(inherits(env_pca_current_cropped, "SpatRaster")) env_pca_current_cropped else terra::rast(env_pca_current_cropped)
+
+    for (scenario_name in names(env_pca_future_list)) {
+      cat("  Processing shifts for scenario:", scenario_name, "\n")
+      future_pca_stack <- env_pca_future_list[[scenario_name]]
+      
+      if (is.null(future_pca_stack)) {
+        cat("  Skipping scenario", scenario_name, "- future PCA stack is NULL.\n")
+        next
+      }
+      
+      # Ensure layers match for subtraction (e.g., up to n_pca_components)
+      # It's crucial that both current and future PCA stacks were generated with the same number of components
+      # and represent the same underlying variables in the same order before PCA.
+      
+      # If layer names don't match exactly but number of layers does for the first N components:
+      if (terra::nlyr(current_pca_terra) >= config$n_pca_components && terra::nlyr(future_pca_stack) >= config$n_pca_components) {
+        
+        # Select the first N components (defined in config)
+        current_pca_subset <- current_pca_terra[[1:config$n_pca_components]]
+        future_pca_subset <- future_pca_stack[[1:config$n_pca_components]]
+        names(current_pca_subset) <- paste0("PC", 1:config$n_pca_components) # Standardize names for safety
+        names(future_pca_subset) <- paste0("PC", 1:config$n_pca_components)
+
+        # Calculate the difference (shift)
+        # terra::`-.SpatRaster` works element-wise if names match or by layer order if names don't.
+        # Better to ensure consistent naming (done above)
+        env_shift_scenario <- future_pca_subset - current_pca_subset 
+        names(env_shift_scenario) <- paste0("Shift_PC", 1:config$n_pca_components)
+        
+        cat("    Calculated PCA shifts for scenario:", scenario_name, "\n")
+        plot(env_shift_scenario, main = paste("Environmental PCA Shifts (Future - Current):", scenario_name), nc = 2)
+        
+      } else {
+        cat("  Warning: Layer mismatch or insufficient layers for PCA shift calculation in scenario", scenario_name, "\n")
+        cat("    Current PCA layers:", terra::nlyr(current_pca_terra), " Future PCA layers:", terra::nlyr(future_pca_stack), " Needed:", config$n_pca_components, "\n")
+      }
     }
   }
 }
+```
 
-if (length(all_fish_cv_results_list) > 0) {
-  combined_fish_cv_df <- dplyr::bind_rows(all_fish_cv_results_list)
+## Relationship between Host and Anemonefish Richness (Current)
+
+This section explores the relationship between the current predicted richness of host sea anemones and their mutualistic anemonefish (based on environmental-only models). We use variance partitioning to determine the independent and shared contributions of host richness and environmental factors (PCA components) to anemonefish richness.
+
+```{r richness-sampling-and-varpart}
+#| label: richness-sampling-and-varpart
+#| fig-width: 8
+#| fig-height: 6
+
+library(vegan) # For varpart
+
+if (is.null(host_richness_sum_cropped) || is.null(fish_richness_sum_cropped) || 
+    (config$use_pca_predictors && is.null(env_pca_current_cropped))) {
+  cat("Warning: Necessary raster data (host richness, fish richness, or current PCA env) is missing. Skipping variance partitioning.\n")
+} else {
+  cat("--- Preparing Data for Variance Partitioning ---\n")
   
-  if (nrow(combined_fish_cv_df) > 0 && "test_AUC" %in% names(combined_fish_cv_df)) {
-    combined_fish_cv_df$type <- factor(combined_fish_cv_df$type, levels = c("Environment Only", "Host Suitability Only", "Environment + Host"))
-    combined_fish_cv_df$species_short <- gsub("Amphiprion_", "A._", combined_fish_cv_df$species) # For plotting
-    
-    # --- LMM Comparison (similar to PDF) ---
-    # The PDF used coef = 0.014 for EFN+Climate vs Climate, and -0.04 for EFN-only vs Climate
-    # This implies a baseline model (Climate-Only) and then testing addition/replacement.
-    
-    # Model 1: Environment + Host vs Environment Only
-    df_env_combined <- combined_fish_cv_df %>% dplyr::filter(type %in% c("Environment Only", "Environment + Host"))
-    if(nrow(df_env_combined) > 0 && length(unique(df_env_combined$type)) == 2) {
-      lmm_auc_env_vs_combined <- tryCatch({
-        glmmTMB::glmmTMB(test_AUC ~ type + (1|species), data = df_env_combined, na.action = na.omit,
-                         control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS"))) # Added optimizer for potential convergence
-      }, error = function(e){warning("LMM for Env vs Combined AUC failed: ", e$message); NULL})
-      if(!is.null(lmm_auc_env_vs_combined)){
-        cat("\nLMM Results: Env-Only vs Env+Host (Anemonefish SDMs):\n")
-        print(summary(lmm_auc_env_vs_combined))
-      }
-    } else { cat("Not enough data for LMM: Env-Only vs Env+Host.\n") }
+  # Ensure all layers have the same extent and resolution for stacking.
+  # The previous cropping step should have handled this for richness sums.
+  # If PCA was used, env_pca_current_cropped should also match.
+  
+  layers_for_sampling <- c(host_richness_sum_cropped, fish_richness_sum_cropped)
+  
+  if (config$use_pca_predictors && !is.null(env_pca_current_cropped)) {
+    # Ensure the env_pca_current_cropped is compatible. Resample if necessary.
+    if (!terra::compareGeom(layers_for_sampling[[1]], env_pca_current_cropped[[1]], stopOnError=FALSE, res=TRUE, crs=TRUE)) {
+       cat("  Resampling current PCA environmental layers to match richness map geometry for sampling...\n")
+       env_pca_current_resampled <- tryCatch({
+         terra::resample(env_pca_current_cropped, layers_for_sampling[[1]], method="bilinear")
+       }, error = function(e) {
+         cat("  Warning: Failed to resample PCA env layers:", e$message, "\n"); NULL
+       })
+       if(!is.null(env_pca_current_resampled)) {
+         env_pca_current_for_sampling <- env_pca_current_resampled
+       } else {
+         cat("  Using un-resampled PCA env. May lead to issues if extents differ significantly.\n")
+         env_pca_current_for_sampling <- env_pca_current_cropped
+       }
+    } else {
+      env_pca_current_for_sampling <- env_pca_current_cropped
+    }
+    layers_for_sampling <- c(layers_for_sampling, env_pca_current_for_sampling[[1:config$n_pca_components]]) # Use first N components
+  } else if (!config$use_pca_predictors) {
+    # TODO: If not using PCA, you'd need to load your VIF-selected CURRENT environmental rasters here,
+    # ensure they are cropped and resampled like the richness maps, and add them to layers_for_sampling.
+    cat("Warning: Variance partitioning without PCA environmental layers is not fully implemented here. Please adapt if using VIF-selected vars.\n")
+  }
 
-    # Model 2: Environment Only vs Host Only (if HostOnly data exists)
-    df_env_hostonly <- combined_fish_cv_df %>% dplyr::filter(type %in% c("Environment Only", "Host Suitability Only"))
-     if(nrow(df_env_hostonly) > 0 && length(unique(df_env_hostonly$type)) == 2) {
-      lmm_auc_env_vs_hostonly <- tryCatch({
-        glmmTMB::glmmTMB(test_AUC ~ type + (1|species), data = df_env_hostonly, na.action = na.omit,
-                         control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
-      }, error = function(e){warning("LMM for Env vs Host-Only AUC failed: ", e$message); NULL})
-        if(!is.null(lmm_auc_env_vs_hostonly)){
-        cat("\nLMM Results: Env-Only vs Host-Only (Anemonefish SDMs):\n")
-        print(summary(lmm_auc_env_vs_hostonly))
-      }
-    } else { cat("Not enough data for LMM: Env-Only vs Host-Only. Ensure 'Host Suitability Only' models ran and results exist.\n") }
-
-
-    # --- Boxplot (PDF Figure 2 adaptation) ---
-    fish_auc_comparison_plot <- ggplot(combined_fish_cv_df, aes(x = reorder(species_short, test_AUC, FUN = median, na.rm=TRUE), y = test_AUC, fill = type)) +
-      geom_boxplot(position = position_dodge(0.9), outlier.size = 0.5) +
-      stat_summary(fun = mean, geom = "point", shape = 23, size = 2, fill = "red", 
-                   position = position_dodge(0.9), aes(group = type), show.legend = FALSE) +
-      labs(title = "Anemonefish SDM Performance: Test AUC by Model Type",
-           x = "Anemonefish Species",
-           y = "Test AUC (Predictive Accuracy)") +
-      scale_fill_manual(name = "Model Predictors", 
-                        values = c("Environment Only" = "grey80", "Host Suitability Only" = "lightpink", "Environment + Host" = "lightblue"),
-                        labels = c("Climate PCA", "Max Host Suitability Only", "Climate PCA + Max Host Suitability")) +
-      theme_bw(base_size = 10) +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1, size=8),
-            legend.position = "top",
-            panel.grid.major.x = element_blank(),
-            panel.grid.minor.x = element_blank()) +
-      coord_cartesian(ylim = c(min(0.5, min(combined_fish_cv_df$test_AUC, na.rm=TRUE)), 1.0)) # Set y-axis limits
-
-    print(fish_auc_comparison_plot)
-    ggsave(file.path(analysis_plot_dir, "anemonefish_sdm_auc_comparison_fig2_style.png"), fish_auc_comparison_plot, width = 14, height = 8, dpi = 300)
-    cat("Anemonefish AUC comparison plot saved.\n")
-
+  # Check if we have enough layers to proceed
+  if (terra::nlyr(layers_for_sampling) < 3) {
+     cat("Error: Need at least host richness, fish richness, and one environmental layer for variance partitioning. Found:", terra::nlyr(layers_for_sampling), "layers.\n")
   } else {
-    warning("Column 'test_AUC' not found in combined CV results for LMM or plotting.")
+    
+    # Rename layers for clarity in the output dataframe
+    names(layers_for_sampling)[1] <- "HostRichness"
+    names(layers_for_sampling)[2] <- "FishRichness_EnvOnly"
+    if (config$use_pca_predictors && terra::nlyr(layers_for_sampling) > 2) {
+      names(layers_for_sampling)[3:(2+config$n_pca_components)] <- paste0("PC", 1:config$n_pca_components)
+    }
+    
+    cat("Stack for sampling has layers:", paste(names(layers_for_sampling), collapse=", "), "\n")
+    
+    # Sample random points
+    # Using dismo::randomPoints for consistency with ant paper if preferred, or terra::spatSample
+    set.seed(123) # for reproducibility
+    # bg_points_sampled_varpart <- dismo::randomPoints(raster::raster(layers_for_sampling[[1]]), 5000) # dismo needs raster object
+    # Note: dismo::randomPoints might struggle with large SpatRasters or specific extents.
+    # Using terra::spatSample might be more robust here with SpatRasters.
+    # We need to sample from areas where ALL layers have data.
+    # One way is to sample from the first layer, then extract from the stack.
+    # Or, create a mask where all layers are non-NA.
+    mask_all_valid <- sum(!is.na(layers_for_sampling)) == nlyr(layers_for_sampling)
+    if(global(mask_all_valid, "sum", na.rm=T)$sum == 0) {
+      cat("Error: No cells where all predictor layers for variance partitioning have valid data.\n")
+    } else {
+      bg_points_sampled_varpart <- terra::spatSample(mask_all_valid, 5000, method = "random", na.rm = TRUE, xy=TRUE, warn=FALSE)
+      cat("Sampled", nrow(bg_points_sampled_varpart), "points for variance partitioning.\n")
+      
+      df_sampled_values <- terra::extract(layers_for_sampling, bg_points_sampled_varpart[, c("x", "y")], ID = FALSE)
+      df_sampled_values <- as.data.frame(df_sampled_values)
+      df_sampled_values <- na.omit(df_sampled_values) # Remove any rows with NAs that might have slipped through
+      
+      cat("Using", nrow(df_sampled_values), "complete cases for variance partitioning.\n")
+      
+      if (nrow(df_sampled_values) > 10 && "HostRichness" %in% names(df_sampled_values) && "FishRichness_EnvOnly" %in% names(df_sampled_values) && 
+          ( (!config$use_pca_predictors && ncol(df_sampled_values) > 2) || (config$use_pca_predictors && all(paste0("PC", 1:config$n_pca_components) %in% names(df_sampled_values))) )
+         ) {
+        
+        # Prepare data for varpart
+        fish_richness_response <- df_sampled_values$FishRichness_EnvOnly
+        host_richness_predictor <- df_sampled_values$HostRichness
+        
+        if (config$use_pca_predictors) {
+          env_predictors_df <- df_sampled_values[, paste0("PC", 1:config$n_pca_components), drop = FALSE]
+        } else {
+          # If using VIF, select the environmental columns (excluding HostRichness and FishRichness_EnvOnly)
+          env_col_names <- setdiff(names(df_sampled_values), c("HostRichness", "FishRichness_EnvOnly"))
+          if(length(env_col_names) > 0) {
+            env_predictors_df <- df_sampled_values[, env_col_names, drop = FALSE]
+          } else {
+            env_predictors_df <- NULL
+            cat("Warning: No environmental predictor columns identified for VIF-based variance partitioning.\n")
+          }
+        }
+
+        if (!is.null(env_predictors_df) && ncol(env_predictors_df) > 0) {
+          # Perform variance partitioning
+          # Response: FishRichness_EnvOnly
+          # Predictor Group 1: HostRichness
+          # Predictor Group 2: Environmental variables (PCA components or VIF-selected)
+          varpart_result <- vegan::varpart(fish_richness_response, host_richness_predictor, env_predictors_df)
+          
+          cat("\n--- Variance Partitioning Results ---\n")
+          print(varpart_result)
+          plot(varpart_result, main = "Variance Partitioning: Anemonefish Richness (Env-Only Models)")
+          
+          # Pearson correlation between host and fish richness
+          cor_test_result <- cor.test(df_sampled_values$HostRichness, df_sampled_values$FishRichness_EnvOnly)
+          cat("\nPearson Correlation between Host Richness and Fish (Env-Only) Richness:\n")
+          print(cor_test_result)
+          
+        } else {
+          cat("Warning: Environmental predictor data frame is empty. Skipping variance partitioning.\n")
+        }
+      } else {
+        cat("Warning: Not enough data or required columns missing for variance partitioning.\n")
+      }
+    } # end else for mask_all_valid check
+  } # end else for nlyr check
+}
+```
+
+## Richness Change Analyses
+
+This section analyzes the projected changes in host sea anemone and anemonefish (environmental-only models) richness under future climate scenarios.
+
+```{r richness-change-analysis}
+#| label: richness-change-analysis
+#| fig-width: 10
+#| fig-height: 10
+
+library(glmmTMB)
+library(emmeans) # For pairwise comparisons
+library(tidyr)   # For pivot_longer
+library(ggplot2)
+
+# Ensure current richness maps are loaded and cropped from the first chunk
+if (is.null(host_richness_sum_cropped) || is.null(fish_richness_sum_cropped)) {
+  cat("Warning: Cropped current richness maps not available. Skipping richness change analysis.\n")
+} else {
+  # --- Host Anemone Richness Change ---
+  cat("\n--- Analyzing Host Sea Anemone Richness Changes ---\n")
+  if (length(host_richness_future_list) > 0) {
+    # Stack current and all future host richness maps
+    all_host_rasters_for_analysis <- c(host_richness_sum_cropped) # Start with current
+    names(all_host_rasters_for_analysis)[1] <- "current" # Explicitly name current
+    
+    for(scen_name in names(host_richness_future_list)) {
+      if(!is.null(host_richness_future_list[[scen_name]])) {
+        # Ensure CRS and extent match before adding to stack. Resample if needed.
+        if(!terra::compareGeom(host_richness_sum_cropped, host_richness_future_list[[scen_name]], stopOnError=FALSE, res=TRUE, crs=TRUE)){
+            cat("  Resampling host richness for scenario:", scen_name, "to match current.\n")
+            host_richness_future_list[[scen_name]] <- terra::resample(host_richness_future_list[[scen_name]], host_richness_sum_cropped, method="bilinear")
+        }
+        # Ensure names are consistent, e.g., just the scenario name
+        names(host_richness_future_list[[scen_name]]) <- scen_name
+        all_host_rasters_for_analysis <- c(all_host_rasters_for_analysis, host_richness_future_list[[scen_name]])
+      }
+    }
+    # Final check after potential resampling
+    if (terra::nlyr(all_host_rasters_for_analysis) < 2) {
+        cat("  Warning: Not enough host richness rasters (current + at least one future) to analyze changes.\n")
+    } else {
+        cat("  Host richness stack for change analysis has layers:", paste(names(all_host_rasters_for_analysis), collapse=", "), "\n")
+        
+        # Sample points and extract values
+        set.seed(456)
+        mask_all_valid_host <- sum(!is.na(all_host_rasters_for_analysis)) == nlyr(all_host_rasters_for_analysis)
+        if(global(mask_all_valid_host, "sum", na.rm=T)$sum == 0) {
+          cat("  Error: No cells where all host richness layers have valid data for change analysis.\n")
+        } else {
+          pts_host_change <- terra::spatSample(mask_all_valid_host, 5000, method = "random", na.rm = TRUE, xy=TRUE, warn=FALSE)
+          df_host_change <- terra::extract(all_host_rasters_for_analysis, pts_host_change[, c("x", "y")], ID = FALSE)
+          df_host_change <- as.data.frame(df_host_change)
+          df_host_change$pixel_id <- 1:nrow(df_host_change) # Add a pixel identifier
+          
+          df_host_change_long <- df_host_change %>%
+            pivot_longer(cols = -pixel_id, names_to = "scenario", values_to = "richness") %>%
+            filter(!is.na(richness)) %>%
+            mutate(scenario = factor(scenario, levels = c("current", future_scenarios_to_load))) # Ensure 'current' is reference
+            
+          if (nrow(df_host_change_long) > 0) {
+            # Fit GLMM
+            lmm_host_richness <- tryCatch({
+              glmmTMB(richness ~ scenario + (1|pixel_id), data = df_host_change_long, family = gaussian()) # Assuming richness can be modeled as Gaussian
+            }, error = function(e) {cat("Error fitting GLMM for host richness:", e$message, "\n"); NULL})
+            
+            if (!is.null(lmm_host_richness)) {
+              cat("\nSummary of GLMM for Host Anemone Richness Change:\n")
+              print(summary(lmm_host_richness))
+              cat("\nAnova for Host Anemone Richness Change:\n")
+              print(car::Anova(lmm_host_richness))
+              cat("\nEstimated Marginal Means for Host Anemone Richness Change:\n")
+              print(emmeans(lmm_host_richness, pairwise ~ scenario))
+            }
+          } else { cat("  No data left after pivoting for host richness LMM.\n") }
+        }
+    }
+  } else { cat("  No future host richness maps available for change analysis.\n") }
+
+  # --- Anemonefish (Env-Only) Richness Change ---
+  cat("\n--- Analyzing Anemonefish (Env-Only) Richness Changes ---\n")
+  if (length(fish_richness_future_list) > 0) {
+    all_fish_rasters_for_analysis <- c(fish_richness_sum_cropped) # Start with current
+    names(all_fish_rasters_for_analysis)[1] <- "current"
+    
+    for(scen_name in names(fish_richness_future_list)) {
+       if(!is.null(fish_richness_future_list[[scen_name]])) {
+        if(!terra::compareGeom(fish_richness_sum_cropped, fish_richness_future_list[[scen_name]], stopOnError=FALSE, res=TRUE, crs=TRUE)){
+            cat("  Resampling fish richness for scenario:", scen_name, "to match current.\n")
+            fish_richness_future_list[[scen_name]] <- terra::resample(fish_richness_future_list[[scen_name]], fish_richness_sum_cropped, method="bilinear")
+        }
+        names(fish_richness_future_list[[scen_name]]) <- scen_name
+        all_fish_rasters_for_analysis <- c(all_fish_rasters_for_analysis, fish_richness_future_list[[scen_name]])
+      }
+    }
+    if(terra::nlyr(all_fish_rasters_for_analysis) < 2) {
+        cat("  Warning: Not enough fish richness rasters (current + at least one future) to analyze changes.\n")
+    } else {
+        cat("  Anemonefish richness stack for change analysis has layers:", paste(names(all_fish_rasters_for_analysis), collapse=", "), "\n")
+
+        set.seed(789)
+        mask_all_valid_fish <- sum(!is.na(all_fish_rasters_for_analysis)) == nlyr(all_fish_rasters_for_analysis)
+        if(global(mask_all_valid_fish, "sum", na.rm=T)$sum == 0) {
+          cat("  Error: No cells where all fish richness layers have valid data for change analysis.\n")
+        } else {
+          pts_fish_change <- terra::spatSample(mask_all_valid_fish, 5000, method = "random", na.rm = TRUE, xy=TRUE, warn=FALSE)
+          df_fish_change <- terra::extract(all_fish_rasters_for_analysis, pts_fish_change[, c("x", "y")], ID = FALSE)
+          df_fish_change <- as.data.frame(df_fish_change)
+          df_fish_change$pixel_id <- 1:nrow(df_fish_change)
+          
+          df_fish_change_long <- df_fish_change %>%
+            pivot_longer(cols = -pixel_id, names_to = "scenario", values_to = "richness") %>%
+            filter(!is.na(richness)) %>%
+            mutate(scenario = factor(scenario, levels = c("current", future_scenarios_to_load)))
+
+          if (nrow(df_fish_change_long) > 0) {
+            lmm_fish_richness <- tryCatch({
+              glmmTMB(richness ~ scenario + (1|pixel_id), data = df_fish_change_long, family = gaussian())
+            }, error = function(e) {cat("Error fitting GLMM for fish richness:", e$message, "\n"); NULL})
+            
+            if (!is.null(lmm_fish_richness)) {
+              cat("\nSummary of GLMM for Anemonefish (Env-Only) Richness Change:\n")
+              print(summary(lmm_fish_richness))
+              cat("\nAnova for Anemonefish (Env-Only) Richness Change:\n")
+              print(car::Anova(lmm_fish_richness))
+              cat("\nEstimated Marginal Means for Anemonefish (Env-Only) Richness Change:\n")
+              print(emmeans(lmm_fish_richness, pairwise ~ scenario))
+            }
+          } else { cat("  No data left after pivoting for fish richness LMM.\n") }
+        }
+    }
+  } else { cat("  No future anemonefish (env-only) richness maps available for change analysis.\n") }
+
+  # --- Combined Plot (Optional, if both groups have data) ---
+  if (exists("df_host_change_long") && exists("df_fish_change_long") && 
+      nrow(df_host_change_long) > 0 && nrow(df_fish_change_long) > 0) {
+    df_host_change_long$guild <- "Host_Anemones"
+    df_fish_change_long$guild <- "Anemonefish_EnvOnly"
+    df_all_richness_change <- bind_rows(df_host_change_long, df_fish_change_long)
+    
+    plot_richness_boxplot <- ggplot(df_all_richness_change, aes(x = guild, y = richness, fill = scenario)) +
+      geom_boxplot() +
+      labs(title = "Projected Richness Changes by Guild and Scenario",
+           x = "Guild", y = "Predicted Richness") +
+      theme_bw() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    print(plot_richness_boxplot)
+    
+    # Combined GLMM for interaction
+    lmm_combined_richness <- tryCatch({
+      glmmTMB(richness ~ scenario * guild + (1|pixel_id), data = df_all_richness_change, family = gaussian())
+    }, error = function(e) {cat("Error fitting combined GLMM for richness:", e$message, "\n"); NULL})
+    if(!is.null(lmm_combined_richness)) {
+      cat("\nSummary of Combined GLMM for Richness (Scenario * Guild Interaction):\n")
+      print(summary(lmm_combined_richness))
+      cat("\nAnova for Combined GLMM Richness:\n")
+      print(car::Anova(lmm_combined_richness))
+    }
+  }
+  
+  # --- Maps of Richness Loss/Gain for a specific future scenario (e.g., worst-case SSP5-8.5 2100) ---
+  # Choose one future scenario for difference maps
+  diff_scenario_host <- "ssp585_2100" # Example
+  diff_scenario_fish <- "ssp585_2100" # Example
+  
+  if (diff_scenario_host %in% names(host_richness_future_list) && !is.null(host_richness_future_list[[diff_scenario_host]])) {
+    host_richness_loss <- host_richness_future_list[[diff_scenario_host]] - host_richness_sum_cropped
+    names(host_richness_loss) <- paste0("HostRichnessChange_", diff_scenario_host)
+    plot(host_richness_loss, main = paste("Host Anemone Richness Change:", diff_scenario_host, "vs Current"))
+    
+    # ggplot version
+    df_host_loss = as.data.frame(host_richness_loss, xy=TRUE)
+    plot_host_loss_map <- ggplot(df_host_loss) +
+      geom_raster(aes(y=y, x=x, fill=.data[[names(host_richness_loss)]])) + # Use .data pronoun
+      scale_fill_gradient2(low = "red", mid = "white", high = "darkgreen", midpoint = 0, name="Richness Change") +
+      labs(title = paste("Host Anemone Richness Change:", diff_scenario_host, "vs Current"), x="Longitude", y="Latitude") +
+      theme_bw() + theme(panel.background = element_rect(fill = "aliceblue"))
+    print(plot_host_loss_map)
+  }
+  
+  if (diff_scenario_fish %in% names(fish_richness_future_list) && !is.null(fish_richness_future_list[[diff_scenario_fish]])) {
+    fish_richness_loss <- fish_richness_future_list[[diff_scenario_fish]] - fish_richness_sum_cropped
+    names(fish_richness_loss) <- paste0("FishRichnessChange_", diff_scenario_fish)
+    plot(fish_richness_loss, main = paste("Anemonefish (Env-Only) Richness Change:", diff_scenario_fish, "vs Current"))
+    
+    df_fish_loss = as.data.frame(fish_richness_loss, xy=TRUE)
+    plot_fish_loss_map <- ggplot(df_fish_loss) +
+      geom_raster(aes(y=y, x=x, fill=.data[[names(fish_richness_loss)]])) +
+      scale_fill_gradient2(low = "red", mid = "white", high = "darkgreen", midpoint = 0, name="Richness Change") +
+      labs(title = paste("Anemonefish (Env-Only) Richness Change:", diff_scenario_fish, "vs Current"), x="Longitude", y="Latitude") +
+      theme_bw() + theme(panel.background = element_rect(fill = "aliceblue"))
+    print(plot_fish_loss_map)
+  }
+}
+```
+
+## Anemonefish Phylogeny
+
+This section loads a phylogenetic tree that includes the anemonefish species under study. It then prunes the tree to only these species and standardizes tip labels for consistency in subsequent analyses.
+
+```{r load-phylogeny-libraries-fish}
+#| label: load-phylogeny-libraries-fish
+#| message: false
+#| warning: false
+
+library(ape)
+library(phytools) 
+library(picante)  
+library(tidyr)
+library(stringr)
+library(dplyr) # Added for data frame manipulation
+```
+
+```{r process-anemonefish-phylogeny}
+#| label: process-anemonefish-phylogeny
+#| message: false
+#| warning: false
+#| error: true  # Keep error = true until a suitable tree is provided and paths are correct
+
+# --- 1. Define Anemonefish Species in Your Study ---
+# Using the scientific names directly from your provided list
+# We will convert them to Genus_species format for tree matching.
+anemonefish_species_in_study_raw <- c(
+  "Amphiprion clarkii", "Amphiprion frenatus", "Amphiprion ocellaris", 
+  "Amphiprion perideraion", "Amphiprion polymnus", "Amphiprion sandaracinos"
+  # Add ALL your other anemonefish species from your full list here if they are not covered by df_fish_comparison yet
+)
+
+# If df_fish_comparison is already loaded and processed, use it as the primary source
+if (exists("df_fish_comparison") && !is.null(df_fish_comparison) && "species" %in% names(df_fish_comparison) && nrow(df_fish_comparison) > 0) {
+  # Assuming df_fish_comparison$species is already in "Genus_species" format from the previous chunk
+  anemonefish_species_in_study_tree_format <- unique(df_fish_comparison$species)
+  cat("Using anemonefish species list from 'df_fish_comparison'.\n")
+} else {
+  cat("Warning: 'df_fish_comparison' not fully available. Using manually defined list and converting to Genus_species format for tree matching.\n")
+  anemonefish_species_in_study_tree_format <- gsub(" ", "_", anemonefish_species_in_study_raw)
+}
+cat("Anemonefish species for tree matching (Genus_species format):", paste(anemonefish_species_in_study_tree_format, collapse=", "), "\n")
+if (length(anemonefish_species_in_study_tree_format) == 0) {
+  stop("No anemonefish species defined for phylogeny processing.")
+}
+
+
+# --- 2. Load Anemonefish Phylogenetic Tree ---
+# !!! --- YOU MUST REPLACE THIS WITH THE ACTUAL PATH TO *YOUR* ANEMONEFISH TREE FILE --- !!!
+# Example: "anemonefish_from_fishtree.nwk" or "some_pomacentridae_study.nex"
+# Place this file in data/phylogeny/
+anemonefish_tree_file_path <- file.path(config$data_dir, "phylogeny", "anemonefish_phylogeny_OTL.nwk") 
+
+pruned_anemonefish_tree <- NULL # Initialize
+fish_label_map_df <- NULL       # Initialize
+
+if (file.exists(anemonefish_tree_file_path)) {
+  cat("Loading anemonefish tree from:", anemonefish_tree_file_path, "\n")
+  
+  full_anemonefish_tree <- tryCatch({
+    file_ext_lower <- tolower(tools::file_ext(anemonefish_tree_file_path))
+    if (file_ext_lower %in% c("nex", "nxs")) {
+      ape::read.nexus(anemonefish_tree_file_path)
+    } else if (file_ext_lower %in% c("nwk", "newick", "tre", "tree")) {
+      ape::read.tree(anemonefish_tree_file_path)
+    } else {
+      cat("Warning: Unknown tree file extension for", basename(anemonefish_tree_file_path), ". Attempting read.tree().\n")
+      ape::read.tree(anemonefish_tree_file_path) # Default attempt
+    }
+  }, error = function(e) {
+    cat("Error loading anemonefish tree:", e$message, "\n"); NULL
+  })
+  
+  if (!is.null(full_anemonefish_tree) && inherits(full_anemonefish_tree, "phylo")) {
+    cat("Full anemonefish tree loaded. Original tips:", length(full_anemonefish_tree$tip.label), "\n")
+    # plot(full_anemonefish_tree, cex = 0.5, main = "Full Loaded Anemonefish Tree (Initial)", type="fan", no.margin=TRUE)
+
+    # --- 2a. Standardize Tip Labels of the Loaded Tree (CRUCIAL) ---
+    # This step is highly dependent on the format of YOUR tree file.
+    # Common operations:
+    #   - Replace spaces with underscores: full_anemonefish_tree$tip.label <- gsub(" ", "_", full_anemonefish_tree$tip.label)
+    #   - Remove strain/accession numbers if present, e.g., using str_extract or sub.
+    # For example, if tips are "Genus species strainXYZ", you might do:
+    #   temp_labels <- gsub(" ", "_", full_anemonefish_tree$tip.label) # First, underscores
+    #   full_anemonefish_tree$tip.label <- str_extract(temp_labels, "^[A-Za-z]+_[a-z]+") # Keep only Genus_species part
+    # Ensure the result is Genus_species
+    
+    # Example: (assuming your tree already uses Genus_species or you've cleaned it above)
+    # full_anemonefish_tree$tip.label <- gsub(" ", "_", full_anemonefish_tree$tip.label) # Basic cleaning
+
+    cat("First 10 tip labels from loaded tree (after potential cleaning):\n")
+    print(head(full_anemonefish_tree$tip.label, 10))
+    cat("Anemonefish species from your study list (for matching):\n")
+    print(head(anemonefish_species_in_study_tree_format, 10))
+
+    # --- 3. Prune Tree to Studied Species ---
+    species_to_keep_in_tree <- intersect(full_anemonefish_tree$tip.label, anemonefish_species_in_study_tree_format)
+    
+    if (length(species_to_keep_in_tree) == 0) {
+        cat("CRITICAL WARNING: No matching species found between your study list and the tree's tip labels after cleaning.\n")
+        cat("Please check:\n")
+        cat("1. The `anemonefish_species_in_study_tree_format` list (should be Genus_species).\n")
+        cat("2. The tip labels in your tree file (`", anemonefish_tree_file_path, "`) and the cleaning step above.\n")
+    } else if (length(species_to_keep_in_tree) < 2) {
+        cat("Warning: Fewer than 2 matching anemonefish species found. Cannot create a meaningful pruned tree.\n")
+        cat("Matching species found in tree:", paste(species_to_keep_in_tree, collapse=", "), "\n")
+    } else {
+      cat("Found", length(species_to_keep_in_tree), "matching anemonefish species to keep in the tree.\n")
+      species_to_drop_from_tree <- setdiff(full_anemonefish_tree$tip.label, species_to_keep_in_tree)
+      
+      pruned_anemonefish_tree <- ape::drop.tip(full_anemonefish_tree, species_to_drop_from_tree)
+      cat("Pruned anemonefish tree to", length(pruned_anemonefish_tree$tip.label), "species in study.\n")
+      
+      # --- 4. Standardize Tip Labels to Short Codes ---
+      if (!is.null(pruned_anemonefish_tree) && length(pruned_anemonefish_tree$tip.label) > 0) {
+        
+        fish_label_map_df <- data.frame(
+          Original_Genus_Species = pruned_anemonefish_tree$tip.label, # These are now Genus_species
+          stringsAsFactors = FALSE
+        ) %>%
+        mutate(
+          genus_part = word(Original_Genus_Species, 1, sep = "_"),
+          species_part = word(Original_Genus_Species, 2, sep = "_"),
+          # Create a more robust short code: First 4 of Genus + First 3 of species
+          short_code_temp = paste0(
+            toupper(str_sub(genus_part, 1, min(4, nchar(genus_part), na.rm = TRUE))), 
+            toupper(str_sub(species_part, 1, min(3, nchar(species_part), na.rm = TRUE)))
+          )
+        )
+        fish_label_map_df$short_code <- make.unique(fish_label_map_df$short_code_temp, sep="")
+
+        cat("\nAnemonefish Label Mapping (Genus_species -> Short Code):\n")
+        print(fish_label_map_df[, c("Original_Genus_Species", "short_code")])
+        
+        pruned_anemonefish_tree$tip.label <- fish_label_map_df$short_code
+        cat("\nStandardized tip labels for pruned anemonefish tree using short codes.\n")
+        
+        plot(pruned_anemonefish_tree, cex = 0.8, main = "Pruned Anemonefish Tree (Short Labels)")
+        axisPhylo() # Add a scale bar
+        
+        # Optional: Check if tree is ultrametric
+        # if (length(pruned_anemonefish_tree$edge.length) > 0 && !anyNA(pruned_anemonefish_tree$edge.length)) {
+        #   is_ultrametric_fish <- is.ultrametric(pruned_anemonefish_tree)
+        #   cat("Is pruned anemonefish tree ultrametric?", is_ultrametric_fish, "\n")
+        # } else {
+        #   cat("Cannot check ultrametric status: tree may lack branch lengths or have NAs.\n")
+        # }
+      } else {
+        cat("Pruned anemonefish tree is NULL or has no tip labels after pruning attempt.\n")
+      }
+    }
+  } else {
+    cat("Anemonefish tree could not be loaded or is not a 'phylo' object.\n")
   }
 } else {
-  warning("No CV results were successfully gathered for anemonefish model comparison. Check paths and ensure model outputs (CV_results_*.csv) exist for all types in the `target_results_base` subdirectories.")
+  cat("Anemonefish phylogeny file not found at:", anemonefish_tree_file_path, "\nPlease provide a valid tree file and update the path.\n")
 }
+
+# The object 'pruned_anemonefish_tree' (if created) and 'fish_label_map_df' 
+# are now available for subsequent phylogenetic analyses.
+# If 'pruned_anemonefish_tree' is NULL, subsequent phylogenetic analyses should be skipped.
+```
+
+## Load Future Individual Species Prediction Rasters
+
+This section loads the individual species prediction rasters for host sea anemones and anemonefish (environmental-only models) for each future scenario. These are needed for calculating Schoener's D overlap and individual suitability shifts.
+
+```{r load-future-individual-preds}
+#| label: load-future-individual-preds
+#| message: false
+#| warning: false
+
+# future_scenarios_to_load was defined in the "Future Species Richness Projections" chunk
+if (!exists("future_scenarios_to_load")) {
+  future_scenarios_to_load <- config$env_scenarios[config$env_scenarios != "current"]
+}
+
+# predictor_suffix was defined in the "Drivers of Richness" chunk
+if (!exists("predictor_suffix")) {
+  predictor_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
+}
+
+
+host_pred_stacks_future_individual <- list()
+fish_pred_stacks_future_individual <- list() # For env-only fish models
+
+for (scenario_name in future_scenarios_to_load) {
+  cat("\n--- Loading individual future predictions for Scenario:", scenario_name, "---\n")
+  
+  # --- Host Anemones ---
+  current_host_future_files <- c()
+  current_host_future_names <- c()
+  if (exists("anemone_species_df") && nrow(anemone_species_df) > 0) {
+    for (i in 1:nrow(anemone_species_df)) {
+      sp_name_sanitized <- gsub(" ", "_", anemone_species_df$scientificName[i])
+      pred_file_path <- construct_prediction_filename(
+        species_name_sanitized = sp_name_sanitized,
+        scenario_name = scenario_name,
+        predictor_type_suffix = predictor_suffix,
+        config = config
+      )
+      if (file.exists(pred_file_path)) {
+        current_host_future_files <- c(current_host_future_files, pred_file_path)
+        current_host_future_names <- c(current_host_future_names, sp_name_sanitized)
+      } else {
+        cat("  Warning: Host future prediction file not found for", sp_name_sanitized, "in", scenario_name, "\n")
+      }
+    }
+    if (length(current_host_future_files) > 0) {
+      temp_stack <- terra::rast(current_host_future_files)
+      names(temp_stack) <- current_host_future_names
+      if (config$apply_indo_pacific_crop) {
+        ip_extent <- terra::ext(config$indo_pacific_bbox)
+        host_pred_stacks_future_individual[[scenario_name]] <- terra::crop(temp_stack, ip_extent)
+      } else {
+        host_pred_stacks_future_individual[[scenario_name]] <- temp_stack
+      }
+      cat("  Loaded and cropped", terra::nlyr(host_pred_stacks_future_individual[[scenario_name]]), "host future predictions for", scenario_name, "\n")
+    } else {
+       host_pred_stacks_future_individual[[scenario_name]] <- NULL
+       cat("  No host future prediction files found for", scenario_name, "\n")
+    }
+  }
+
+  # --- Anemonefish (Environmental-Only) ---
+  current_fish_future_files <- c()
+  current_fish_future_names <- c()
+  if (exists("anemonefish_species_df") && nrow(anemonefish_species_df) > 0) {
+    for (i in 1:nrow(anemonefish_species_df)) {
+      sp_name_sanitized <- gsub(" ", "_", anemonefish_species_df$scientificName[i])
+      pred_file_path <- construct_prediction_filename(
+        species_name_sanitized = sp_name_sanitized,
+        scenario_name = scenario_name,
+        predictor_type_suffix = predictor_suffix, 
+        config = config
+      )
+      if (file.exists(pred_file_path)) {
+        current_fish_future_files <- c(current_fish_future_files, pred_file_path)
+        current_fish_future_names <- c(current_fish_future_names, sp_name_sanitized)
+      } else {
+        cat("  Warning: Anemonefish (env-only) future prediction file not found for", sp_name_sanitized, "in", scenario_name, "\n")
+      }
+    }
+     if (length(current_fish_future_files) > 0) {
+      temp_stack_fish <- terra::rast(current_fish_future_files)
+      names(temp_stack_fish) <- current_fish_future_names
+      if (config$apply_indo_pacific_crop) {
+        ip_extent <- terra::ext(config$indo_pacific_bbox)
+        fish_pred_stacks_future_individual[[scenario_name]] <- terra::crop(temp_stack_fish, ip_extent)
+      } else {
+        fish_pred_stacks_future_individual[[scenario_name]] <- temp_stack_fish
+      }
+      cat("  Loaded and cropped", terra::nlyr(fish_pred_stacks_future_individual[[scenario_name]]), "anemonefish (env-only) future predictions for", scenario_name, "\n")
+    } else {
+       fish_pred_stacks_future_individual[[scenario_name]] <- NULL
+       cat("  No anemonefish (env-only) future prediction files found for", scenario_name, "\n")
+    }
+  }
+}
+# Result: host_pred_stacks_future_individual and fish_pred_stacks_future_individual
+# are lists of SpatRasters, named by scenario, containing individual species layers.
+```
+
+## Schoener's D Niche Overlap Calculations
+
+This section calculates Schoener's D niche overlap index between each host sea anemone and its potential anemonefish mutualists (using anemonefish environmental-only models). This is done for the current period and projected future scenarios to assess potential changes in spatial co-occurrence.
+
+## Schoener's D Niche Overlap Calculations
+
+This section calculates Schoener's D niche overlap index between each host sea anemone and its potential anemonefish mutualists (using anemonefish environmental-only models). This is done for the current period and projected future scenarios to assess potential changes in spatial co-occurrence.
+
+```{r schoeners-d-calculation-anemonefish}
+#| label: schoeners-d-calculation-anemonefish
+#| message: false
+#| warning: false
+#| fig-width: 10 
+#| fig-height: 8
+
+library(ENMeval) # For calc.niche.overlap
+library(dplyr)
+library(tidyr)   # For pivot_longer, pivot_wider
+library(ggplot2)
+library(corrplot)
+library(stringr) # For str_replace_all
+
+# --- Verify Prerequisites ---
+if (!exists("host_pred_stack_cropped") || is.null(host_pred_stack_cropped)) {
+  stop("`host_pred_stack_cropped` not found. Run previous chunks.")
+}
+if (!exists("fish_pred_stack_cropped") || is.null(fish_pred_stack_cropped)) {
+  stop("`fish_pred_stack_cropped` (env-only models) not found. Run previous chunks.")
+}
+if (!exists("host_pred_stacks_future_individual") || !is.list(host_pred_stacks_future_individual)) {
+  stop("`host_pred_stacks_future_individual` not found or not a list. Run previous chunks.")
+}
+if (!exists("fish_pred_stacks_future_individual") || !is.list(fish_pred_stacks_future_individual)) {
+  stop("`fish_pred_stacks_future_individual` (env-only models) not found or not a list. Run previous chunks.")
+}
+if (!exists("future_scenarios_to_load")) {
+  future_scenarios_to_load <- config$env_scenarios[config$env_scenarios != "current"]
+  if (length(future_scenarios_to_load) == 0) stop("No future scenarios defined.")
+}
+if (!exists("anemone_species_df") || !exists("anemonefish_species_df")) {
+    stop("Species data frames (anemone_species_df, anemonefish_species_df) not found.")
+}
+
+
+# --- 1. Calculate Current Overlap ---
+cat("--- Calculating Current Niche Overlap (Schoener's D) ---\n")
+
+# Ensure layer names are consistent and usable (Genus_species format)
+names_hosts_current <- names(host_pred_stack_cropped)
+names_fish_current <- names(fish_pred_stack_cropped) # These are from env-only models
+
+all_preds_current_for_overlap <- c(host_pred_stack_cropped, fish_pred_stack_cropped)
+# Ensure all layer names are unique before stacking for calc.niche.overlap
+# This shouldn't be an issue if host and fish names are distinct.
+if (any(duplicated(names(all_preds_current_for_overlap)))){
+    warning("Duplicate layer names found before calculating current overlap. This may cause issues.")
+}
+
+overlap_current_matrix_d <- NULL
+if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
+  overlap_current_matrix_d <- tryCatch({
+    ENMeval::calc.niche.overlap(all_preds_current_for_overlap, "D")
+  }, error = function(e) {
+    cat("Error calculating current niche overlap:", e$message, "\n"); NULL
+  })
+} else {
+  cat("Not enough layers in the combined current stack to calculate overlap.\n")
+}
+
+if (is.null(overlap_current_matrix_d)) {
+  stop("Failed to calculate current niche overlap matrix. Cannot proceed.")
+}
+cat("Current niche overlap matrix (Schoener's D) calculated.\n")
+
+# --- 2. Calculate Future Overlaps (Loop through scenarios) ---
+overlap_future_matrices_d <- list()
+
+for (scenario_name_fut in future_scenarios_to_load) {
+  cat("\n--- Calculating Future Niche Overlap for Scenario:", scenario_name_fut, "---\n")
+  
+  current_future_host_stack_indiv <- host_pred_stacks_future_individual[[scenario_name_fut]]
+  current_future_fish_stack_indiv <- fish_pred_stacks_future_individual[[scenario_name_fut]] # Env-only models
+  
+  if (is.null(current_future_host_stack_indiv) || terra::nlyr(current_future_host_stack_indiv) == 0 || 
+      is.null(current_future_fish_stack_indiv) || terra::nlyr(current_future_fish_stack_indiv) == 0) {
+    cat("  Skipping scenario", scenario_name_fut, "- missing future host or fish prediction stacks.\n")
+    overlap_future_matrices_d[[scenario_name_fut]] <- NULL
+    next
+  }
+  
+  # Important: Ensure layer names in future stacks match the order and content of current stacks
+  # This assumes the lists of species (and thus layers) are consistent.
+  # The loading chunk should have named them correctly as Genus_species.
+  
+  all_preds_future_for_overlap <- c(current_future_host_stack_indiv, current_future_fish_stack_indiv)
+  if (any(duplicated(names(all_preds_future_for_overlap)))){
+    warning("Duplicate layer names found before calculating future overlap for ", scenario_name_fut, ". This may cause issues.")
+  }
+  
+  if (terra::nlyr(all_preds_future_for_overlap) >= 2) {
+    overlap_future_matrices_d[[scenario_name_fut]] <- tryCatch({
+      # Align future stack geometry with current stack geometry for calcNicheOverlap robustness
+      if(!terra::compareGeom(all_preds_current_for_overlap, all_preds_future_for_overlap, stopOnError=FALSE, res=TRUE, crs=TRUE, ext=TRUE)){
+          cat("   Resampling future combined stack for scenario", scenario_name_fut, "to match current geometry.\n")
+          all_preds_future_for_overlap <- terra::resample(all_preds_future_for_overlap, all_preds_current_for_overlap, method="bilinear")
+      }
+      ENMeval::calc.niche.overlap(all_preds_future_for_overlap, "D")
+    }, error = function(e) {
+      cat("  Error calculating future niche overlap for", scenario_name_fut, ":", e$message, "\n"); NULL
+    })
+    if (!is.null(overlap_future_matrices_d[[scenario_name_fut]])) {
+      cat("  Future niche overlap matrix (Schoener's D) calculated for", scenario_name_fut, "\n")
+    }
+  } else {
+    cat("  Not enough layers in combined future stack for", scenario_name_fut, "to calculate overlap.\n")
+    overlap_future_matrices_d[[scenario_name_fut]] <- NULL
+  }
+}
+
+# --- 3. Process and Compare Overlap Matrices ---
+# Ensure names_hosts_current and names_fish_current are Genus_species format
+valid_host_rows <- intersect(names_hosts_current, rownames(overlap_current_matrix_d))
+valid_fish_cols <- intersect(names_fish_current, colnames(overlap_current_matrix_d))
+
+if (length(valid_host_rows) == 0 || length(valid_fish_cols) == 0) {
+  stop("No valid host or fish names found to subset the current overlap matrix. Check layer naming of input stacks.")
+}
+
+# Extract the host-fish interaction part of the matrix
+current_host_fish_overlap_raw <- overlap_current_matrix_d[valid_host_rows, valid_fish_cols, drop = FALSE]
+
+# Convert to long format
+current_host_fish_overlap_long <- current_host_fish_overlap_raw %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("host_species") %>%
+  pivot_longer(cols = -host_species, names_to = "fish_species", values_to = "overlap_current")
+
+cat("\nMean current overlap (Schoener's D) between all host-fish pairs:", round(mean(current_host_fish_overlap_long$overlap_current, na.rm = TRUE), 3), "\n")
+
+# --- Choose scenarios for detailed comparison (e.g., SSP1-1.9 2050 and SSP5-8.5 2100) ---
+# These names must match the keys in overlap_future_matrices_d and config$env_scenarios
+scenarios_for_detailed_comparison <- intersect(c("ssp119_2050", "ssp585_2100"), names(overlap_future_matrices_d))
+if(length(scenarios_for_detailed_comparison) == 0) {
+    cat("Warning: None of the specified detailed comparison scenarios (ssp119_2050, ssp585_2100) have overlap data. Plotting will be skipped for them.\n")
+}
+
+
+# --- Loop through chosen future scenarios for t-tests and plots ---
+for (chosen_future_scenario in scenarios_for_detailed_comparison) {
+  cat("\n--- Detailed Comparison for Future Scenario:", chosen_future_scenario, "---\n")
+  
+  overlap_future_chosen_matrix <- overlap_future_matrices_d[[chosen_future_scenario]]
+  if (is.null(overlap_future_chosen_matrix)) {
+    cat("  No future overlap matrix available for", chosen_future_scenario, ". Skipping detailed comparison.\n")
+    next
+  }
+  
+  future_host_fish_overlap_raw_chosen <- overlap_future_chosen_matrix[valid_host_rows, valid_fish_cols, drop = FALSE]
+  
+  future_host_fish_overlap_long_chosen <- future_host_fish_overlap_raw_chosen %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column("host_species") %>%
+    pivot_longer(cols = -host_species, names_to = "fish_species", values_to = "overlap_future")
+    
+  cat("Mean future overlap (Schoener's D) for", chosen_future_scenario, ":", round(mean(future_host_fish_overlap_long_chosen$overlap_future, na.rm = TRUE), 3), "\n")
+  
+  comparison_df <- current_host_fish_overlap_long %>%
+    left_join(future_host_fish_overlap_long_chosen, by = c("host_species", "fish_species")) %>%
+    filter(!is.na(overlap_current), !is.na(overlap_future))
+
+  if (nrow(comparison_df) > 1) {
+    ttest_result <- t.test(comparison_df$overlap_current, comparison_df$overlap_future, paired = TRUE)
+    cat("\nPaired t-test: Current vs Future (", chosen_future_scenario, ") Overlap:\n")
+    print(ttest_result)
+    
+    # Scatter Plot
+    plot_scatter <- ggplot(comparison_df, aes(x = overlap_current, y = overlap_future)) +
+      geom_point(alpha = 0.6, color = "darkblue") +
+      geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "red") +
+      xlim(0, 1) + ylim(0, 1) +
+      labs(
+        title = paste("Niche Overlap Change:", chosen_future_scenario, "vs Current"),
+        x = "Schoener's D (Current Conditions)",
+        y = paste("Schoener's D (Future -", chosen_future_scenario, ")")
+      ) +
+      theme_bw(base_size = 12) +
+      coord_fixed()
+    print(plot_scatter)
+
+    # Proportional Change Matrix Plot
+    # Prepare display names (full scientific names with spaces)
+    host_display_names_map <- anemone_species_df %>% 
+      select(scientificName) %>% 
+      mutate(sanitized_name = gsub(" ", "_", scientificName)) %>%
+      distinct(sanitized_name, .keep_all = TRUE) %>%
+      tibble::deframe()
+      
+    fish_display_names_map <- anemonefish_species_df %>% 
+      select(scientificName) %>% 
+      mutate(sanitized_name = gsub(" ", "_", scientificName)) %>%
+      distinct(sanitized_name, .keep_all = TRUE) %>%
+      tibble::deframe()
+      
+    prop_change_df <- comparison_df %>%
+      mutate(
+        proportional_change = case_when(
+          overlap_current == 0 & overlap_future == 0 ~ 0, # Both zero, no change
+          overlap_current == 0 & overlap_future > 0  ~ 1, # New overlap, max positive change
+          overlap_current > 0  & overlap_future == 0 ~ -1, # Lost overlap, max negative change
+          overlap_current > 0                         ~ (overlap_future - overlap_current) / overlap_current,
+          TRUE                                        ~ NA_real_ # Should not happen if filtered NAs
+        )
+      ) %>%
+      mutate(proportional_change_capped = pmax(-1, pmin(1, proportional_change))) %>%
+      select(host_species, fish_species, proportional_change_capped)
+
+    if(nrow(prop_change_df) > 0) {
+        prop_change_matrix <- prop_change_df %>%
+          pivot_wider(names_from = fish_species, values_from = proportional_change_capped) %>%
+          tibble::column_to_rownames("host_species") %>%
+          as.matrix()
+
+        # Use display names if mapping is successful
+        rownames_display <- host_display_names_map[rownames(prop_change_matrix)]
+        colnames_display <- fish_display_names_map[colnames(prop_change_matrix)]
+        
+        # Fallback if any name not found in map
+        rownames(prop_change_matrix) <- ifelse(is.na(rownames_display), rownames(prop_change_matrix), rownames_display)
+        colnames(prop_change_matrix) <- ifelse(is.na(colnames_display), colnames(prop_change_matrix), colnames_display)
+
+        if(nrow(prop_change_matrix) > 0 && ncol(prop_change_matrix) > 0) {
+          corrplot::corrplot(prop_change_matrix,
+                           method = "circle", is.corr = FALSE, tl.srt = 60, tl.col = 'black', 
+                           tl.cex = 0.6, cl.cex = 0.7,
+                           col.lim = c(-1, 1), 
+                           col = colorRampPalette(c("firebrick3", "white", "dodgerblue3"))(200),
+                           title = paste("Proportional Change in Host-Fish Overlap\n(", chosen_future_scenario, " vs Current)"),
+                           mar = c(0,0,2,0)) # Adjusted margins for title
+        } else {cat("  Not enough data to create proportional change matrix plot for", chosen_future_scenario, "\n")}
+    } else {cat("  No data for proportional change calculation for", chosen_future_scenario, "\n")}
+  } else { cat("  Not enough paired overlap data for t-test or plotting for", chosen_future_scenario, "\n") }
+} # End loop chosen_future_scenario
+
+cat("\n--- Schoener's D calculations and comparisons finished. ---\n")
+```
+
+## Phylogenetic Signal of Anemonefish Niche Overlap
+
+This section tests for phylogenetic signal in the niche overlap values among anemonefish species (using environmental-only models). This is done for the current period and a selected future scenario to see if the relationship between phylogeny and overlap changes.
+
+```{r phylo-signal-fish-overlap-current-future}
+#| label: phylo-signal-fish-overlap-current-future
+#| message: false
+#| warning: false
+
+library(picante) 
+library(ape)     
+
+if (is.null(pruned_anemonefish_tree)) {
+  cat("Warning: `pruned_anemonefish_tree` not available. Skipping phylogenetic signal of fish-fish overlap.\n")
+} else if (is.null(overlap_current_matrix_d) || 
+           length(intersect(pruned_anemonefish_tree$tip.label, fish_label_map_df$short_code[fish_label_map_df$Original_Genus_Species %in% names_fish_current])) < 2) { 
+  cat("Warning: Current overlap matrix or mapping to tree tips insufficient for anemonefish. Skipping phylogenetic signal of fish-fish overlap.\n")
+} else {
+  cat("--- Calculating Phylogenetic Signal of Anemonefish-Anemonefish Niche Overlap ---\n")
+  
+  # --- 1. Create phylogenetic distance matrix for anemonefish ---
+  fish_phy_dist_matrix <- NULL
+  if (length(pruned_anemonefish_tree$edge.length) > 0 && !anyNA(pruned_anemonefish_tree$edge.length)) {
+      fish_phy_dist_matrix <- tryCatch(ape::cophenetic.phylo(pruned_anemonefish_tree), error = function(e){
+          cat("Error creating phylogenetic distance matrix:", e$message, "\n"); NULL
+      })
+  } else {
+      cat("Warning: Pruned anemonefish tree lacks branch lengths or has NAs; cannot calculate cophenetic distances for Mantel test.\n")
+  }
+
+  # Ensure fish_label_map_df is available (should be from phylogeny chunk)
+  if (!exists("fish_label_map_df") || is.null(fish_label_map_df)) {
+      stop("`fish_label_map_df` (mapping short codes to Genus_species) is missing.")
+  }
+
+  # --- Function to perform Mantel test for a given overlap matrix ---
+  perform_overlap_mantel_test <- function(overlap_matrix, matrix_label, phy_dist_matrix, tree_tips_short_codes, label_map_df) {
+    cat("\n--- Processing Mantel Test for:", matrix_label, "---\n")
+    
+    if (is.null(overlap_matrix) || is.null(phy_dist_matrix)) {
+      cat("  Skipping Mantel test for", matrix_label, "- missing overlap or phylogenetic distance matrix.\n")
+      return(NULL)
+    }
+
+    # Map short codes on tree back to Genus_species to subset the full overlap matrix
+    genus_species_for_tree_tips_local <- label_map_df$Original_Genus_Species[match(tree_tips_short_codes, label_map_df$short_code)]
+    
+    valid_fish_for_overlap_subset <- intersect(genus_species_for_tree_tips_local, colnames(overlap_matrix))
+    valid_fish_for_overlap_subset <- intersect(valid_fish_for_overlap_subset, rownames(overlap_matrix))
+
+    if (length(valid_fish_for_overlap_subset) < 2) {
+      cat("  Warning: Less than 2 anemonefish species with both tree data and overlap data for", matrix_label, ". Skipping Mantel test.\n")
+      return(NULL)
+    }
+    
+    # Subset the full overlap matrix to only include these fish species
+    fish_fish_overlap_submatrix_local <- overlap_matrix[valid_fish_for_overlap_subset, valid_fish_for_overlap_subset, drop = FALSE]
+    
+    # Convert overlap (similarity) to dissimilarity (1 - D)
+    fish_fish_dissimilarity_matrix_local <- 1 - fish_fish_overlap_submatrix_local
+    
+    # Rename rows/cols of dissimilarity matrix to short codes for matching with phy_dist_matrix
+    rownames(fish_fish_dissimilarity_matrix_local) <- label_map_df$short_code[match(rownames(fish_fish_dissimilarity_matrix_local), label_map_df$Original_Genus_Species)]
+    colnames(fish_fish_dissimilarity_matrix_local) <- label_map_df$short_code[match(colnames(fish_fish_dissimilarity_matrix_local), label_map_df$Original_Genus_Species)]
+    
+    # Ensure phy_dist_matrix also uses short codes (it should from previous chunk)
+    # Match order of phy_dist_matrix and dissimilarity_matrix
+    common_short_codes_for_mantel <- intersect(rownames(phy_dist_matrix), rownames(fish_fish_dissimilarity_matrix_local))
+    
+    if (length(common_short_codes_for_mantel) < 2) {
+      cat("  Warning: Not enough common species with short codes between phy_dist and overlap_dist for", matrix_label, ". Skipping Mantel.\n")
+      return(NULL)
+    }
+    
+    phy_dist_final <- phy_dist_matrix[common_short_codes_for_mantel, common_short_codes_for_mantel]
+    dissim_final <- fish_fish_dissimilarity_matrix_local[common_short_codes_for_mantel, common_short_codes_for_mantel]
+    
+    mantel_result <- tryCatch({
+      vegan::mantel(as.dist(phy_dist_final), as.dist(dissim_final), na.rm = TRUE, permutations = 999)
+    }, error = function(e){cat("  Error during Mantel test for", matrix_label, ":", e$message, "\n"); NULL})
+    
+    if (!is.null(mantel_result)) {
+      cat("Mantel Test Results for", matrix_label, ":\n")
+      print(mantel_result)
+    }
+    return(mantel_result)
+  }
+
+  # --- 2. Current Anemonefish-Anemonefish Overlap Mantel Test ---
+  mantel_current_fish_overlap <- perform_overlap_mantel_test(
+    overlap_matrix = overlap_current_matrix_d, 
+    matrix_label = "Current Anemonefish-Anemonefish Overlap",
+    phy_dist_matrix = fish_phy_dist_matrix,
+    tree_tips_short_codes = pruned_anemonefish_tree$tip.label,
+    label_map_df = fish_label_map_df
+  )
+
+  # --- 3. Future Anemonefish-Anemonefish Overlap Mantel Test (for a selected scenario) ---
+  # Choose ONE future scenario to test here, e.g., the "worst-case" or most interesting one.
+  # Ensure this chosen_future_scenario_for_mantel was processed in the Schoener's D section.
+  chosen_future_scenario_for_mantel <- "ssp585_2100" # Or "ssp119_2050", etc.
+
+  if (chosen_future_scenario_for_mantel %in% names(overlap_future_matrices_d) && 
+      !is.null(overlap_future_matrices_d[[chosen_future_scenario_for_mantel]])) {
+    
+    overlap_future_chosen_for_mantel <- overlap_future_matrices_d[[chosen_future_scenario_for_mantel]]
+    
+    mantel_future_fish_overlap <- perform_overlap_mantel_test(
+      overlap_matrix = overlap_future_chosen_for_mantel,
+      matrix_label = paste("Future (", chosen_future_scenario_for_mantel, ") Anemonefish-Anemonefish Overlap"),
+      phy_dist_matrix = fish_phy_dist_matrix,
+      tree_tips_short_codes = pruned_anemonefish_tree$tip.label,
+      label_map_df = fish_label_map_df
+    )
+  } else {
+    cat("\nOverlap data for future scenario '", chosen_future_scenario_for_mantel, "' not available for Mantel test.\n")
+  }
+}
+cat("\n--- Phylogenetic signal of overlap analysis finished. ---\n")
+```
+
+### Levin's B Niche Breadth (Current Predictions)
+
+This section calculates Levin's B ($B_2$) niche breadth metric for each host sea anemone species and each anemonefish species (using their environmental-only model predictions for the current period). This metric quantifies the uniformity of a species' predicted suitability across its range. We then compare the mean niche breadth between the two guilds.
+
+```{r levin-b-niche-breadth}
+#| label: levin-b-niche-breadth
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 8 # Adjust as needed if you uncomment plots
+
+library(ENMTools) # For raster.breadth
+library(dplyr)
+
+# Ensure the current individual prediction stacks are available and cropped
+if (is.null(host_pred_stack_cropped) || !inherits(host_pred_stack_cropped, "SpatRaster")) {
+  stop("`host_pred_stack_cropped` is not available or not a SpatRaster. Run previous chunks.")
+}
+if (is.null(fish_pred_stack_cropped) || !inherits(fish_pred_stack_cropped, "SpatRaster")) {
+  stop("`fish_pred_stack_cropped` (for env-only fish models) is not available or not a SpatRaster. Run previous chunks.")
+}
+
+# --- 1. Calculate Niche Breadth for Host Sea Anemones ---
+cat("--- Calculating Levin's B Niche Breadth for Host Sea Anemones (Current) ---\n")
+host_niche_breadth_df <- data.frame(
+  species_name_sanitized = character(0), 
+  levins_B1 = numeric(0), 
+  levins_B2 = numeric(0),
+  stringsAsFactors = FALSE
+)
+
+if (terra::nlyr(host_pred_stack_cropped) > 0) {
+  for (i in 1:terra::nlyr(host_pred_stack_cropped)) {
+    species_raster_host <- host_pred_stack_cropped[[i]]
+    sp_name_host <- names(species_raster_host)
+    cat("  Calculating breadth for host:", sp_name_host, "\n")
+    plot(species_raster_host, main = paste("Suitability - Host:", sp_name_host)) # Optional plot
+    
+    # raster.breadth expects a SpatRaster, which species_raster_host should be
+    breadth_metrics_host <- tryCatch({
+      ENMTools::raster.breadth(species_raster_host)
+    }, error = function(e) {
+      cat("  Warning: Could not calculate breadth for host", sp_name_host, ":", e$message, "\n")
+      NULL
+    })
+    
+    if (!is.null(breadth_metrics_host)) {
+      host_niche_breadth_df <- rbind(host_niche_breadth_df, 
+                                     data.frame(species_name_sanitized = sp_name_host, 
+                                                levins_B1 = breadth_metrics_host$B1, 
+                                                levins_B2 = breadth_metrics_host$B2))
+    }
+  }
+  cat("Finished calculating niche breadth for hosts.\n")
+  print(host_niche_breadth_df)
+} else {
+  cat("No host anemone prediction layers to calculate breadth for.\n")
+}
+
+
+# --- 2. Calculate Niche Breadth for Anemonefish (Environmental-Only Models) ---
+cat("\n--- Calculating Levin's B Niche Breadth for Anemonefish (Env-Only, Current) ---\n")
+fish_niche_breadth_df <- data.frame(
+  species_name_sanitized = character(0), 
+  levins_B1 = numeric(0), 
+  levins_B2 = numeric(0),
+  stringsAsFactors = FALSE
+)
+
+if (terra::nlyr(fish_pred_stack_cropped) > 0) {
+  for (i in 1:terra::nlyr(fish_pred_stack_cropped)) {
+    species_raster_fish <- fish_pred_stack_cropped[[i]]
+    sp_name_fish <- names(species_raster_fish)
+    cat("  Calculating breadth for anemonefish:", sp_name_fish, "\n")
+    plot(species_raster_fish, main = paste("Suitability - Fish (Env-Only):", sp_name_fish)) # Optional plot
+
+    breadth_metrics_fish <- tryCatch({
+      ENMTools::raster.breadth(species_raster_fish)
+    }, error = function(e) {
+      cat("  Warning: Could not calculate breadth for fish", sp_name_fish, ":", e$message, "\n")
+      NULL
+    })
+    
+    if (!is.null(breadth_metrics_fish)) {
+      fish_niche_breadth_df <- rbind(fish_niche_breadth_df, 
+                                     data.frame(species_name_sanitized = sp_name_fish, 
+                                                levins_B1 = breadth_metrics_fish$B1, 
+                                                levins_B2 = breadth_metrics_fish$B2))
+    }
+  }
+  cat("Finished calculating niche breadth for anemonefish (env-only).\n")
+  print(fish_niche_breadth_df)
+} else {
+  cat("No anemonefish (env-only) prediction layers to calculate breadth for.\n")
+}
+
+# --- 3. Compare Mean Niche Breadth (Levin's B2) ---
+if (nrow(host_niche_breadth_df) > 1 && nrow(fish_niche_breadth_df) > 1) {
+  cat("\n--- Comparing Mean Niche Breadth (Levin's B2) between Guilds ---\n")
+  
+  # Perform t-test if both groups have data for B2
+  if ("levins_B2" %in% names(host_niche_breadth_df) && "levins_B2" %in% names(fish_niche_breadth_df)) {
+    
+    # Remove rows with NA in levins_B2 for a fair comparison
+    valid_hosts_b2 <- host_niche_breadth_df$levins_B2[!is.na(host_niche_breadth_df$levins_B2)]
+    valid_fish_b2 <- fish_niche_breadth_df$levins_B2[!is.na(fish_niche_breadth_df$levins_B2)]
+    
+    if (length(valid_hosts_b2) > 1 && length(valid_fish_b2) > 1) {
+      ttest_breadth_b2 <- t.test(valid_hosts_b2, valid_fish_b2)
+      cat("Welch Two Sample t-test for Levin's B2 (Hosts vs. Fish Env-Only):\n")
+      print(ttest_breadth_b2)
+    } else {
+      cat("Not enough valid B2 values for t-test after removing NAs.\n")
+    }
+    
+    cat("\nStandard Deviation of Levin's B2:\n")
+    cat("  Hosts:", sd(valid_hosts_b2, na.rm = TRUE), "\n")
+    cat("  Anemonefish (Env-Only):", sd(valid_fish_b2, na.rm = TRUE), "\n")
+    
+  } else {
+    cat("Levin's B2 column not found in one or both breadth data frames.\n")
+  }
+} else {
+  cat("Not enough data to compare niche breadths between hosts and anemonefish.\n")
+}
+
+# The data frames 'host_niche_breadth_df' and 'fish_niche_breadth_df' are now available.
+# They contain species names and their Levin's B1 and B2 values.
+```
+
+## Correlation between Niche Breadth and Suitability Shifts
+
+This section investigates whether a species' current niche breadth (Levin's $B_2$) is correlated with its projected mean change in environmental suitability under future climate scenarios.
+
+```{r breadth-suitability-correlation}
+#| label: breadth-suitability-correlation
+#| message: false
+#| warning: false
+#| fig-width: 10
+#| fig-height: 5
+
+library(dplyr)
+library(ggplot2)
+library(tidyr) # For pivot_wider if needed
+
+# --- Ensure prerequisite data is available ---
+if (!exists("host_niche_breadth_df") || !exists("fish_niche_breadth_df")) {
+  stop("Niche breadth data frames ('host_niche_breadth_df', 'fish_niche_breadth_df') not found. Run previous chunk.")
+}
+if (!exists("suitability_shifts_list") || !is.list(suitability_shifts_list) || length(suitability_shifts_list) == 0) {
+  stop("`suitability_shifts_list` not found or empty. Run 'Individual Species Suitability Shifts' chunk.")
+}
+if (!exists("future_scenarios_to_load") || length(future_scenarios_to_load) == 0) {
+  future_scenarios_to_load <- config$env_scenarios[config$env_scenarios != "current"]
+  if (length(future_scenarios_to_load) == 0) stop("No future scenarios defined.")
+}
+
+
+# --- 1. Prepare Host Anemone Data (Breadth and Shifts) ---
+cat("--- Processing Host Anemone Breadth vs. Suitability Shift ---\n")
+if (nrow(host_niche_breadth_df) > 0) {
+  # Start with breadth data
+  host_breadth_shifts_df <- host_niche_breadth_df %>%
+    select(species_name_sanitized, breadth_B2 = levins_B2)
+
+  # Add shift data for each future scenario
+  for (scenario_name in future_scenarios_to_load) {
+    shift_data_name <- paste0("hosts_", scenario_name)
+    if (shift_data_name %in% names(suitability_shifts_list) && 
+        !is.null(suitability_shifts_list[[shift_data_name]]) &&
+        nrow(suitability_shifts_list[[shift_data_name]]) > 0) {
+      
+      temp_shift_df <- suitability_shifts_list[[shift_data_name]] %>%
+        as.data.frame() %>% # Ensure it's a data frame
+        tibble::rownames_to_column("species_name_sanitized") %>%
+        select(species_name_sanitized, mean_suitability_shift = mean)
+      
+      # Dynamically create column name for the shift in this scenario
+      shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name)) # e.g., shift_119_2050
+      
+      host_breadth_shifts_df <- host_breadth_shifts_df %>%
+        left_join(temp_shift_df %>% rename(!!shift_col_name := mean_suitability_shift), 
+                  by = "species_name_sanitized")
+    } else {
+      cat("  Warning: Shift data for hosts in scenario '", scenario_name, "' not found or empty.\n")
+    }
+  }
+  
+  host_breadth_shifts_df <- host_breadth_shifts_df %>% filter(!is.na(breadth_B2))
+  cat("Host anemone data prepared for breadth vs. shift analysis:\n")
+  print(head(host_breadth_shifts_df))
+
+  # Perform correlations for each future scenario for hosts
+  for (scenario_name in future_scenarios_to_load) {
+    shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
+    if (shift_col_name %in% names(host_breadth_shifts_df)) {
+      # Ensure there are enough non-NA pairs for correlation
+      temp_df_cor_host <- host_breadth_shifts_df %>% select(breadth_B2, !!sym(shift_col_name)) %>% na.omit()
+      if(nrow(temp_df_cor_host) > 2) {
+        cor_test_host <- cor.test(temp_df_cor_host$breadth_B2, temp_df_cor_host[[shift_col_name]], method = "pearson")
+        cat("\nCorrelation (Host Anemones) - Breadth vs. Shift (", scenario_name, "):\n")
+        print(cor_test_host)
+      } else {
+        cat("\nNot enough data points to calculate correlation for hosts in scenario:", scenario_name, "\n")
+      }
+    }
+  }
+} else {
+  cat("No host niche breadth data available.\n")
+  host_breadth_shifts_df <- NULL
+}
+
+
+# --- 2. Prepare Anemonefish (Env-Only) Data (Breadth and Shifts) ---
+cat("\n--- Processing Anemonefish (Env-Only) Breadth vs. Suitability Shift ---\n")
+if (nrow(fish_niche_breadth_df) > 0) {
+  fish_breadth_shifts_df <- fish_niche_breadth_df %>%
+    select(species_name_sanitized, breadth_B2 = levins_B2)
+
+  for (scenario_name in future_scenarios_to_load) {
+    shift_data_name <- paste0("fish_env_only_", scenario_name)
+    if (shift_data_name %in% names(suitability_shifts_list) && 
+        !is.null(suitability_shifts_list[[shift_data_name]]) &&
+        nrow(suitability_shifts_list[[shift_data_name]]) > 0) {
+        
+      temp_shift_df_fish <- suitability_shifts_list[[shift_data_name]] %>%
+        as.data.frame() %>%
+        tibble::rownames_to_column("species_name_sanitized") %>%
+        select(species_name_sanitized, mean_suitability_shift = mean)
+        
+      shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
+      
+      fish_breadth_shifts_df <- fish_breadth_shifts_df %>%
+        left_join(temp_shift_df_fish %>% rename(!!shift_col_name := mean_suitability_shift), 
+                  by = "species_name_sanitized")
+    } else {
+      cat("  Warning: Shift data for anemonefish (env-only) in scenario '", scenario_name, "' not found or empty.\n")
+    }
+  }
+  
+  fish_breadth_shifts_df <- fish_breadth_shifts_df %>% filter(!is.na(breadth_B2))
+  cat("Anemonefish (env-only) data prepared for breadth vs. shift analysis:\n")
+  print(head(fish_breadth_shifts_df))
+
+  # Perform correlations for each future scenario for fish
+  for (scenario_name in future_scenarios_to_load) {
+    shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
+    if (shift_col_name %in% names(fish_breadth_shifts_df)) {
+      temp_df_cor_fish <- fish_breadth_shifts_df %>% select(breadth_B2, !!sym(shift_col_name)) %>% na.omit()
+      if(nrow(temp_df_cor_fish) > 2){
+        cor_test_fish <- cor.test(temp_df_cor_fish$breadth_B2, temp_df_cor_fish[[shift_col_name]], method = "pearson")
+        cat("\nCorrelation (Anemonefish Env-Only) - Breadth vs. Shift (", scenario_name, "):\n")
+        print(cor_test_fish)
+      } else {
+         cat("\nNot enough data points to calculate correlation for fish in scenario:", scenario_name, "\n")
+      }
+    }
+  }
+} else {
+  cat("No anemonefish (env-only) niche breadth data available.\n")
+  fish_breadth_shifts_df <- NULL
+}
+
+# --- 3. Prepare data for combined plotting (similar to ant paper's all_bre) ---
+# This creates a long-format data frame for easier ggplotting with facets or colors
+all_breadth_shifts_long_df <- NULL
+
+if (!is.null(host_breadth_shifts_df) && nrow(host_breadth_shifts_df) > 0) {
+  host_plot_df <- host_breadth_shifts_df %>% 
+    pivot_longer(cols = starts_with("shift_"), names_to = "scenario_shift_code", values_to = "suitability_shift") %>%
+    mutate(guild = "Host_Anemones")
+  all_breadth_shifts_long_df <- bind_rows(all_breadth_shifts_long_df, host_plot_df)
+}
+if (!is.null(fish_breadth_shifts_df) && nrow(fish_breadth_shifts_df) > 0) {
+  fish_plot_df <- fish_breadth_shifts_df %>%
+    pivot_longer(cols = starts_with("shift_"), names_to = "scenario_shift_code", values_to = "suitability_shift") %>%
+    mutate(guild = "Anemonefish_EnvOnly")
+  all_breadth_shifts_long_df <- bind_rows(all_breadth_shifts_long_df, fish_plot_df)
+}
+
+if (!is.null(all_breadth_shifts_long_df) && nrow(all_breadth_shifts_long_df) > 0) {
+  all_breadth_shifts_long_df <- all_breadth_shifts_long_df %>%
+    filter(!is.na(breadth_B2), !is.na(suitability_shift)) %>%
+    # Recreate a more descriptive scenario name for plotting
+    mutate(scenario_display = str_replace_all(scenario_shift_code, 
+                                             c("shift_" = "SSP", "_" = "-", "dec50" = "(2050)", "dec100" = "(2100)"))) 
+  
+  cat("\nCombined long format data for plotting breadth vs. suitability shift:\n")
+  print(head(all_breadth_shifts_long_df))
+  
+  # Plotting (example for all scenarios faceted by scenario and guild)
+  plot_breadth_vs_shift <- ggplot(all_breadth_shifts_long_df, aes(x = suitability_shift, y = breadth_B2)) +
+    geom_point(alpha = 0.7) +
+    geom_smooth(method = "lm", se = TRUE, aes(color = guild), linetype="dashed") + # Add se and color by guild
+    facet_grid(guild ~ scenario_display, scales = "free_x") + # Facet by guild and scenario
+    labs(
+      title = "Niche Breadth (Levin's B2) vs. Mean Suitability Shift",
+      x = "Mean Change in Suitability (Future - Current)",
+      y = "Levin's B2 (Niche Breadth)"
+    ) +
+    theme_bw(base_size = 10) +
+    theme(strip.text = element_text(size = 8),
+          legend.position = "bottom")
+  
+  print(plot_breadth_vs_shift)
+  
+} else {
+  cat("Not enough combined data to plot breadth vs. suitability shifts.\n")
+}
+
+# The data frames `host_breadth_shifts_df`, `fish_breadth_shifts_df`, 
+# and `all_breadth_shifts_long_df` are now available.
 ```
