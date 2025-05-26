@@ -853,6 +853,126 @@ if (!config$use_pca_predictors) {
 }
 ```
 
+## Individual Species Suitability Shifts
+
+This section calculates the mean change in environmental suitability for each individual host sea anemone and anemonefish species between the current period and each future climate scenario. These shift values will be used to explore correlations with niche breadth.
+
+```{r calculate-suitability-shifts}
+#| label: calculate-suitability-shifts
+#| message: false
+#| warning: false
+
+# Prerequisites from previous chunks:
+# - host_pred_stack_cropped: Current individual host predictions (cropped)
+# - fish_pred_stack_cropped: Current individual fish (env-only) predictions (cropped)
+# - host_pred_stacks_future_individual: List of future individual host predictions (cropped), named by scenario
+# - fish_pred_stacks_future_individual: List of future individual fish (env-only) predictions (cropped), named by scenario
+# - future_scenarios_to_load: Vector of future scenario names (e.g., "ssp119_2050", "ssp585_2100")
+
+if (!exists("host_pred_stack_cropped") || !exists("fish_pred_stack_cropped") ||
+    !exists("host_pred_stacks_future_individual") || !exists("fish_pred_stacks_future_individual") ||
+    !exists("future_scenarios_to_load")) {
+  stop("Prerequisite data for calculating suitability shifts is missing. Ensure previous chunks (loading current and future individual predictions) have run successfully.")
+}
+
+suitability_shifts_list <- list() # Initialize list to store results for all species and scenarios
+
+cat("--- Calculating Mean Suitability Shifts for Individual Species ---\n")
+
+for (scenario_name_fut in future_scenarios_to_load) {
+  cat("\n  Processing Scenario:", scenario_name_fut, "\n")
+  
+  # --- Host Anemones Suitability Shifts ---
+  cat("    Calculating shifts for Host Anemones...\n")
+  current_hosts_for_diff <- host_pred_stack_cropped
+  future_hosts_for_diff_raw <- host_pred_stacks_future_individual[[scenario_name_fut]]
+  
+  if (!is.null(current_hosts_for_diff) && !is.null(future_hosts_for_diff_raw) && 
+      terra::nlyr(current_hosts_for_diff) > 0 && terra::nlyr(future_hosts_for_diff_raw) > 0) {
+    
+    common_host_species <- intersect(names(current_hosts_for_diff), names(future_hosts_for_diff_raw))
+    
+    if (length(common_host_species) > 0) {
+      current_hosts_subset <- current_hosts_for_diff[[common_host_species]]
+      future_hosts_subset_raw <- future_hosts_for_diff_raw[[common_host_species]]
+      
+      # Ensure geometry matches for subtraction by resampling future to current if needed
+      future_hosts_subset_aligned <- future_hosts_subset_raw
+      if(!terra::compareGeom(current_hosts_subset, future_hosts_subset_raw, stopOnError=FALSE, res=TRUE, crs=TRUE, ext=TRUE)){
+          cat("      Resampling future host predictions for scenario '", scenario_name_fut, "' to match current geometry for shift calculation.\n")
+          future_hosts_subset_aligned <- tryCatch(
+            terra::resample(future_hosts_subset_raw, current_hosts_subset, method="bilinear"),
+            error = function(e) {
+              cat("      ERROR resampling future host stack for", scenario_name_fut, ":", e$message, "\n"); NULL
+            }
+          )
+      }
+      
+      if (!is.null(future_hosts_subset_aligned)) {
+        diff_hosts_scenario_indiv <- future_hosts_subset_aligned - current_hosts_subset
+        mean_shifts_hosts_indiv <- global(diff_hosts_scenario_indiv, "mean", na.rm = TRUE)
+        rownames(mean_shifts_hosts_indiv) <- names(diff_hosts_scenario_indiv) # Should be common_host_species
+        
+        suitability_shifts_list[[paste0("hosts_", scenario_name_fut)]] <- mean_shifts_hosts_indiv
+        cat("      Mean suitability shifts for hosts in", scenario_name_fut, "calculated.\n")
+        # print(head(mean_shifts_hosts_indiv)) 
+      }
+    } else {
+      cat("      No common host species found between current and future stacks for scenario", scenario_name_fut, "\n")
+    }
+  } else {
+    cat("    Skipping host anemones for scenario", scenario_name_fut, "- current or future individual prediction stack missing or empty.\n")
+  }
+
+  # --- Anemonefish (Environmental-Only Models) Suitability Shifts ---
+  cat("    Calculating shifts for Anemonefish (Env-Only)...\n")
+  current_fish_for_diff <- fish_pred_stack_cropped 
+  future_fish_for_diff_raw <- fish_pred_stacks_future_individual[[scenario_name_fut]] 
+  
+  if (!is.null(current_fish_for_diff) && !is.null(future_fish_for_diff_raw) &&
+      terra::nlyr(current_fish_for_diff) > 0 && terra::nlyr(future_fish_for_diff_raw) > 0) {
+      
+    common_fish_species <- intersect(names(current_fish_for_diff), names(future_fish_for_diff_raw))
+    
+    if (length(common_fish_species) > 0) {
+      current_fish_subset <- current_fish_for_diff[[common_fish_species]]
+      future_fish_subset_raw <- future_fish_for_diff_raw[[common_fish_species]]
+      
+      future_fish_subset_aligned <- future_fish_subset_raw
+      if(!terra::compareGeom(current_fish_subset, future_fish_subset_raw, stopOnError=FALSE, res=TRUE, crs=TRUE, ext=TRUE)){
+         cat("      Resampling future fish (env-only) predictions for scenario '", scenario_name_fut, "' to match current geometry.\n")
+         future_fish_subset_aligned <- tryCatch(
+            terra::resample(future_fish_subset_raw, current_fish_subset, method="bilinear"),
+            error = function(e) {
+              cat("      ERROR resampling future fish stack for", scenario_name_fut, ":", e$message, "\n"); NULL
+            }
+          )
+      }
+      
+      if (!is.null(future_fish_subset_aligned)) {
+        diff_fish_scenario_indiv <- future_fish_subset_aligned - current_fish_subset
+        mean_shifts_fish_indiv <- global(diff_fish_scenario_indiv, "mean", na.rm = TRUE)
+        rownames(mean_shifts_fish_indiv) <- names(diff_fish_scenario_indiv)
+        
+        suitability_shifts_list[[paste0("fish_env_only_", scenario_name_fut)]] <- mean_shifts_fish_indiv
+        cat("      Mean suitability shifts for anemonefish (env-only) in", scenario_name_fut, "calculated.\n")
+        # print(head(mean_shifts_fish_indiv)) 
+      }
+    } else {
+      cat("      No common anemonefish species found between current and future stacks for scenario", scenario_name_fut, "\n")
+    }
+  } else {
+    cat("    Skipping anemonefish (env-only) for scenario", scenario_name_fut, "- current or future individual prediction stack missing or empty.\n")
+  }
+  
+} # End loop through future scenarios
+
+cat("\n--- Individual species suitability shift calculations finished. ---\n")
+# The `suitability_shifts_list` object is now populated.
+# Example access: suitability_shifts_list[["hosts_ssp119_2050"]]
+# It will contain data frames with rownames = species_name_sanitized and a column "mean" for the shift.
+```
+
 ## Relationship between Host and Anemonefish Richness (Current)
 
 This section explores the relationship between the current predicted richness of host sea anemones and their mutualistic anemonefish (based on environmental-only models). We use variance partitioning to determine the independent and shared contributions of host richness and environmental factors (PCA components) to anemonefish richness.
@@ -1973,7 +2093,7 @@ cat("--- Processing Host Anemone Breadth vs. Suitability Shift ---\n")
 if (nrow(host_niche_breadth_df) > 0) {
   # Start with breadth data
   host_breadth_shifts_df <- host_niche_breadth_df %>%
-    select(species_name_sanitized, breadth_B2 = levins_B2)
+    dplyr::select(species_name_sanitized, breadth_B2 = levins_B2)
 
   # Add shift data for each future scenario
   for (scenario_name in future_scenarios_to_load) {
@@ -1985,7 +2105,7 @@ if (nrow(host_niche_breadth_df) > 0) {
       temp_shift_df <- suitability_shifts_list[[shift_data_name]] %>%
         as.data.frame() %>% # Ensure it's a data frame
         tibble::rownames_to_column("species_name_sanitized") %>%
-        select(species_name_sanitized, mean_suitability_shift = mean)
+        dplyr::select(species_name_sanitized, mean_suitability_shift = mean)
       
       # Dynamically create column name for the shift in this scenario
       shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name)) # e.g., shift_119_2050
@@ -2007,7 +2127,7 @@ if (nrow(host_niche_breadth_df) > 0) {
     shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
     if (shift_col_name %in% names(host_breadth_shifts_df)) {
       # Ensure there are enough non-NA pairs for correlation
-      temp_df_cor_host <- host_breadth_shifts_df %>% select(breadth_B2, !!sym(shift_col_name)) %>% na.omit()
+      temp_df_cor_host <- host_breadth_shifts_df %>% dplyr::select(breadth_B2, !!sym(shift_col_name)) %>% na.omit()
       if(nrow(temp_df_cor_host) > 2) {
         cor_test_host <- cor.test(temp_df_cor_host$breadth_B2, temp_df_cor_host[[shift_col_name]], method = "pearson")
         cat("\nCorrelation (Host Anemones) - Breadth vs. Shift (", scenario_name, "):\n")
@@ -2027,7 +2147,7 @@ if (nrow(host_niche_breadth_df) > 0) {
 cat("\n--- Processing Anemonefish (Env-Only) Breadth vs. Suitability Shift ---\n")
 if (nrow(fish_niche_breadth_df) > 0) {
   fish_breadth_shifts_df <- fish_niche_breadth_df %>%
-    select(species_name_sanitized, breadth_B2 = levins_B2)
+    dplyr::select(species_name_sanitized, breadth_B2 = levins_B2)
 
   for (scenario_name in future_scenarios_to_load) {
     shift_data_name <- paste0("fish_env_only_", scenario_name)
@@ -2038,7 +2158,7 @@ if (nrow(fish_niche_breadth_df) > 0) {
       temp_shift_df_fish <- suitability_shifts_list[[shift_data_name]] %>%
         as.data.frame() %>%
         tibble::rownames_to_column("species_name_sanitized") %>%
-        select(species_name_sanitized, mean_suitability_shift = mean)
+        dplyr::select(species_name_sanitized, mean_suitability_shift = mean)
         
       shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
       
@@ -2058,7 +2178,7 @@ if (nrow(fish_niche_breadth_df) > 0) {
   for (scenario_name in future_scenarios_to_load) {
     shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
     if (shift_col_name %in% names(fish_breadth_shifts_df)) {
-      temp_df_cor_fish <- fish_breadth_shifts_df %>% select(breadth_B2, !!sym(shift_col_name)) %>% na.omit()
+      temp_df_cor_fish <- fish_breadth_shifts_df %>% dplyr::select(breadth_B2, !!sym(shift_col_name)) %>% na.omit()
       if(nrow(temp_df_cor_fish) > 2){
         cor_test_fish <- cor.test(temp_df_cor_fish$breadth_B2, temp_df_cor_fish[[shift_col_name]], method = "pearson")
         cat("\nCorrelation (Anemonefish Env-Only) - Breadth vs. Shift (", scenario_name, "):\n")
@@ -2122,4 +2242,321 @@ if (!is.null(all_breadth_shifts_long_df) && nrow(all_breadth_shifts_long_df) > 0
 
 # The data frames `host_breadth_shifts_df`, `fish_breadth_shifts_df`, 
 # and `all_breadth_shifts_long_df` are now available.
+```
+
+### Figure: Niche Breadth vs. Suitability Shift
+
+This figure visualizes the relationship between current niche breadth (Levin's $B_2$) and the projected mean change in suitability under a specific future scenario for both host sea anemones and anemonefish (environmental-only models). This is analogous to Figure 5 in the reference desert ant paper.
+
+```{r breadth-suitability-figure}
+#| label: breadth-suitability-figure
+#| fig-width: 10
+#| fig-height: 5 # Adjust for two plots side-by-side
+#| message: false
+#| warning: false
+
+library(ggplot2)
+library(cowplot) # For plot_grid
+
+# --- Choose ONE future scenario for this figure ---
+# This should match one of the columns created in host_breadth_shifts_df and fish_breadth_shifts_df
+# e.g., "shift_585_2100" (derived from "ssp585_2100")
+chosen_scenario_for_figure <- "shift_585_2100" # CHANGE AS NEEDED
+
+plot_a_host <- NULL
+plot_b_fish <- NULL
+
+# --- Host Anemones Plot ---
+if (!is.null(host_breadth_shifts_df) && chosen_scenario_for_figure %in% names(host_breadth_shifts_df) && "breadth_B2" %in% names(host_breadth_shifts_df)) {
+  
+  # Check correlation for the dashed line logic (significant vs. non-significant)
+  cor_data_host <- host_breadth_shifts_df %>% dplyr::select(breadth_B2, !!sym(chosen_scenario_for_figure)) %>% na.omit()
+  host_cor_test <- NULL
+  if(nrow(cor_data_host) > 2) {
+    host_cor_test <- cor.test(cor_data_host$breadth_B2, cor_data_host[[chosen_scenario_for_figure]])
+  }
+  
+  plot_a_host <- ggplot(host_breadth_shifts_df, aes(x = .data[[chosen_scenario_for_figure]], y = breadth_B2)) +
+    geom_point(alpha = 0.8, color = "dodgerblue3") +
+    geom_smooth(method = "lm", 
+                linetype = if (!is.null(host_cor_test) && host_cor_test$p.value < 0.05) "solid" else "dashed", 
+                se = TRUE, color = "black") + # Show SE, solid if p < 0.05
+    labs(
+      # title = "Host Anemones",
+      x = paste("Mean Suitability Shift (", gsub("shift_", "SSP", chosen_scenario_for_figure), ")"),
+      y = "Environmental Breadth (Levin's B2)"
+    ) +
+    theme_bw(base_size = 11) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+  
+  cat("Host plot generated for", chosen_scenario_for_figure, "\n")
+  if(!is.null(host_cor_test)) print(host_cor_test)
+  
+} else {
+  cat("Skipping host breadth vs. shift plot: data for", chosen_scenario_for_figure, "or breadth_B2 missing.\n")
+}
+
+# --- Anemonefish (Env-Only) Plot ---
+if (!is.null(fish_breadth_shifts_df) && chosen_scenario_for_figure %in% names(fish_breadth_shifts_df) && "breadth_B2" %in% names(fish_breadth_shifts_df)) {
+  
+  cor_data_fish <- fish_breadth_shifts_df %>% dplyr::select(breadth_B2, !!sym(chosen_scenario_for_figure)) %>% na.omit()
+  fish_cor_test <- NULL
+  if(nrow(cor_data_fish) > 2) {
+    fish_cor_test <- cor.test(cor_data_fish$breadth_B2, cor_data_fish[[chosen_scenario_for_figure]])
+  }
+
+  plot_b_fish <- ggplot(fish_breadth_shifts_df, aes(x = .data[[chosen_scenario_for_figure]], y = breadth_B2)) +
+    geom_point(alpha = 0.8, color = "firebrick3") +
+    geom_smooth(method = "lm", 
+                linetype = if (!is.null(fish_cor_test) && fish_cor_test$p.value < 0.05) "solid" else "dashed", 
+                se = TRUE, color = "black") +
+    labs(
+      # title = "Anemonefish (Env-Only)",
+      x = paste("Mean Suitability Shift (", gsub("shift_", "SSP", chosen_scenario_for_figure), ")"),
+      y = "Environmental Breadth (Levin's B2)"
+    ) +
+    theme_bw(base_size = 11) +
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+    
+  cat("Anemonefish plot generated for", chosen_scenario_for_figure, "\n")
+  if(!is.null(fish_cor_test)) print(fish_cor_test)
+  
+} else {
+  cat("Skipping anemonefish breadth vs. shift plot: data for", chosen_scenario_for_figure, "or breadth_B2 missing.\n")
+}
+
+# --- Combine Plots ---
+if (!is.null(plot_a_host) && !is.null(plot_b_fish)) {
+  combined_breadth_plot <- cowplot::plot_grid(plot_a_host, plot_b_fish, ncol = 2, labels = "AUTO")
+  print(combined_breadth_plot)
+  cat("Combined breadth vs. suitability shift plot generated.\n")
+} else {
+  cat("Could not generate combined breadth plot as one or both individual plots are missing.\n")
+}
+```
+
+## Phylogenetic Signal of Niche Breadth and Suitability Shifts (Anemonefish)
+
+This section tests for phylogenetic signal (Blomberg's K) in niche breadth (Levin's B2) and in the mean suitability shifts for anemonefish species under future scenarios.
+
+```{r phylo-signal-traits-anemonefish}
+#| label: phylo-signal-traits-anemonefish
+#| message: false
+#| warning: false
+
+library(phytools) # For phylosig, multiPhylosignal
+library(picante)  # For phylosignal (Blomberg's K)
+library(dplyr)
+library(geiger)
+
+if (is.null(pruned_anemonefish_tree)) {
+  cat("Warning: `pruned_anemonefish_tree` not available. Skipping phylogenetic signal of traits for anemonefish.\n")
+} else if (is.null(fish_breadth_shifts_df) || nrow(fish_breadth_shifts_df) == 0) {
+  cat("Warning: `fish_breadth_shifts_df` not available or empty. Skipping phylogenetic signal of traits.\n")
+} else if (!exists("fish_label_map_df") || is.null(fish_label_map_df)) {
+  cat("Warning: `fish_label_map_df` (mapping Original_Genus_Species to short_code) is missing. Skipping phylogenetic signal.\n")
+} else {
+  cat("--- Testing Phylogenetic Signal for Anemonefish Traits ---\n")
+
+  # Ensure tree is strictly bifurcating if needed by some phytools functions
+  # (multi2di might resolve polytomies randomly, consider implications)
+  if(!is.binary(pruned_anemonefish_tree) && length(pruned_anemonefish_tree$tip.label) > 2) {
+      pruned_anemonefish_tree_binary <- multi2di(pruned_anemonefish_tree, random = TRUE) # Random resolution
+      cat("  Resolved polytomies in anemonefish tree for phylosignal analysis.\n")
+  } else {
+      pruned_anemonefish_tree_binary <- pruned_anemonefish_tree
+  }
+
+
+  # --- 1. Phylogenetic Signal in Niche Breadth (Levin's B2) ---
+  cat("\n  Testing phylogenetic signal for Niche Breadth (Levin's B2)...\n")
+  
+  trait_data_breadth <- fish_breadth_shifts_df %>%
+    inner_join(fish_label_map_df, by = c("species_name_sanitized" = "Original_Genus_Species")) %>%
+    filter(short_code %in% pruned_anemonefish_tree_binary$tip.label) %>% # Keep only species in the tree
+    dplyr::select(short_code, breadth_B2) %>%
+    filter(!is.na(breadth_B2)) %>%
+    distinct(short_code, .keep_all = TRUE) # Ensure unique species
+    
+  if (nrow(trait_data_breadth) > 2) {
+    breadth_values <- trait_data_breadth$breadth_B2
+    names(breadth_values) <- trait_data_breadth$short_code
+    
+    # Match tree and data
+    matched_data_breadth <- treedata(pruned_anemonefish_tree_binary, breadth_values, sort=TRUE, warnings=FALSE)
+    
+    if (length(matched_data_breadth$data) > 2) {
+      phylosig_breadth_B2 <- phylosig(matched_data_breadth$phy, matched_data_breadth$data[,1], method="K", test=TRUE, nsim=999)
+      cat("  Blomberg's K for Niche Breadth (B2):\n")
+      print(phylosig_breadth_B2)
+    } else {
+      cat("  Not enough matching species between tree and breadth data after NA removal.\n")
+    }
+  } else {
+    cat("  Not enough species with valid niche breadth data and in the tree to test for phylogenetic signal.\n")
+  }
+
+  # --- 2. Phylogenetic Signal in Suitability Shifts for each Future Scenario ---
+  for (scenario_name in future_scenarios_to_load) {
+    shift_col_name <- paste0("shift_", gsub("ssp", "", scenario_name))
+    cat("\n  Testing phylogenetic signal for Suitability Shift under scenario:", scenario_name, "(column:", shift_col_name, ")...\n")
+    
+    if (shift_col_name %in% names(fish_breadth_shifts_df)) {
+      trait_data_shift <- fish_breadth_shifts_df %>%
+        inner_join(fish_label_map_df, by = c("species_name_sanitized" = "Original_Genus_Species")) %>%
+        filter(short_code %in% pruned_anemonefish_tree_binary$tip.label) %>%
+        dplyr::select(short_code, suitability_shift = !!sym(shift_col_name)) %>%
+        filter(!is.na(suitability_shift)) %>%
+        distinct(short_code, .keep_all = TRUE)
+        
+      if (nrow(trait_data_shift) > 2) {
+        shift_values <- trait_data_shift$suitability_shift
+        names(shift_values) <- trait_data_shift$short_code
+        
+        matched_data_shift <- treedata(pruned_anemonefish_tree_binary, shift_values, sort=TRUE, warnings=FALSE)
+        
+        if(length(matched_data_shift$data) > 2) {
+          phylosig_shift <- phylosig(matched_data_shift$phy, matched_data_shift$data[,1], method="K", test=TRUE, nsim=999)
+          cat("  Blomberg's K for Suitability Shift (", scenario_name, "):\n")
+          print(phylosig_shift)
+        } else {
+          cat("  Not enough matching species between tree and shift data for", scenario_name, "after NA removal.\n")
+        }
+      } else {
+        cat("  Not enough species with valid suitability shift data for scenario", scenario_name, "and in the tree.\n")
+      }
+    } else {
+      cat("  Shift data column '", shift_col_name, "' not found for scenario", scenario_name, ".\n")
+    }
+  }
+}
+```
+
+## Variable Importance Comparison
+
+This section loads the variable importance (VI) scores from the environmental-only SDMs for host sea anemones and anemonefish. It then compares the importance of each environmental predictor (PCA components if used) between the two guilds.
+
+```{r variable-importance-comparison}
+#| label: variable-importance-comparison
+#| message: false
+#| warning: false
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(stringr)
+
+# Determine predictor suffix used for the environmental-only models
+env_model_predictor_suffix <- ifelse(config$use_pca_predictors, "_pca", "_vif")
+
+# --- Load Host Anemone Variable Importance ---
+cat("--- Loading Host Anemone Variable Importance ---\n")
+host_vi_subdir_name <- config$model_output_subdir_map[[env_model_predictor_suffix]] %||% ifelse(config$use_pca_predictors, "anemone_pca", "anemone_vif") # Fallback
+host_vi_dir <- file.path(config$target_vi_base, host_vi_subdir_name) # target_vi_base is data/output
+
+host_vi_files <- list.files(path = host_vi_dir, pattern = "^VI_.*\\.csv$", full.names = TRUE)
+if (length(host_vi_files) == 0 && env_model_predictor_suffix == "_pca") { # Specific check for typical pca subfolder in target_vi_base
+    host_vi_dir_alt <- file.path(config$target_vi_base, "anemone_pca")
+    host_vi_files <- list.files(path = host_vi_dir_alt, pattern = "^VI_.*\\.csv$", full.names = TRUE)
+    if(length(host_vi_files)>0) host_vi_dir <- host_vi_dir_alt # Update if found in alt
+}
+
+
+if (length(host_vi_files) > 0) {
+  host_vi_data <- purrr::map_df(host_vi_files, 
+                ~readr::read_csv(.x, show_col_types = FALSE) %>% 
+                   mutate(filename = basename(.x))) %>%
+    mutate(
+      species_sanitized = str_remove(str_remove(filename, "^VI_"), "\\.csv$"),
+      guild = "Host_Anemones"
+    ) %>%
+    rename(Permutation_Importance = Importance) # Match ant paper column if different
+    
+  cat("Loaded VI data for", length(unique(host_vi_data$species_sanitized)), "host species.\n")
+} else {
+  cat("Warning: No Variable Importance CSV files found for host anemones in:", host_vi_dir, "\n")
+  host_vi_data <- NULL
+}
+
+# --- Load Anemonefish (Environmental-Only Models) Variable Importance ---
+cat("\n--- Loading Anemonefish (Env-Only) Variable Importance ---\n")
+fish_vi_subdir_name <- config$model_output_subdir_map[[env_model_predictor_suffix]] %||% ifelse(config$use_pca_predictors, "anemonefish_pca", "anemonefish_vif")
+fish_vi_dir <- file.path(config$target_vi_base, fish_vi_subdir_name)
+
+fish_vi_files <- list.files(path = fish_vi_dir, pattern = "^VI_.*\\.csv$", full.names = TRUE)
+if (length(fish_vi_files) == 0 && env_model_predictor_suffix == "_pca") { # Specific check
+    fish_vi_dir_alt <- file.path(config$target_vi_base, "anemonefish_pca")
+    fish_vi_files <- list.files(path = fish_vi_dir_alt, pattern = "^VI_.*\\.csv$", full.names = TRUE)
+    if(length(fish_vi_files)>0) fish_vi_dir <- fish_vi_dir_alt
+}
+
+if (length(fish_vi_files) > 0) {
+  fish_vi_data <- purrr::map_df(fish_vi_files, 
+                ~readr::read_csv(.x, show_col_types = FALSE) %>% 
+                   mutate(filename = basename(.x))) %>%
+    mutate(
+      species_sanitized = str_remove(str_remove(filename, "^VI_"), "\\.csv$"),
+      guild = "Anemonefish_EnvOnly"
+    ) %>%
+    rename(Permutation_Importance = Importance) # Match ant paper column if different
+  cat("Loaded VI data for", length(unique(fish_vi_data$species_sanitized)), "anemonefish (env-only) species.\n")
+} else {
+  cat("Warning: No Variable Importance CSV files found for anemonefish (env-only) in:", fish_vi_dir, "\n")
+  fish_vi_data <- NULL
+}
+
+# --- Combine and Compare VI ---
+if (!is.null(host_vi_data) && !is.null(fish_vi_data) && nrow(host_vi_data) > 0 && nrow(fish_vi_data) > 0) {
+  combined_vi_data <- bind_rows(host_vi_data, fish_vi_data) %>%
+    filter(!is.na(Permutation_Importance)) # Ensure importance values are valid
+  
+  # Ensure 'Variable' column exists (it should from SDMtune::varImp output)
+  if (!"Variable" %in% names(combined_vi_data)) {
+    stop("The 'Variable' column is missing from the loaded VI data. Check the output of calculate_and_save_vi.")
+  }
+  
+  cat("\nCombined VI data for comparison:\n")
+  print(head(combined_vi_data))
+
+  # Boxplot of VI by guild
+  plot_vi_comparison <- ggplot(combined_vi_data, aes(x = Variable, y = Permutation_Importance, fill = guild)) +
+    geom_boxplot(alpha = 0.8, position = position_dodge(preserve = "single")) +
+    labs(
+      title = "Variable Importance Comparison between Guilds",
+      x = "Predictor Variable",
+      y = "Permutation Importance (%)"
+    ) +
+    scale_fill_manual(values = c("Host_Anemones" = "coral", "Anemonefish_EnvOnly" = "steelblue"), name = "Guild") +
+    theme_bw(base_size = 12) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
+  
+  print(plot_vi_comparison)
+  
+  # Perform t-tests for each predictor variable (e.g., each PC component if PCA was used)
+  cat("\n--- T-tests for difference in Variable Importance between Guilds ---\n")
+  predictor_vars_to_test <- unique(combined_vi_data$Variable)
+  
+  for (var_name in predictor_vars_to_test) {
+    cat("  Testing variable:", var_name, "\n")
+    data_for_ttest <- combined_vi_data %>% filter(Variable == var_name)
+    
+    if (nrow(data_for_ttest %>% distinct(guild)) == 2 && 
+        nrow(data_for_ttest %>% filter(guild == "Host_Anemones") %>% na.omit()) > 1 &&
+        nrow(data_for_ttest %>% filter(guild == "Anemonefish_EnvOnly") %>% na.omit()) > 1) {
+      
+      ttest_vi_result <- tryCatch({
+        t.test(Permutation_Importance ~ guild, data = data_for_ttest)
+      }, error = function(e){
+        cat("    Error in t-test for", var_name, ":", e$message, "\n"); NULL
+      })
+      if(!is.null(ttest_vi_result)) print(ttest_vi_result)
+      
+    } else {
+      cat("    Skipping t-test for", var_name, "- insufficient data or only one guild present.\n")
+    }
+  }
+  
+} else {
+  cat("Not enough variable importance data to compare between guilds.\n")
+}
 ```
