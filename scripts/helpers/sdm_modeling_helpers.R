@@ -834,13 +834,13 @@ predict_sdm_suitability <- function(final_sdm_model, predictor_stack, config, lo
 #' @param logger A log4r logger object.
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-save_tuning_results <- function(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger, species_log_file = NULL) {
+save_tuning_results <- function(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger, species_log_file = NULL, group_name) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SaveTuneHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
   
   if (is.null(tuning_output) || !inherits(tuning_output, "SDMtune")) { hlog("ERROR", "Invalid tuning object provided."); return(FALSE) }
   
   # Determine target subdirectory using the map from config
-  subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]]
+  subdir_name <- paste0(group_name, config$model_output_subdir_map[[predictor_type_suffix]])
   if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
   target_subdir <- file.path(config$target_results_base, subdir_name)
   dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)

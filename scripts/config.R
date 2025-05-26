@@ -105,7 +105,7 @@ env_scenarios <- c("current", "ssp119_2050", "ssp119_2100", "ssp585_2050", "ssp5
 scenario_folder_map <- list(current = file.path(env_data_dir, "current"), ssp119_2050 = file.path(env_data_dir, "future", "ssp119"), ssp119_2100 = file.path(env_data_dir, "future", "ssp119"), ssp585_2050 = file.path(env_data_dir, "future", "ssp585"), ssp585_2100 = file.path(env_data_dir, "future", "ssp585"))
 terrain_folder <- file.path(env_data_dir, "terrain")
 ssp_scenario_map <- list(ssp119_2050 = "ssp119", ssp119_2100 = "ssp119", ssp585_2050 = "ssp585", ssp585_2100 = "ssp585")
-model_output_subdir_map <- list(`_pca` = "", `_biotic_only` = "_biotic_only", `_combined_pca` = "combined_pca")
+model_output_subdir_map <- list(`_pca` = "_pca", `_biotic_only` = "_biotic_only", `_combined_pca` = "_combined_pca")
 
 # Predictor Selection Switch
 use_pca_predictors <- TRUE
@@ -141,11 +141,12 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 sdm_spatial_cv_type_to_use <- "spatial_grid"
 blockcv_auto_range <- TRUE
 blockcv_range_default <- 300000 # 20000
-blockcv_range_max <- 1000000
+blockcv_range_max <- 500000
 blockcv_hexagon <- TRUE
 # ("systematic", "random")
 blockcv_selection <- "systematic"
 blockcv_n_iterate <- 300
+blockcv_lat_blocks <- 20000
 
 # OBIS stuff
 ecoregion_shapefile <- file.path(shapefile_dir, "MarineRealms_BO.shp")

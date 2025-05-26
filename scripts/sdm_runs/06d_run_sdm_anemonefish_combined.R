@@ -274,7 +274,7 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
     }
     best_hypers <- attr(tuning_output, "best_hypers")
     
-    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) {
+    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file, group_name=group_name)) {
       rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
     }
     
