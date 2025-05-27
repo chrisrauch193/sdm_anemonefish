@@ -558,6 +558,236 @@ if (!is.null(df_fish_comparison) && nrow(df_fish_comparison) > 0 && "test_AUC" %
 # ... (Code for GLMM and plots for TSS, similar to AUC, but commented out) ...
 ```
 
+
+
+
+## Compare anemonefish model performance
+
+This section statistically compares the performance (test AUC) of the different anemonefish model types (environmental-only, biotic-only, combined host+environment) using a linear mixed model. It also visualizes these comparisons and performs pairwise comparisons at the species level.
+
+```{r compare-fish-model-performance}
+#| label: compare-fish-model-performance
+#| message: false
+#| warning: false
+
+library(glmmTMB)
+library(ggplot2)
+library(dplyr)
+library(purrr) # For map functions
+library(broom) # For tidying test results
+# library(performance) # Optional
+
+if (!is.null(df_fish_comparison) && nrow(df_fish_comparison) > 0 && "test_AUC" %in% names(df_fish_comparison)) {
+
+  # Ensure model_type is a factor for the GLMM
+  df_fish_comparison$model_type <- factor(df_fish_comparison$model_type, 
+                                          levels = c("env_only", "biotic_only", "combined_host_env"))
+
+  # --- Statistical Comparison using GLMM (Overall Effect) ---
+  cat("\n--- Fitting GLMM to compare test_AUC across model types (Overall Effect) ---\n")
+  m1_fish_auc <- tryCatch({
+    glmmTMB(test_AUC ~ model_type + (1|species), data = df_fish_comparison)
+  }, error = function(e) {
+    cat("Error fitting GLMM for AUC:", e$message, "\n")
+    NULL
+  })
+
+  if (!is.null(m1_fish_auc)) {
+    cat("\nSummary of GLMM for test_AUC:\n")
+    print(summary(m1_fish_auc))
+    # print(performance::model_performance(m1_fish_auc)) # Optional
+  }
+
+  # --- Visualization (Overall and Per Species) ---
+  # (Your existing ggplot code for plot_auc_comparison and plot_auc_per_species remains here)
+  cat("\n--- Generating boxplot of test_AUC by model type ---\n")
+  # ... (plot_auc_comparison code from your previous QMD) ...
+  plot_auc_comparison <- ggplot(df_fish_comparison, aes(x = model_type, y = test_AUC, fill = model_type)) +
+    geom_boxplot(alpha = 0.7) +
+    stat_summary(fun = mean, geom = "point", shape = 18, size = 3, color = "black",
+                 position = position_dodge(width = 0.75)) + 
+    labs(
+      title = "Anemonefish Model Performance Comparison",
+      x = "Model Type",
+      y = "Test AUC (Predictive Accuracy)"
+    ) +
+    scale_fill_manual(
+      values = c("env_only" = "grey70", "biotic_only" = "skyblue", "combined_host_env" = "salmon"),
+      name = "Model Type",
+      labels = c("Environmental Only", "Biotic (Host) Only", "Combined (Host+Env)")
+    ) +
+    theme_bw(base_size = 12) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      legend.position = "bottom",
+      axis.text.x = element_text(angle = 45, hjust = 1) 
+    )
+  print(plot_auc_comparison)
+  
+  df_fish_comparison_plot <- df_fish_comparison %>%
+    mutate(species_display = str_replace(species, "_", " ")) 
+    
+  plot_auc_per_species <- ggplot(df_fish_comparison_plot, aes(x = species_display, y = test_AUC, fill = model_type)) +
+    geom_boxplot(position = position_dodge(preserve = "single")) + 
+    stat_summary(fun = mean, geom = "point", shape = 23, size = 2, fill = "red", color = "black",
+                 position = position_dodge(width = 0.75, preserve = "single"), 
+                 aes(group = model_type)) + 
+    labs(
+      title = "Anemonefish Model Performance by Species and Type",
+      x = "Anemonefish Species",
+      y = "Test AUC (Predictive Accuracy)"
+    ) +
+    scale_fill_manual(
+      values = c("env_only" = "grey70", "biotic_only" = "skyblue", "combined_host_env" = "salmon"),
+      name = "Model Type:",
+      labels = c("Environmental Only", "Biotic (Host) Only", "Combined (Host+Env)")
+    ) +
+    theme_bw(base_size = 11) +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.position = "top",
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 8), 
+      plot.title = element_text(hjust = 0.5),
+      plot.subtitle = element_text(hjust = 0.5)
+    ) +
+    ylim(0, 1) 
+  print(plot_auc_per_species)
+
+  cat("\nMean test_AUC per species and model type:\n")
+  print(
+    df_fish_comparison %>%
+      group_by(species, model_type) %>%
+      dplyr::summarize(mean_auc = mean(test_AUC, na.rm = TRUE), .groups = 'drop') %>%
+      arrange(species, model_type)
+  )
+
+  # --- Per-Species Pairwise Comparison of Model Performance (AUC) ---
+  cat("\n\n--- Per-Species Pairwise Comparison of Model Performance (AUC) ---\n")
+  
+  # Get unique species
+  unique_species_fish <- unique(df_fish_comparison$species)
+  
+  all_species_test_results <- list() # To store results of tests
+  
+  for (sp in unique_species_fish) {
+    cat("\n  -- Species:", sp, "--\n")
+    species_data <- df_fish_comparison %>% filter(species == sp)
+    
+    # Ensure there's data for at least two model types for this species
+    if (length(unique(species_data$model_type)) < 2) {
+      cat("    Skipping: Not enough model types with data for this species.\n")
+      next
+    }
+    
+    # Define the comparisons you want to make
+    # For example: env_only vs. combined_host_env, env_only vs. biotic_only
+    comparisons_to_make <- list(
+      c("env_only", "combined_host_env"),
+      c("env_only", "biotic_only"),
+      c("biotic_only", "combined_host_env")
+    )
+    
+    species_results_current <- list()
+    
+    for (comp_pair in comparisons_to_make) {
+      type1 <- comp_pair[1]
+      type2 <- comp_pair[2]
+      
+      data_type1 <- species_data %>% filter(model_type == type1) %>% pull(test_AUC)
+      data_type2 <- species_data %>% filter(model_type == type2) %>% pull(test_AUC)
+      
+      # Ensure we have enough data points (e.g., from multiple CV folds) for each type
+      # And that the number of data points are equal for a paired test.
+      # If your SDMtune runs generate a fixed number of CV results (e.g., 40 like the ant paper),
+      # these lengths should typically be equal.
+      if (length(data_type1) > 1 && length(data_type2) > 1 && length(data_type1) == length(data_type2)) {
+        
+        # Paired t-test (assumes differences are normally distributed)
+        # Alternatively, Wilcoxon signed-rank test (non-parametric)
+        # test_result <- t.test(data_type1, data_type2, paired = TRUE, alternative = "two.sided")
+        test_result <- tryCatch({
+            wilcox.test(data_type1, data_type2, paired = TRUE, alternative = "two.sided", exact = FALSE, correct = TRUE)
+        }, warning = function(w){ # Handle warnings, e.g., about ties for Wilcoxon
+            cat("      Warning during Wilcoxon test for", sp, type1, "vs", type2, ":", w$message, "\n")
+            # Attempt to run again without continuity correction if it's a common warning source with ties
+            tryCatch({
+                wilcox.test(data_type1, data_type2, paired = TRUE, alternative = "two.sided", exact = FALSE, correct = FALSE)
+            }, error = function(e2) { cat("      Wilcoxon test (no correction) also failed:", e2$message, "\n"); NULL})
+        }, error = function(e) {
+            cat("      Error in Wilcoxon test for", sp, type1, "vs", type2, ":", e$message, "\n")
+            NULL
+        })
+
+        if (!is.null(test_result)) {
+          cat("    Comparison:", type1, "vs.", type2, "\n")
+          # print(broom::tidy(test_result)) # broom makes output tidy
+          cat(sprintf("      Method: %s, W = %.2f, p-value = %.4f\n", test_result$method, test_result$statistic, test_result$p.value))
+          cat(sprintf("      Mean AUC %s: %.3f, Mean AUC %s: %.3f\n", type1, mean(data_type1, na.rm=T), type2, mean(data_type2, na.rm=T)))
+          species_results_current[[paste0(type1, "_vs_", type2)]] <- list(
+            method = test_result$method,
+            statistic = test_result$statistic,
+            p.value = test_result$p.value,
+            mean_auc_type1 = mean(data_type1, na.rm=T),
+            mean_auc_type2 = mean(data_type2, na.rm=T)
+          )
+        }
+      } else {
+        cat("    Skipping comparison", type1, "vs.", type2, "- insufficient or unequal data points.\n")
+        cat("      Data points for", type1, ":", length(data_type1), "; for", type2, ":", length(data_type2), "\n")
+      }
+    } # End loop through comparison pairs
+    all_species_test_results[[sp]] <- species_results_current
+  } # End loop through species
+  
+  # You can further process `all_species_test_results` to create a summary table of p-values if desired.
+  # For example, to see how many species showed significant improvement with combined models:
+  if(length(all_species_test_results) > 0) {
+      cat("\n\n--- Summary of Per-Species Test Significances (p < 0.05) ---\n")
+      for(comp_name in names(all_species_test_results[[1]])){ # Assuming all species have same comparisons
+          significant_count <- 0
+          better_type2_count <- 0 # Count where type2 was significantly better
+          cat("  Comparison:", comp_name, "\n")
+          for(sp_name_res in names(all_species_test_results)){
+              if(!is.null(all_species_test_results[[sp_name_res]][[comp_name]]$p.value) &&
+                 all_species_test_results[[sp_name_res]][[comp_name]]$p.value < 0.05){
+                  significant_count <- significant_count + 1
+                  # Check which mean AUC was higher
+                  mean1 <- all_species_test_results[[sp_name_res]][[comp_name]]$mean_auc_type1
+                  mean2 <- all_species_test_results[[sp_name_res]][[comp_name]]$mean_auc_type2
+                  comp_pair_names <- strsplit(comp_name, "_vs_")[[1]]
+                  if (mean2 > mean1) {
+                      cat("    ", sp_name_res, ":", comp_pair_names[2], "significantly better than", comp_pair_names[1], "(p =", round(all_species_test_results[[sp_name_res]][[comp_name]]$p.value, 4), ")\n")
+                      better_type2_count <- better_type2_count + 1
+                  } else if (mean1 > mean2) {
+                      cat("    ", sp_name_res, ":", comp_pair_names[1], "significantly better than", comp_pair_names[2], "(p =", round(all_species_test_results[[sp_name_res]][[comp_name]]$p.value, 4), ")\n")
+                  } else {
+                      cat("    ", sp_name_res, ": Significant difference, but means are equal (p =", round(all_species_test_results[[sp_name_res]][[comp_name]]$p.value, 4), ") - check data.\n")
+                  }
+              }
+          }
+          cat("    Total species with significant difference for", comp_name, ":", significant_count, "\n")
+          if (grepl("combined_host_env", comp_name)) { # If this comparison involves combined
+             cat("    Total species where combined model was significantly better:", better_type2_count, "\n")
+          }
+      }
+  }
+
+
+} else {
+  cat("Skipping model comparison as 'df_fish_comparison' is empty or test_AUC is missing.\n")
+}
+# (TSS analysis section would follow similarly if added later)
+```
+
+
+
+
+
+
+
+
 ## Current Environmental Predictors (PCA)
 
 This section loads the Principal Component Analysis (PCA) rasters for the current environmental conditions. These PCA rasters were generated by script `05_preprocess_env_pca_only.R` (if PCA was used) and represent the primary environmental gradients used in the SDMs.

@@ -3,8 +3,6 @@
 # Configuration Settings for Anemone/Anemonefish SDM Project (v5 - Correct Path Definitions)
 #-------------------------------------------------------------------------------
 
-setwd("~/a0236995/sdm_anemonefish")
-
 # Using pacman for streamlined package management
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, readxl,
@@ -101,7 +99,8 @@ terrain_variables_final <- c("bathymetry_mean", "slope", "rugosity", "distcoast"
 vars_to_copy_to_future <- c("chl_baseline_2000_2018_depthmax_mean", "par_mean_baseline_2000_2020_depthsurf")
 
 # Scenarios and Time Steps
-env_scenarios <- c("current", "ssp119_2050", "ssp119_2100", "ssp585_2050", "ssp585_2100")
+# env_scenarios <- c("current", "ssp119_2050", "ssp119_2100", "ssp585_2050", "ssp585_2100")
+env_scenarios <- c("current")
 scenario_folder_map <- list(current = file.path(env_data_dir, "current"), ssp119_2050 = file.path(env_data_dir, "future", "ssp119"), ssp119_2100 = file.path(env_data_dir, "future", "ssp119"), ssp585_2050 = file.path(env_data_dir, "future", "ssp585"), ssp585_2100 = file.path(env_data_dir, "future", "ssp585"))
 terrain_folder <- file.path(env_data_dir, "terrain")
 ssp_scenario_map <- list(ssp119_2050 = "ssp119", ssp119_2100 = "ssp119", ssp585_2050 = "ssp585", ssp585_2100 = "ssp585")
@@ -140,13 +139,14 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 # ("spatial_grid" or "spatial_lat" or "random")
 sdm_spatial_cv_type_to_use <- "spatial_grid"
 blockcv_auto_range <- TRUE
-blockcv_range_default <- 300000 # 20000
-blockcv_range_max <- 500000
+blockcv_range_default <- 30000 # 20000
+blockcv_range_min_for_auto <- 20000    # e.g., 20km in meters
+blockcv_range_max_for_auto <- 1000000  # e.g., 1000km in meters
 blockcv_hexagon <- TRUE
 # ("systematic", "random")
 blockcv_selection <- "systematic"
 blockcv_n_iterate <- 300
-blockcv_lat_blocks <- 20000
+blockcv_lat_blocks <- 10
 
 # OBIS stuff
 ecoregion_shapefile <- file.path(shapefile_dir, "MarineRealms_BO.shp")
@@ -164,6 +164,10 @@ autocor_maxdist <- 1000000   # 1000 km max distance for correlogram
 autocor_signif <- 0.05      # Significance level for non-correlation
 sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on BlockCV results)
 
+
+
+global_seed <- 1
+do_final_prediction <- TRUE
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -223,7 +227,8 @@ config <- list(
   sdm_spatial_cv_type_to_use = sdm_spatial_cv_type_to_use, # Which generated block type to use? ("spatial_grid" or "spatial_lat" or "random")
   blockcv_auto_range = blockcv_auto_range,       # TRUE: Calculate range based on autocorrelation
   blockcv_range_default = blockcv_range_default,        # Fixed range in METERS (used only if blockcv_auto_range = FALSE)
-  blockcv_range_max = blockcv_range_max,
+  blockcv_range_min_for_auto = blockcv_range_min_for_auto,
+  blockcv_range_max_for_auto = blockcv_range_max_for_auto,
   blockcv_hexagon = blockcv_hexagon,          # Use hexagonal blocks for spatial_grid?
   blockcv_selection = blockcv_selection, # Fold assignment method ("systematic" or "random")
   blockcv_n_iterate = blockcv_n_iterate,          # Iterations for blockCV fold assignment (more relevant for 'random' selection)
@@ -242,7 +247,12 @@ config <- list(
   autocor_classdist = autocor_classdist,
   autocor_maxdist = autocor_maxdist,
   autocor_signif = autocor_signif,
-  sac_prune_threshold = sac_prune_threshold
+  sac_prune_threshold = sac_prune_threshold,
+  
+  
+  
+  global_seed = global_seed,
+  do_final_prediction = do_final_prediction
 )
 
 

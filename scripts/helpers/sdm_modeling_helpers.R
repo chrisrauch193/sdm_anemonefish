@@ -525,10 +525,159 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
 }
 
 
+#' #' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
+#' #'
+#' #' Calculates block size via autocorrelation (if requested) and generates
+#' #' spatial_grid folds using the 'size' argument. Optionally handles fixed range.
+#' #' Directly returns the blockCV folds object ready for SDMtune::train.
+#' #'
+#' #' @param full_swd_data SWD object (output from SDMtune::prepareSWD).
+#' #' @param predictor_stack SpatRaster stack (used for CRS).
+#' #' @param config Project configuration list.
+#' #' @param logger log4r logger object.
+#' #' @param species_log_file Path to species-specific log file.
+#' #' @return A blockCV folds object suitable for SDMtune::train, or NULL on error.
+#' create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
+#'   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
+#' 
+#'   # --- Extract Config Parameters ---
+#'   cv_method      <- config$sdm_spatial_cv_type_to_use
+#'   nfolds         <- config$sdm_n_folds
+#'   auto_range     <- config$blockcv_auto_range
+#'   range_default  <- config$blockcv_range_default # Default fixed range
+#'   range_max      <- config$blockcv_range_max     # Max allowed auto-range
+#'   use_hexagon    <- config$blockcv_hexagon
+#'   selection_type <- config$blockcv_selection
+#'   n_iterate      <- config$blockcv_n_iterate
+#'   # lat_blocks     <- config$blockcv_lat_blocks # Only needed if cv_method=="spatial_lat"
+#' 
+#'   hlog("INFO", paste("Attempting to create", nfolds, "spatial folds (Method:", cv_method, ", blockCV simplified logic)..."))
+#' 
+#'   # --- Prepare sf object from SWD data ---
+#'   swd_coords_df <- as.data.frame(full_swd_data@coords); colnames(swd_coords_df) <- c("X", "Y")
+#'   swd_coords_df$pa <- full_swd_data@pa
+#'   target_crs_str <- terra::crs(predictor_stack, proj=TRUE); if (is.null(target_crs_str)|target_crs_str=="") target_crs_str <- "EPSG:4326"
+#'   swd_sf <- tryCatch({ sf::st_as_sf(swd_coords_df, coords = c("X", "Y"), crs = target_crs_str) },
+#'                      error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
+#'   if(is.null(swd_sf)) return(NULL)
+#'   hlog("DEBUG", paste("Created sf object with", nrow(swd_sf), "rows."))
+#' 
+#'   # --- Determine Range/Block Size ---
+#'   final_range_m <- range_default # Start with default fixed range
+#' 
+#'   if (auto_range) {
+#'     hlog("INFO", "Calculating spatial autocorrelation range...")
+#'     sf::sf_use_s2(FALSE) # Disable S2 for blockCV functions if issues arise
+#'     auto_cor_result <- tryCatch({
+#'       blockCV::cv_spatial_autocor(x = swd_sf, column = "pa", plot = FALSE) # Avoid plotting here
+#'     }, error = function(e) {
+#'       hlog("WARN", paste("cv_spatial_autocor failed:", e$message, "- using default range."))
+#'       NULL
+#'     })
+#'     sf::sf_use_s2(TRUE) # Re-enable S2 if disabled
+#' 
+#'     if (!is.null(auto_cor_result) && !is.na(auto_cor_result$range)) {
+#'       auto_range_val <- auto_cor_result$range
+#'       hlog("INFO", paste("  Autocorrelation range result:", round(auto_range_val, 1), "m"))
+#'       if (auto_range_val < range_max) {
+#'         final_range_m <- auto_range_val
+#'         hlog("INFO", paste("  Using auto-calculated range:", round(final_range_m, 1), "m"))
+#'       } else {
+#'         final_range_m <- range_max
+#'         hlog("WARN", paste("  Autocorrelation range exceeded max allowed (", range_max, "m). Using max range instead."))
+#'       }
+#'     } else {
+#'       hlog("WARN", "  Autocorrelation calculation failed or returned NA. Using default range:", range_default, "m")
+#'       final_range_m <- range_default
+#'     }
+#'   } else {
+#'     hlog("INFO", paste("Using fixed default range:", range_default, "m"))
+#'     final_range_m <- range_default
+#'   }
+#' 
+#'   # Ensure range is positive
+#'   if(final_range_m <= 0) {
+#'     hlog("WARN", paste("Calculated/Default range is not positive (", final_range_m, "). Setting to a small positive value (1000m)."))
+#'     final_range_m <- 1000
+#'   }
+#' 
+#'   # --- Generate Folds based on Method ---
+#'   spatial_folds <- NULL
+#'   tryCatch({
+#'     if (cv_method == "spatial_grid") {
+#'       hlog("INFO", paste("Generating spatial grid blocks with size:", round(final_range_m, 1), "m"))
+#'       spatial_folds <- blockCV::cv_spatial(
+#'         x = swd_sf,
+#'         column = "pa",
+#'         r = predictor_stack[[1]], # Provide first layer for extent/res info if needed
+#'         k = nfolds,
+#'         size = final_range_m,
+#'         hexagon = use_hexagon,
+#'         selection = selection_type,
+#'         iteration = n_iterate,
+#'         progress = FALSE, # Disable internal progress bar
+#'         report = FALSE,   # Disable internal report
+#'         plot = FALSE      # Disable internal plot
+#'       )
+#'       # Optionally plot separately
+#'       # blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack)
+#' 
+#'     } else if (cv_method == "spatial_lat") {
+#'       hlog("INFO", "Generating latitudinal blocks.")
+#'       lat_blocks_n <- config$blockcv_lat_blocks # Get from config
+#'       if(is.null(lat_blocks_n) || !is.numeric(lat_blocks_n) || lat_blocks_n < 2) {
+#'         hlog("WARN", "blockcv_lat_blocks invalid in config, defaulting to 5.")
+#'         lat_blocks_n <- 5
+#'       }
+#'       spatial_folds <- blockCV::cv_spatial(
+#'         x = swd_sf,
+#'         column = "pa",
+#'         r = predictor_stack[[1]],
+#'         k = nfolds,
+#'         rows_cols = c(lat_blocks_n, 1), # Use lat blocks from config
+#'         selection = selection_type,
+#'         iteration = n_iterate,
+#'         progress = FALSE, report = FALSE, plot = FALSE
+#'       )
+#'     } else if (cv_method == "random") {
+#'       hlog("WARN", "'random' CV method selected. This is standard k-fold, not spatial. Consider 'spatial_grid' or 'spatial_lat'.")
+#'       # SDMtune handles random folds internally if folds=NULL or folds=integer 'k'
+#'       # To explicitly return folds compatible with SDMtune's expectation for spatial CV:
+#'       # We can create random folds using blockCV as well, but it's less standard.
+#'       # For consistency, let SDMtune handle random k-fold by returning NULL here.
+#'       # SDMtune will use its default random k-fold when `folds` is NULL in `train`.
+#'       # However, the tuning function expects folds. Let's create standard random folds.
+#'       set.seed(config$global_seed) # for reproducibility
+#'       n_pts <- nrow(swd_sf)
+#'       fold_indices <- sample(rep(1:nfolds, length.out = n_pts))
+#'       # Create the list structure SDMtune expects for folds
+#'       spatial_folds <- list(
+#'         train = lapply(1:nfolds, function(k) which(fold_indices != k)),
+#'         test = lapply(1:nfolds, function(k) which(fold_indices == k))
+#'       )
+#'       attr(spatial_folds, "method") <- "Random k-fold" # Add attribute for clarity
+#' 
+#'     } else {
+#'       hlog("ERROR", paste("Unsupported sdm_spatial_cv_type_to_use:", cv_method))
+#'       return(NULL)
+#'     }
+#' 
+#'     if(is.null(spatial_folds)) { hlog("ERROR", "blockCV fold generation returned NULL."); return(NULL) }
+#' 
+#'     hlog("DEBUG", paste("Spatial folds object created using blockCV (k=", nfolds, ")."))
+#'     return(spatial_folds) # Return the blockCV object or random fold list
+#' 
+#'   }, error = function(e) {
+#'     hlog("ERROR", paste("Error during spatial fold creation:", e$message))
+#'     return(NULL)
+#'   })
+#' }
+
+
 #' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
 #'
-#' Calculates block size via autocorrelation (if requested) and generates
-#' spatial_grid folds using the 'size' argument. Optionally handles fixed range.
+#' Calculates block size via autocorrelation (if requested), applies min/max caps,
+#' and generates spatial_grid folds using the 'size' argument. Optionally handles fixed range.
 #' Directly returns the blockCV folds object ready for SDMtune::train.
 #'
 #' @param full_swd_data SWD object (output from SDMtune::prepareSWD).
@@ -539,20 +688,25 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
 #' @return A blockCV folds object suitable for SDMtune::train, or NULL on error.
 create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
-  
+
   # --- Extract Config Parameters ---
   cv_method      <- config$sdm_spatial_cv_type_to_use
   nfolds         <- config$sdm_n_folds
   auto_range     <- config$blockcv_auto_range
-  range_default  <- config$blockcv_range_default # Default fixed range
-  range_max      <- config$blockcv_range_max     # Max allowed auto-range
+  range_default  <- config$blockcv_range_default      # Default fixed range
+
+  # --- NEW/RENAMED ---
+  range_min_auto <- config$blockcv_range_min_for_auto # Min cap for auto-detected range
+  range_max_auto <- config$blockcv_range_max_for_auto # Max cap for auto-detected range
+  # -------------------
+
   use_hexagon    <- config$blockcv_hexagon
   selection_type <- config$blockcv_selection
   n_iterate      <- config$blockcv_n_iterate
-  # lat_blocks     <- config$blockcv_lat_blocks # Only needed if cv_method=="spatial_lat"
-  
+  lat_blocks     <- config$blockcv_lat_blocks # Only needed if cv_method=="spatial_lat"
+
   hlog("INFO", paste("Attempting to create", nfolds, "spatial folds (Method:", cv_method, ", blockCV simplified logic)..."))
-  
+
   # --- Prepare sf object from SWD data ---
   swd_coords_df <- as.data.frame(full_swd_data@coords); colnames(swd_coords_df) <- c("X", "Y")
   swd_coords_df$pa <- full_swd_data@pa
@@ -561,10 +715,10 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
                      error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
   if(is.null(swd_sf)) return(NULL)
   hlog("DEBUG", paste("Created sf object with", nrow(swd_sf), "rows."))
-  
+
   # --- Determine Range/Block Size ---
   final_range_m <- range_default # Start with default fixed range
-  
+
   if (auto_range) {
     hlog("INFO", "Calculating spatial autocorrelation range...")
     sf::sf_use_s2(FALSE) # Disable S2 for blockCV functions if issues arise
@@ -575,32 +729,41 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       NULL
     })
     sf::sf_use_s2(TRUE) # Re-enable S2 if disabled
-    
+
     if (!is.null(auto_cor_result) && !is.na(auto_cor_result$range)) {
       auto_range_val <- auto_cor_result$range
-      hlog("INFO", paste("  Autocorrelation range result:", round(auto_range_val, 1), "m"))
-      if (auto_range_val < range_max) {
-        final_range_m <- auto_range_val
-        hlog("INFO", paste("  Using auto-calculated range:", round(final_range_m, 1), "m"))
+      hlog("INFO", paste("  Autocorrelation raw range result:", round(auto_range_val, 1), "m"))
+
+      # --- Apply Min/Max Caps for Auto Range ---
+      if (!is.null(range_min_auto) && auto_range_val < range_min_auto) {
+        final_range_m <- range_min_auto
+        hlog("INFO", paste("  Auto-range", round(auto_range_val,1), "m was below min_cap", range_min_auto, "m. Using min_cap."))
+      } else if (!is.null(range_max_auto) && auto_range_val > range_max_auto) {
+        final_range_m <- range_max_auto
+        hlog("INFO", paste("  Auto-range", round(auto_range_val,1), "m exceeded max_cap", range_max_auto, "m. Using max_cap."))
       } else {
-        final_range_m <- range_max
-        hlog("WARN", paste("  Autocorrelation range exceeded max allowed (", range_max, "m). Using max range instead."))
+        final_range_m <- auto_range_val
+        hlog("INFO", paste("  Using auto-calculated (and capped, if applicable) range:", round(final_range_m, 1), "m"))
       }
+      # ---------------------------------------
+
     } else {
       hlog("WARN", "  Autocorrelation calculation failed or returned NA. Using default range:", range_default, "m")
       final_range_m <- range_default
     }
   } else {
     hlog("INFO", paste("Using fixed default range:", range_default, "m"))
+    # For non-auto range, min/max caps are not typically applied, it's a fixed default.
+    # If you wanted to cap the default_range too, you'd add logic here.
     final_range_m <- range_default
   }
-  
+
   # Ensure range is positive
   if(final_range_m <= 0) {
     hlog("WARN", paste("Calculated/Default range is not positive (", final_range_m, "). Setting to a small positive value (1000m)."))
-    final_range_m <- 1000
+    final_range_m <- 1000 # Or some other sensible small positive default
   }
-  
+
   # --- Generate Folds based on Method ---
   spatial_folds <- NULL
   tryCatch({
@@ -611,7 +774,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
         column = "pa",
         r = predictor_stack[[1]], # Provide first layer for extent/res info if needed
         k = nfolds,
-        size = final_range_m,
+        size = final_range_m,     # USE THE FINAL, CAPPED RANGE
         hexagon = use_hexagon,
         selection = selection_type,
         iteration = n_iterate,
@@ -620,14 +783,15 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
         plot = FALSE      # Disable internal plot
       )
       # Optionally plot separately
-      # blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack)
-      
+      # blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack[[1]])
+
     } else if (cv_method == "spatial_lat") {
       hlog("INFO", "Generating latitudinal blocks.")
-      lat_blocks_n <- config$blockcv_lat_blocks # Get from config
+      # Ensure 'blockcv_lat_n_blocks' exists in config for this method
+      lat_blocks_n <- config$blockcv_lat_blocks # Use the renamed config variable
       if(is.null(lat_blocks_n) || !is.numeric(lat_blocks_n) || lat_blocks_n < 2) {
-        hlog("WARN", "blockcv_lat_blocks invalid in config, defaulting to 5.")
-        lat_blocks_n <- 5
+        hlog("WARN", "sdm_spatial_cv_lat_n_blocks invalid/missing in config, defaulting to 10.")
+        lat_blocks_n <- 10
       }
       spatial_folds <- blockCV::cv_spatial(
         x = swd_sf,
@@ -641,37 +805,32 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       )
     } else if (cv_method == "random") {
       hlog("WARN", "'random' CV method selected. This is standard k-fold, not spatial. Consider 'spatial_grid' or 'spatial_lat'.")
-      # SDMtune handles random folds internally if folds=NULL or folds=integer 'k'
-      # To explicitly return folds compatible with SDMtune's expectation for spatial CV:
-      # We can create random folds using blockCV as well, but it's less standard.
-      # For consistency, let SDMtune handle random k-fold by returning NULL here.
-      # SDMtune will use its default random k-fold when `folds` is NULL in `train`.
-      # However, the tuning function expects folds. Let's create standard random folds.
-      set.seed(config$global_seed) # for reproducibility
+      set.seed(123) # for reproducibility
       n_pts <- nrow(swd_sf)
       fold_indices <- sample(rep(1:nfolds, length.out = n_pts))
-      # Create the list structure SDMtune expects for folds
       spatial_folds <- list(
         train = lapply(1:nfolds, function(k) which(fold_indices != k)),
         test = lapply(1:nfolds, function(k) which(fold_indices == k))
       )
-      attr(spatial_folds, "method") <- "Random k-fold" # Add attribute for clarity
-      
+      attr(spatial_folds, "method") <- "Random k-fold"
+
     } else {
       hlog("ERROR", paste("Unsupported sdm_spatial_cv_type_to_use:", cv_method))
       return(NULL)
     }
-    
+
     if(is.null(spatial_folds)) { hlog("ERROR", "blockCV fold generation returned NULL."); return(NULL) }
-    
+
     hlog("DEBUG", paste("Spatial folds object created using blockCV (k=", nfolds, ")."))
-    return(spatial_folds) # Return the blockCV object or random fold list
-    
+    return(spatial_folds)
+
   }, error = function(e) {
     hlog("ERROR", paste("Error during spatial fold creation:", e$message))
     return(NULL)
   })
 }
+
+
 
 
 #' Tune SDM Hyperparameters using SDMtune gridSearch with SPATIAL k-fold CV
@@ -709,8 +868,37 @@ run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, conf
     if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
       hlog("ERROR", paste("Failed train CV base model:", e$message))
       hlog("ERROR", "  ---> glmnet error occurred. Data issues within folds possible or block size might be problematic. Check data or adjust blockcv_auto_range/blockcv_range_m.")
+      
+      
+      hlog("INFO", "Trying lateral blockCV")
+      config$sdm_spatial_cv_type_to_use <- "spatial_lat"
+      spatial_folds_blockcv <- create_spatial_cv_folds_simplified(
+        full_swd_data,
+        predictor_stack, # Pass stack for CRS info
+        config,
+        logger,
+        species_log_file
+      )
+      if(is.null(spatial_folds_blockcv)) {
+        hlog("ERROR", "Failed to create spatial folds.");
+        config$sdm_spatial_cv_type_to_use <- "spatial_grid"
+        return(NULL)
+      }
+      
+      hlog("DEBUG", "LATERAL BLOCKCV Training initial CV base model for gridSearch...")
+      initial_cv_model <- tryCatch({
+        SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
+      }, error = function(e) {
+        if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
+          hlog("ERROR", paste("Failed train CV base model:", e$message))
+          hlog("ERROR", "  ---> glmnet error occurred. Data issues within folds possible or block size might be problematic. Check data or adjust blockcv_auto_range/blockcv_range_m.")
+        } else { hlog("ERROR", paste("Failed train CV base model:", e$message)) }
+        config$sdm_spatial_cv_type_to_use <- "spatial_grid"
+        return(NULL)
+      })
+      if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
+
     } else { hlog("ERROR", paste("Failed train CV base model:", e$message)) }
-    return(NULL)
   })
   if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
   
@@ -783,7 +971,7 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 #' @return Character string with the full path to the expected prediction file.
 construct_prediction_filename <- function(species_name_sanitized, scenario_name, predictor_type_suffix, config) {
   
-  base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
   
@@ -929,13 +1117,91 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 }
 
 
-#' Calculate and Save Variable Importance (Handles MaxNet Directly)
-#' Calculates permutation importance. For MaxNet models, it extracts the
-#' importance calculated during training. For other models, it uses SDMtune::varImp.
+#' #' Calculate and Save Variable Importance (Handles MaxNet Directly)
+#' #' Calculates permutation importance. For MaxNet models, it extracts the
+#' #' importance calculated during training. For other models, it uses SDMtune::varImp.
+#' #' Saves results to the target structure.
+#' #'
+#' #' @param final_model An `SDMmodel` object (output from `train_final_sdm`).
+#' #' @param training_swd An `SWD` object (potentially needed for varImp on non-MaxNet).
+#' #' @param species_name_sanitized Sanitized species name.
+#' #' @param group_name Group name ("anemone" or "anemonefish").
+#' #' @param predictor_type_suffix Suffix indicating model type. Used in filename.
+#' #' @param config The configuration list.
+#' #' @param logger A log4r logger object.
+#' #' @param species_log_file Optional path for detailed species logs.
+#' #' @return TRUE on success, FALSE on failure.
+#' #' @export
+#' calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept for potential use by other methods
+#'                                   species_name_sanitized, group_name, predictor_type_suffix,
+#'                                   config, logger, species_log_file = NULL) {
+#'   
+#'   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[VarImpHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
+#'   
+#'   # --- Input validation ---
+#'   if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
+#'     hlog("ERROR", "Invalid SDMmodel object provided for VI.")
+#'     return(FALSE)
+#'   }
+#'   
+#'   hlog("INFO", "Calculating/Extracting variable importance...")
+#'   vi_results_df <- NULL
+#'   
+#'   tryCatch({
+#'     # model_method <- final_model@method # Get the method used (e.g., "Maxnet")
+#'     model_method <- "Maxnet"
+#'     
+#'     if (model_method == "Maxnet") {
+#'       hlog("DEBUG", "Maxnet model detected. Extracting pre-calculated permutation importance.")
+#'       raw_maxnet_model <- final_model@model
+#'       hlog("INFO", "HERE 1")
+#'       if (!is.null(raw_maxnet_model) && !is.null(raw_maxnet_model$variable.importance)) {
+#'         hlog("INFO", "HERE 2")
+#'         importance_vector <- raw_maxnet_model$variable.importance
+#'         hlog("INFO", "HERE 3")
+#'         vi_results_df <- data.frame(Variable = names(importance_vector), Importance = as.numeric(importance_vector), stringsAsFactors = FALSE)
+#'         hlog("INFO", "HERE 4")
+#'         vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
+#'         hlog("DEBUG", "Successfully extracted MaxNet variable importance.")
+#'       } else { hlog("WARN", "Could not find pre-calculated variable importance in the MaxNet model object.") }
+#'     } else {
+#'       hlog("DEBUG", paste("Model method is", model_method, ". Attempting SDMtune::varImp..."))
+#'       if (is.null(training_swd) || !inherits(training_swd, "SWD")) { hlog("ERROR", "Training SWD object required for varImp calculation with non-MaxNet models."); return(FALSE) }
+#'       show_progress <- FALSE
+#'       if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE}) }
+#'       vi_results <- SDMtune::varImp(model = final_model, permut = 10, progress = show_progress, test = training_swd)
+#'       if (!is.null(vi_results) && nrow(vi_results) > 0) { vi_results_df <- vi_results; hlog("DEBUG", "SDMtune::varImp successful for non-MaxNet model.") }
+#'       else { hlog("WARN", "SDMtune::varImp returned empty results for non-MaxNet model.") }
+#'     }
+#'     
+#'     # --- Saving Logic ---
+#'     if (is.null(vi_results_df)) { hlog("ERROR", "Variable importance could not be obtained."); return(FALSE) }
+#'     
+#'     # Determine target subdirectory using the map from config
+#'     subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]] # Uses same map as CV results
+#'     if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
+#'     target_subdir <- file.path(config$target_vi_base, subdir_name) # Use config$target_vi_base
+#'     dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
+#'     
+#'     vi_filename <- paste0("VI_", species_name_sanitized, ".csv") # Filename consistent with target repo
+#'     vi_file_path <- file.path(target_subdir, vi_filename)
+#'     
+#'     readr::write_csv(vi_results_df, vi_file_path)
+#'     hlog("INFO", paste("Variable importance saved to:", vi_file_path))
+#'     return(TRUE)
+#'     
+#'   }, error = function(e) {
+#'     hlog("ERROR", paste("Variable importance processing/saving failed:", e$message))
+#'     return(FALSE)
+#'   })
+#' }
+
+#' Calculate and Save Variable Importance for Maxnet Models
+#' Calculates permutation importance specifically for Maxnet models using SDMtune::varImp.
 #' Saves results to the target structure.
 #'
-#' @param final_model An `SDMmodel` object (output from `train_final_sdm`).
-#' @param training_swd An `SWD` object (potentially needed for varImp on non-MaxNet).
+#' @param final_model An `SDMmodel` object (output from `train_final_sdm`, assumed to be Maxnet).
+#' @param training_swd An `SWD` object (required for `SDMtune::varImp`).
 #' @param species_name_sanitized Sanitized species name.
 #' @param group_name Group name ("anemone" or "anemonefish").
 #' @param predictor_type_suffix Suffix indicating model type. Used in filename.
@@ -944,61 +1210,103 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
 #' @export
-calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept for potential use by other methods
+calculate_and_save_vi <- function(final_model, training_swd,
                                   species_name_sanitized, group_name, predictor_type_suffix,
                                   config, logger, species_log_file = NULL) {
   
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[VarImpHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
+  hlog <- function(level, ...) {
+    msg <- paste(Sys.time(), paste0("[", level, "]"), "[VarImpHelper]", paste0(..., collapse = " "))
+    if (!is.null(species_log_file)) {
+      cat(msg, "\n", file = species_log_file, append = TRUE)
+    } else if (!is.null(logger)) {
+      if (level == "INFO") log4r::info(logger, msg)
+      else if (level == "WARN") log4r::warn(logger, msg)
+      else if (level == "ERROR") log4r::error(logger, msg)
+      else log4r::debug(logger, msg) # Assumes DEBUG for other levels
+    }
+  }
   
   # --- Input validation ---
   if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
     hlog("ERROR", "Invalid SDMmodel object provided for VI.")
     return(FALSE)
   }
+  # Optional: Add a check if final_model@method is indeed "Maxnet" if there's any doubt
+  # if (final_model@method != "Maxnet") {
+  #   hlog("WARN", paste("This function is optimized for Maxnet models, but received:", final_model@method))
+  #   # Could still proceed or return FALSE depending on strictness
+  # }
   
-  hlog("INFO", "Calculating/Extracting variable importance...")
+  
+  hlog("INFO", "Calculating permutation importance for Maxnet model using SDMtune::varImp...")
   vi_results_df <- NULL
   
   tryCatch({
-    model_method <- final_model@method # Get the method used (e.g., "Maxnet")
+    if (is.null(training_swd) || !inherits(training_swd, "SWD")) {
+      hlog("ERROR", "Training SWD object (as 'test' argument) is required for SDMtune::varImp with Maxnet models.")
+      return(FALSE)
+    }
     
-    if (model_method == "Maxnet") {
-      hlog("DEBUG", "Maxnet model detected. Extracting pre-calculated permutation importance.")
-      raw_maxnet_model <- final_model@model
-      if (!is.null(raw_maxnet_model) && !is.null(raw_maxnet_model$variable.importance)) {
-        importance_vector <- raw_maxnet_model$variable.importance
-        vi_results_df <- data.frame(Variable = names(importance_vector), Importance = as.numeric(importance_vector), stringsAsFactors = FALSE)
-        vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
-        hlog("DEBUG", "Successfully extracted MaxNet variable importance.")
-      } else { hlog("WARN", "Could not find pre-calculated variable importance in the MaxNet model object.") }
+    show_progress_vi <- FALSE
+    # Using %||% operator, ensure rlang is available or define it, e.g., `'%||%' <- function(a, b) if (is.null(a)) b else a`
+    # If not, use a more explicit check:
+    # log_level_for_progress <- if (is.null(config$log_level)) "INFO" else config$log_level
+    if (!is.null(logger)) {
+      tryCatch({
+        current_log_level_num <- log4r::log_level(config$log_level %||% "INFO") # Use %||% for default
+        debug_level_num <- log4r::log_level("DEBUG")
+        show_progress_vi <- current_log_level_num <= debug_level_num
+      }, error = function(e) {
+        hlog("WARN", paste("Error determining log level for progress bar display:", e$message))
+        show_progress_vi <- FALSE # Default to no progress on error
+      })
+    }
+    
+    permut_val <- 10 # Number of permutations, as in your original code for non-MaxNet
+    
+    # SDMtune::varImp calculates permutation importance for Maxnet models
+    temp_vi_calc <- SDMtune::varImp(model = final_model,
+                                    permut = permut_val,
+                                    progress = show_progress_vi)
+    
+    if (!is.null(temp_vi_calc) && nrow(temp_vi_calc) > 0 && "Permutation_importance" %in% colnames(temp_vi_calc) && "Variable" %in% colnames(temp_vi_calc)) {
+      # Ensure the output format is exactly "Variable" and "Importance"
+      vi_results_df <- data.frame(Variable = temp_vi_calc$Variable,
+                                  Importance = temp_vi_calc$Permutation_importance,
+                                  stringsAsFactors = FALSE)
+      vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
+      hlog("DEBUG", "SDMtune::varImp calculation successful for Maxnet model.")
     } else {
-      hlog("DEBUG", paste("Model method is", model_method, ". Attempting SDMtune::varImp..."))
-      if (is.null(training_swd) || !inherits(training_swd, "SWD")) { hlog("ERROR", "Training SWD object required for varImp calculation with non-MaxNet models."); return(FALSE) }
-      show_progress <- FALSE
-      if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE}) }
-      vi_results <- SDMtune::varImp(model = final_model, permut = 10, progress = show_progress, test = training_swd)
-      if (!is.null(vi_results) && nrow(vi_results) > 0) { vi_results_df <- vi_results; hlog("DEBUG", "SDMtune::varImp successful for non-MaxNet model.") }
-      else { hlog("WARN", "SDMtune::varImp returned empty results for non-MaxNet model.") }
+      hlog("WARN", "SDMtune::varImp returned empty, malformed, or NULL results for Maxnet model.")
+      # vi_results_df remains NULL
     }
     
     # --- Saving Logic ---
-    if (is.null(vi_results_df)) { hlog("ERROR", "Variable importance could not be obtained."); return(FALSE) }
+    if (is.null(vi_results_df)) {
+      hlog("ERROR", "Variable importance could not be obtained for the Maxnet model.")
+      return(FALSE)
+    }
     
-    # Determine target subdirectory using the map from config
-    subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]] # Uses same map as CV results
-    if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
-    target_subdir <- file.path(config$target_vi_base, subdir_name) # Use config$target_vi_base
+    subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]]
+    if (is.null(subdir_name)) {
+      hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix))
+      return(FALSE)
+    }
+    target_subdir <- file.path(config$target_vi_base, subdir_name)
     dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
     
-    vi_filename <- paste0("VI_", species_name_sanitized, ".csv") # Filename consistent with target repo
+    vi_filename <- paste0("VI_", species_name_sanitized, ".csv")
     vi_file_path <- file.path(target_subdir, vi_filename)
     
+    # Ensure readr is available, or use utils::write.csv
+    # utils::write.csv(vi_results_df, vi_file_path, row.names = FALSE)
     readr::write_csv(vi_results_df, vi_file_path)
     hlog("INFO", paste("Variable importance saved to:", vi_file_path))
     return(TRUE)
     
   }, error = function(e) {
-    hlog("ERROR", paste("Variable importance processing/saving failed:", e$message))
+    hlog("ERROR", paste("Variable importance processing/saving failed for Maxnet model:", e$message))
+    # Optionally print stack trace for debugging: print(sys.calls())
     return(FALSE)
   })
 }
@@ -1125,7 +1433,6 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   metrics_df[numeric_cols] <- lapply(metrics_df[numeric_cols], round, digits = 4) # Round numerics
   if("AICc" %in% names(metrics_df)) metrics_df$AICc <- round(metrics_df$AICc, 2) # Different rounding for AICc
   
-  hlog("INFO", "WOW WE GOT HERasdadasdasE")
   
   # Determine target subdirectory using the map from config
   subdir_name <- paste0(group_name, config$model_output_subdir_map[[predictor_type_suffix]])
@@ -1135,9 +1442,6 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   
   # Construct filenames matching the target repo style
   target_base_name <- paste0("CV_Results_", species_name_sanitized) # Using sanitized name
-  
-  
-  hlog("INFO", "WOW WE GOasdasdasdasdasdasdasdasdasdT HERE")
 
   # 2. Save results table (CSV - for target analysis mirroring target)
   csv_file <- file.path(target_subdir, paste0(target_base_name, ".csv"))

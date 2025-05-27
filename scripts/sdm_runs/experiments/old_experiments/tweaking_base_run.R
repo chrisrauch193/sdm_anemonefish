@@ -281,11 +281,11 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     }
     best_hypers <- attr(tuning_output, "best_hypers")
     
-    # Save Tuning Results
-    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) {
-      rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc();
-      return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
-    }
+    # # Save Tuning Results
+    # if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) {
+    #   rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc();
+    #   return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
+    # }
     
     # Train Final Model (using species_specific_stack)
     cat("INFO Starting final model training.")

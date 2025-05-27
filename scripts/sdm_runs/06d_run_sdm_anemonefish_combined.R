@@ -315,75 +315,80 @@ process_species_sdm_combined <- function(species_row, config, env_predictor_path
   } else { slog("WARN", "Skipping variable importance: final model object is unavailable.") }
   
   # --- Prediction Loop ---
-  # Requires GLOBAL predictor stacks
-  predictions_made = 0; prediction_errors = 0
-  scenarios_to_predict <- names(env_predictor_paths_list)
-  slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
-  
-  if (!is.null(final_model)) {
-    for (pred_scenario in scenarios_to_predict) {
-      slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
-      target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
-      if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
-      rerun_flag <- config$force_rerun$run_biotic_sdms # Check biotic flag
-      if (!rerun_flag && file.exists(target_pred_file_path)) { slog("DEBUG", "  Prediction exists. Skipping."); next }
-      
-      # --- Prepare GLOBAL Stack for Prediction Scenario ---
-      pred_predictor_stack_global <- NULL
-      tryCatch({
-        pred_env_path <- env_predictor_paths_list[[pred_scenario]]
-        if (is.null(pred_env_path) || !file.exists(pred_env_path)) stop(paste("Env PCA stack missing:", pred_scenario))
-        pred_env_stack <- terra::rast(pred_env_path) # Load Env PCA
-        reference_geom_pred <- pred_env_stack[[1]]
+  if (config$do_final_prediction) {
+    # Requires GLOBAL predictor stacks
+    predictions_made = 0; prediction_errors = 0
+    scenarios_to_predict <- names(env_predictor_paths_list)
+    slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
+    
+    if (!is.null(final_model)) {
+      for (pred_scenario in scenarios_to_predict) {
+        slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
+        target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
+        if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
+        rerun_flag <- config$force_rerun$run_biotic_sdms # Check biotic flag
+        if (!rerun_flag && file.exists(target_pred_file_path)) { slog("DEBUG", "  Prediction exists. Skipping."); next }
         
-        host_paths_for_pred <- all_host_prediction_paths[[pred_scenario]][names(all_host_prediction_paths[[pred_scenario]]) %in% associated_hosts_sanitized]
-        if (length(host_paths_for_pred) == 0) stop(paste("No host paths found:", pred_scenario))
-        
-        host_rasters_pred_list <- list()
-        for(host_name in names(host_paths_for_pred)){
-          host_path <- host_paths_for_pred[[host_name]]
-          host_rast <- tryCatch(terra::rast(host_path), error=function(e){slog("WARN",paste("Failed load host",basename(host_path),":",e$message)); NULL})
-          if(!is.null(host_rast)){
-            if (!terra::compareGeom(reference_geom_pred, host_rast, stopOnError=FALSE, res=TRUE)) { slog("DEBUG", paste("Resampling host", basename(host_path))); host_rast <- tryCatch(terra::resample(host_rast, reference_geom_pred, method="bilinear"), error=function(e){slog("ERROR",paste("Failed resample",basename(host_path),":",e$message)); NULL}) }
-            if(!is.null(host_rast)){ names(host_rast) <- host_name; host_rasters_pred_list[[host_name]] <- host_rast }
+        # --- Prepare GLOBAL Stack for Prediction Scenario ---
+        pred_predictor_stack_global <- NULL
+        tryCatch({
+          pred_env_path <- env_predictor_paths_list[[pred_scenario]]
+          if (is.null(pred_env_path) || !file.exists(pred_env_path)) stop(paste("Env PCA stack missing:", pred_scenario))
+          pred_env_stack <- terra::rast(pred_env_path) # Load Env PCA
+          reference_geom_pred <- pred_env_stack[[1]]
+          
+          host_paths_for_pred <- all_host_prediction_paths[[pred_scenario]][names(all_host_prediction_paths[[pred_scenario]]) %in% associated_hosts_sanitized]
+          if (length(host_paths_for_pred) == 0) stop(paste("No host paths found:", pred_scenario))
+          
+          host_rasters_pred_list <- list()
+          for(host_name in names(host_paths_for_pred)){
+            host_path <- host_paths_for_pred[[host_name]]
+            host_rast <- tryCatch(terra::rast(host_path), error=function(e){slog("WARN",paste("Failed load host",basename(host_path),":",e$message)); NULL})
+            if(!is.null(host_rast)){
+              if (!terra::compareGeom(reference_geom_pred, host_rast, stopOnError=FALSE, res=TRUE)) { slog("DEBUG", paste("Resampling host", basename(host_path))); host_rast <- tryCatch(terra::resample(host_rast, reference_geom_pred, method="bilinear"), error=function(e){slog("ERROR",paste("Failed resample",basename(host_path),":",e$message)); NULL}) }
+              if(!is.null(host_rast)){ names(host_rast) <- host_name; host_rasters_pred_list[[host_name]] <- host_rast }
+            }
           }
-        }
-        if (length(host_rasters_pred_list) == 0) stop(paste("Failed load/resample hosts:", pred_scenario))
+          if (length(host_rasters_pred_list) == 0) stop(paste("Failed load/resample hosts:", pred_scenario))
+          
+          host_stack_scenario <- terra::rast(host_rasters_pred_list)
+          max_host_suitability_scenario <- terra::app(host_stack_scenario, fun = "max", na.rm = TRUE); names(max_host_suitability_scenario) <- "host_suitability_max"
+          pred_predictor_stack_global <- c(pred_env_stack, max_host_suitability_scenario) # Assign to outer scope
+          slog("DEBUG", paste("  GLOBAL Predictor stack for prediction:", paste(names(pred_predictor_stack_global), collapse=", ")))
+          rm(pred_env_stack, host_stack_scenario, max_host_suitability_scenario, host_rasters_pred_list); gc()
+          
+        }, error = function(e) {
+          slog("ERROR", paste("  Failed preparing GLOBAL combined stack for prediction:", pred_scenario, "Error:", e$message))
+          if (exists("pred_env_stack")) rm(pred_env_stack); if (exists("host_stack_scenario")) rm(host_stack_scenario); if (exists("max_host_suitability_scenario")) rm(max_host_suitability_scenario); if (exists("host_rasters_pred_list")) rm(host_rasters_pred_list)
+          gc(); pred_predictor_stack_global <- NULL
+        })
+        # --- End GLOBAL Stack Prep ---
         
-        host_stack_scenario <- terra::rast(host_rasters_pred_list)
-        max_host_suitability_scenario <- terra::app(host_stack_scenario, fun = "max", na.rm = TRUE); names(max_host_suitability_scenario) <- "host_suitability_max"
-        pred_predictor_stack_global <- c(pred_env_stack, max_host_suitability_scenario) # Assign to outer scope
-        slog("DEBUG", paste("  GLOBAL Predictor stack for prediction:", paste(names(pred_predictor_stack_global), collapse=", ")))
-        rm(pred_env_stack, host_stack_scenario, max_host_suitability_scenario, host_rasters_pred_list); gc()
+        if(is.null(pred_predictor_stack_global)) { prediction_errors <- prediction_errors + 1; next }
         
-      }, error = function(e) {
-        slog("ERROR", paste("  Failed preparing GLOBAL combined stack for prediction:", pred_scenario, "Error:", e$message))
-        if (exists("pred_env_stack")) rm(pred_env_stack); if (exists("host_stack_scenario")) rm(host_stack_scenario); if (exists("max_host_suitability_scenario")) rm(max_host_suitability_scenario); if (exists("host_rasters_pred_list")) rm(host_rasters_pred_list)
-        gc(); pred_predictor_stack_global <- NULL
-      })
-      # --- End GLOBAL Stack Prep ---
-      
-      if(is.null(pred_predictor_stack_global)) { prediction_errors <- prediction_errors + 1; next }
-      
-      # Predict & Save
-      prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
-      if (inherits(prediction_output, "SpatRaster")) {
-        save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
-        if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
-        rm(prediction_output); gc()
-      } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
-      rm(pred_predictor_stack_global); gc()
-    } # End prediction scenario loop
+        # Predict & Save
+        prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
+        if (inherits(prediction_output, "SpatRaster")) {
+          save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
+          if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
+          rm(prediction_output); gc()
+        } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
+        rm(pred_predictor_stack_global); gc()
+      } # End prediction scenario loop
+    } else {
+      prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping predictions: Final model unavailable."); slog("ERROR", msg)
+      status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+    }
+    
+    # --- Prepare return status ---
+    final_status <- "success"; status_message <- paste0("Finished Combined SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
+    if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
+    else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) }
+    else { slog("INFO", status_message) }
   } else {
-    prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping predictions: Final model unavailable."); slog("ERROR", msg)
-    status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+    final_status <- "success"
+    status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Predictions Skipped")
   }
-  
-  # --- Prepare return status ---
-  final_status <- "success"; status_message <- paste0("Finished Combined SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
-  if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
-  else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) }
-  else { slog("INFO", status_message) }
   
   # --- Clean up ---
   if (!is.null(species_specific_stack)) rm(species_specific_stack)

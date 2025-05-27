@@ -103,7 +103,7 @@ process_species_list <- function(file_path, output_file_path) {
   gbif_names <- lapply(final_list$scientificName, rgbif::name_backbone)
   gbif_names <- bind_rows(gbif_names)
   gbif_names <- gbif_names %>%
-    select(gbif_speciesKey = usageKey, gbif_scientificName = scientificName, gbif_matchType = matchType)
+    dplyr::select(gbif_speciesKey = usageKey, gbif_scientificName = scientificName, gbif_matchType = matchType)
   
   final_list <- final_list %>% bind_cols(gbif_names)
   

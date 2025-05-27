@@ -266,49 +266,54 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   } else { slog("WARN", "Skipping variable importance: final model object is unavailable.") }
   
   # --- Prediction Loop ---
-  predictions_made = 0; prediction_errors = 0
-  scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
-  slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
-  
-  if (!is.null(final_model)) {
-    for (pred_scenario in scenarios_to_predict) {
-      slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
-      target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
-      if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
-      rerun_flag <- config$force_rerun$run_standard_sdms
-      if (!rerun_flag && file.exists(target_pred_file_path)) { slog("DEBUG", "  Prediction exists in target location. Skipping."); next }
-      
-      # Load GLOBAL predictor stack for prediction
-      pred_predictor_stack_global <- NULL
-      if(use_pca) {
-        pred_predictor_path <- predictor_paths_or_list[[pred_scenario]]
-        if (is.null(pred_predictor_path) || !file.exists(pred_predictor_path)) { slog("WARN", paste("  GLOBAL PCA stack path missing:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
-        pred_predictor_stack_global <- tryCatch(terra::rast(pred_predictor_path), error = function(e) {slog("WARN", paste("  Error loading GLOBAL PCA stack:", e$message)); NULL})
-      } else {
-        scenario_vif_vars <- generate_scenario_variable_list(predictor_paths_or_list, pred_scenario, config)
-        if(length(scenario_vif_vars) < 1) { slog("WARN", paste("  No VIF vars for scenario:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
-        pred_predictor_stack_global <- load_selected_env_data(pred_scenario, scenario_vif_vars, config)
+  if (config$do_final_prediction) {
+    predictions_made = 0; prediction_errors = 0
+    scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
+    slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
+    
+    if (!is.null(final_model)) {
+      for (pred_scenario in scenarios_to_predict) {
+        slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
+        target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
+        if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
+        rerun_flag <- config$force_rerun$run_standard_sdms
+        if (!rerun_flag && file.exists(target_pred_file_path)) { slog("DEBUG", "  Prediction exists in target location. Skipping."); next }
+        
+        # Load GLOBAL predictor stack for prediction
+        pred_predictor_stack_global <- NULL
+        if(use_pca) {
+          pred_predictor_path <- predictor_paths_or_list[[pred_scenario]]
+          if (is.null(pred_predictor_path) || !file.exists(pred_predictor_path)) { slog("WARN", paste("  GLOBAL PCA stack path missing:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
+          pred_predictor_stack_global <- tryCatch(terra::rast(pred_predictor_path), error = function(e) {slog("WARN", paste("  Error loading GLOBAL PCA stack:", e$message)); NULL})
+        } else {
+          scenario_vif_vars <- generate_scenario_variable_list(predictor_paths_or_list, pred_scenario, config)
+          if(length(scenario_vif_vars) < 1) { slog("WARN", paste("  No VIF vars for scenario:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
+          pred_predictor_stack_global <- load_selected_env_data(pred_scenario, scenario_vif_vars, config)
+        }
+        if(is.null(pred_predictor_stack_global)) { slog("WARN", paste("  Failed load GLOBAL predictor stack:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
+        
+        prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
+        if (inherits(prediction_output, "SpatRaster")) {
+          save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
+          if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
+          rm(prediction_output); gc()
+        } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
+        rm(pred_predictor_stack_global); gc()
       }
-      if(is.null(pred_predictor_stack_global)) { slog("WARN", paste("  Failed load GLOBAL predictor stack:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
-      
-      prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
-      if (inherits(prediction_output, "SpatRaster")) {
-        save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
-        if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
-        rm(prediction_output); gc()
-      } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
-      rm(pred_predictor_stack_global); gc()
+    } else {
+      prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping all predictions: Final model was not available."); slog("ERROR", msg)
+      status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
     }
+    
+    # --- Prepare return status ---
+    final_status <- "success"; status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
+    if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
+    else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) }
+    else { slog("INFO", status_message) }
   } else {
-    prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping all predictions: Final model was not available."); slog("ERROR", msg)
-    status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+    final_status <- "success"
+    status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Predictions Skipped")
   }
-  
-  # --- Prepare return status ---
-  final_status <- "success"; status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
-  if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
-  else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) }
-  else { slog("INFO", status_message) }
   
   # --- Clean up ---
   if (!is.null(species_specific_stack)) rm(species_specific_stack)
