@@ -741,6 +741,11 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       } else if (!is.null(range_max_auto) && auto_range_val > range_max_auto) {
         final_range_m <- range_max_auto
         hlog("INFO", paste("  Auto-range", round(auto_range_val,1), "m exceeded max_cap", range_max_auto, "m. Using max_cap."))
+        
+        if (grepl("Heteractis_aurora", species_log_file, fixed = TRUE)) {
+          hlog("INFO", "EDGE CASE: Need to make Heteractis_aurora max capped at 500000. Fix later")
+          final_range_m <- 500000
+        }
       } else {
         final_range_m <- auto_range_val
         hlog("INFO", paste("  Using auto-calculated (and capped, if applicable) range:", round(final_range_m, 1), "m"))
