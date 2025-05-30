@@ -10,6 +10,116 @@
 pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2, ecospat, spThin, geosphere,
                biomod2, presenceabsence, randomForest, gbm, mda, gam) # Added biomod2 and dependencies
 
+
+#' #' Load, Clean, and Get Coordinates for Individual Species Occurrences
+#' #' (Returns list with data and count)
+#' #'
+#' #' @param species_aphia_id AphiaID of the target species.
+#' #' @param occurrence_dir Directory containing individual species CSV files.
+#' #' @param config Project configuration list (needs `occurrence_crs`, `thinning_method`, `min_occurrences_sdm`, and optionally `predictor_stack_for_thinning` if thinning is 'cell').
+#' #' @param logger A log4r logger object (can be NULL for less verbose output).
+#' #' @param species_log_file Optional path to a species-specific log file for detailed messages.
+#' #' @return A list containing cleaned coordinates `coords` (matrix) and the final `count`, or NULL on error.
+#' load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, config, logger, species_log_file = NULL) {
+#'   
+#'   # Local logging function for this helper
+#'   hlog <- function(level, ...) {
+#'     msg <- paste(Sys.time(), paste0("[",level,"]"), "[OccLoadHelper]", paste0(..., collapse = " "))
+#'     if (!is.null(species_log_file)) { # Prefer species log if provided
+#'       cat(msg, "\n", file = species_log_file, append = TRUE)
+#'     } else if (!is.null(logger)) { # Fallback to main logger
+#'       log_level_func <- switch(level, DEBUG=log4r::debug, INFO=log4r::info, WARN=log4r::warn, log4r::error)
+#'       log_level_func(logger, msg) # Log to main logger
+#'     } else {
+#'       # cat(msg, "\n") # Fallback to console if no loggers provided
+#'     }
+#'   }
+#'   
+#'   hlog("DEBUG", paste("Loading occurrences for AphiaID:", species_aphia_id))
+#'   occ_file <- file.path(occurrence_dir, paste0(species_aphia_id, ".csv"))
+#'   if (!file.exists(occ_file)) {
+#'     hlog("WARN", paste("Occurrence file not found:", basename(occ_file)))
+#'     return(list(coords = NULL, count = 0))
+#'   }
+#'   
+#'   tryCatch({
+#'     occ_df <- readr::read_csv(occ_file, col_types = readr::cols(.default = "c"), show_col_types = FALSE)
+#'     
+#'     if (!all(c("decimalLongitude", "decimalLatitude") %in% names(occ_df))) {
+#'       hlog("WARN", paste("Missing coordinate columns in file:", basename(occ_file)))
+#'       return(list(coords = NULL, count = 0))
+#'     }
+#'     
+#'     occ_clean <- occ_df %>%
+#'       dplyr::mutate(
+#'         decimalLongitude = suppressWarnings(as.numeric(decimalLongitude)),
+#'         decimalLatitude = suppressWarnings(as.numeric(decimalLatitude))
+#'       ) %>%
+#'       dplyr::filter(
+#'         !is.na(decimalLongitude), !is.na(decimalLatitude),
+#'         decimalLongitude >= -180, decimalLongitude <= 180,
+#'         decimalLatitude >= -90, decimalLatitude <= 90
+#'       )
+#'     
+#'     count_after_clean <- nrow(occ_clean)
+#'     hlog("DEBUG", paste("  Retained", count_after_clean, "records after coordinate cleaning."))
+#'     
+#'     if (count_after_clean == 0) {
+#'       hlog("WARN", "No valid coordinates after cleaning.")
+#'       return(list(coords = NULL, count = 0))
+#'     }
+#'     
+#'     # --- Spatial Thinning (Optional) ---
+#'     if (!is.null(config$thinning_method) && config$thinning_method == "cell" && !is.null(config$predictor_stack_for_thinning)) {
+#'       hlog("DEBUG", "  Applying cell-based thinning...")
+#'       predictor_stack_thin <- config$predictor_stack_for_thinning
+#'       if (is.null(predictor_stack_thin) || !inherits(predictor_stack_thin, "SpatRaster") || terra::nlyr(predictor_stack_thin) == 0) {
+#'         hlog("WARN", " predictor_stack_for_thinning invalid/missing. Skipping thinning.")
+#'         occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'       } else {
+#'         occs_sf <- sf::st_as_sf(occ_clean, coords = c("decimalLongitude", "decimalLatitude"), crs = config$occurrence_crs)
+#'         target_crs <- terra::crs(predictor_stack_thin)
+#'         if (sf::st_crs(occs_sf) != sf::st_crs(target_crs)) {
+#'           occs_sf <- sf::st_transform(occs_sf, crs = target_crs)
+#'         }
+#'         occs_spatvector <- terra::vect(occs_sf)
+#'         occs_cells <- tryCatch(terra::extract(predictor_stack_thin[[1]], occs_spatvector, cells = TRUE), error=function(e){hlog("WARN",paste("Error extracting cells:",e$message));NULL})
+#'         
+#'         if(is.null(occs_cells)){
+#'           hlog("WARN", " Cell extraction failed. Skipping thinning.")
+#'           occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'         } else {
+#'           valid_cells_indices <- which(!is.na(occs_cells$cell))
+#'           if(length(valid_cells_indices) > 0) {
+#'             unique_cell_indices_in_valid <- which(!duplicated(occs_cells$cell[valid_cells_indices]))
+#'             original_indices_to_keep <- valid_cells_indices[unique_cell_indices_in_valid]
+#'             occs_thinned_sf <- occs_sf[original_indices_to_keep, ]
+#'             occ_thinned_coords <- sf::st_coordinates(occs_thinned_sf)
+#'             colnames(occ_thinned_coords) <- c("decimalLongitude", "decimalLatitude") # Ensure names
+#'           } else {
+#'             hlog("WARN", " No valid cells found for occurrences on thinning raster. Skipping thinning.")
+#'             occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'           }
+#'         }
+#'       }
+#'       count_after_thin <- nrow(occ_thinned_coords)
+#'       hlog("DEBUG", paste("  Retained", count_after_thin, "records after thinning."))
+#'       if (count_after_thin == 0) {hlog("WARN", "No records left after thinning."); return(list(coords = NULL, count = 0))}
+#'     } else {
+#'       hlog("DEBUG", "  Skipping spatial thinning or method not 'cell'.")
+#'       occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'       count_after_thin <- nrow(occ_thinned_coords)
+#'     }
+#'     
+#'     return(list(coords = occ_thinned_coords, count = count_after_thin))
+#'     
+#'   }, error = function(e) {
+#'     hlog("ERROR", paste("Error processing occurrences for AphiaID", species_aphia_id, ":", e$message))
+#'     return(list(coords = NULL, count = 0))
+#'   })
+#' }
+
+
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count) - Modified to NOT do cell thinning internally.
 #'
@@ -20,7 +130,7 @@ pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV,
 #' @param species_log_file Optional path to a species-specific log file for detailed messages.
 #' @return A list containing cleaned coordinates `coords` (matrix) and the final `count`, or NULL on error.
 load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, config, logger, species_log_file = NULL) {
-  
+
   # Local logging function for this helper
   hlog <- function(level, ...) {
     msg <- paste(Sys.time(), paste0("[",level,"]"), "[OccLoadHelper]", paste0(..., collapse = " "))
@@ -36,22 +146,22 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
       # cat(msg, "\n") # Fallback to console if no loggers provided
     }
   }
-  
+
   hlog("DEBUG", paste("Loading occurrences for AphiaID:", species_aphia_id))
   occ_file <- file.path(occurrence_dir, paste0(species_aphia_id, ".csv"))
   if (!file.exists(occ_file)) {
     hlog("WARN", paste("Occurrence file not found:", basename(occ_file)))
     return(list(coords = NULL, count = 0))
   }
-  
+
   tryCatch({
     occ_df <- readr::read_csv(occ_file, col_types = readr::cols(.default = "c"), show_col_types = FALSE)
-    
+
     if (!all(c("decimalLongitude", "decimalLatitude") %in% names(occ_df))) {
       hlog("WARN", paste("Missing coordinate columns in file:", basename(occ_file)))
       return(list(coords = NULL, count = 0))
     }
-    
+
     occ_clean <- occ_df %>%
       dplyr::mutate(
         decimalLongitude = suppressWarnings(as.numeric(decimalLongitude)),
@@ -62,23 +172,23 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
         decimalLongitude >= -180, decimalLongitude <= 180,
         decimalLatitude >= -90, decimalLatitude <= 90
       )
-    
+
     count_after_clean <- nrow(occ_clean)
     hlog("DEBUG", paste("  Retained", count_after_clean, "records after basic coordinate cleaning (NA removal)."))
-    
+
     if (count_after_clean == 0) {
       hlog("WARN", "No valid coordinates after cleaning.")
       return(list(coords = NULL, count = 0))
     }
-    
+
     # --- NO SPATIAL THINNING HERE ---
     # Thinning is now handled by a separate function `thin_occurrences_by_sac`
     hlog("DEBUG", "  Skipping internal spatial thinning. Raw cleaned coordinates returned.")
     occ_final_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
     colnames(occ_final_coords) <- c("longitude", "latitude") # Ensure consistent names
-    
+
     return(list(coords = occ_final_coords, count = count_after_clean))
-    
+
   }, error = function(e) {
     hlog("ERROR", paste("Error processing occurrences for AphiaID", species_aphia_id, ":", e$message))
     return(list(coords = NULL, count = 0))
@@ -290,6 +400,74 @@ thin_occurrences_by_sac <- function(occs_coords, predictor_stack, config, logger
               n_thinned = n_final,
               thinning_distance_km = thin_dist_km_final))
 }
+
+
+
+
+
+
+
+
+
+
+
+#' Generate Background Points within the Raster Extent (v2 - with Coral Masking)
+#' Can optionally mask sampling to coral reef areas defined in config.
+#' @param predictor_stack SpatRaster stack (used for extent/masking).
+#' @param n_background Number of points to attempt generating.
+#' @param config Project configuration list (needs `mask_background_points_to_coral`, `apply_coral_mask`, `coral_shapefile`). #<< ADDED config
+#' @param logger A log4r logger object (can be NULL).
+#' @param species_log_file Optional path to a species-specific log file.
+#' @param seed Optional random seed for reproducibility.
+#' @return A data frame of background point coordinates (x, y), or NULL on error.
+generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = 123) { #<< ADDED config
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BgGenHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
+  
+  hlog("DEBUG", paste("Generating up to", n_background, "background points...")) # Changed log level
+  if (is.null(predictor_stack) || !inherits(predictor_stack, "SpatRaster") || terra::nlyr(predictor_stack) == 0) { hlog("ERROR", "Predictor stack is required."); return(NULL) }
+  if (!is.null(seed)) set.seed(seed)
+  
+  # --- Determine the layer to sample from ---
+  sampling_layer <- predictor_stack[[1]] # Start with the first layer
+  sampling_mask <- NULL # Initialize
+  
+  # Apply Coral Mask (if configured in config)
+  if (config$mask_background_points_to_coral && config$apply_coral_mask) {
+    hlog("DEBUG", "  Attempting coral reef mask for background point sampling...")
+    if (!is.null(config$coral_shapefile) && file.exists(config$coral_shapefile)) {
+      coral_areas_sf <- tryCatch({ sf::st_read(config$coral_shapefile, quiet = TRUE) }, error = function(e) {hlog("WARN",paste("   Failed load coral shapefile:", e$message)); NULL})
+      if (!is.null(coral_areas_sf)) {
+        coral_areas_vect <- tryCatch({ terra::vect(coral_areas_sf) }, error = function(e) {hlog("WARN",paste("   Failed convert coral sf to vect:", e$message)); NULL})
+        if (!is.null(coral_areas_vect)) {
+          if(terra::crs(coral_areas_vect) != terra::crs(sampling_layer)){
+            hlog("DEBUG", "    Projecting coral shapefile CRS...")
+            coral_areas_vect <- tryCatch(terra::project(coral_areas_vect, terra::crs(sampling_layer)), error = function(e){hlog("WARN",paste("     Failed project coral shapefile:", e$message)); NULL})
+          }
+          if(!is.null(coral_areas_vect)){
+            sampling_mask <- tryCatch(terra::mask(sampling_layer, coral_areas_vect), error=function(e){hlog("WARN",paste("     Failed mask sampling layer:", e$message)); NULL})
+            if(!is.null(sampling_mask)) { hlog("DEBUG", "  Coral reef mask applied for sampling.") }
+            else { hlog("WARN", "  Failed to create mask. Sampling from unmasked layer.") }
+          } else { hlog("WARN", "  CRS projection failed. Sampling from unmasked layer.") }
+        } else { hlog("WARN", "  sf to vect conversion failed. Sampling from unmasked layer.") }
+      } else { hlog("WARN", "  Coral shapefile loading failed. Sampling from unmasked layer.") }
+    } else { hlog("WARN", "  Coral shapefile path missing/invalid. Sampling from unmasked layer.") }
+  } else { hlog("DEBUG", "  Background point sampling not masked to coral reefs.") }
+  
+  # Use the masked layer if created, otherwise the original first layer
+  layer_to_sample_from <- if(!is.null(sampling_mask)) sampling_mask else sampling_layer
+  
+  # --- Sample Points ---
+  tryCatch({
+    bg_points <- terra::spatSample(layer_to_sample_from, size = n_background, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
+    if (nrow(bg_points) < n_background) { hlog("WARN", paste("Could only sample", nrow(bg_points), "background points (requested", n_background, ", likely due to mask/raster extent).")) }
+    if (nrow(bg_points) == 0) { hlog("ERROR", "Failed to generate ANY background points from the sampling area."); return(NULL) }
+    hlog("INFO", paste("Generated", nrow(bg_points), "background points.")) # Changed log level
+    return(as.data.frame(bg_points[, c("x", "y")]))
+  }, error = function(e) { hlog("ERROR", paste("Error generating background points:", e$message)); return(NULL) })
+}
+
+
+
 
 
 #' Generate Background Points using OBIS/MPAEU Ecoregion/Depth Method (Returns List v4)
@@ -525,159 +703,10 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
 }
 
 
-#' #' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
-#' #'
-#' #' Calculates block size via autocorrelation (if requested) and generates
-#' #' spatial_grid folds using the 'size' argument. Optionally handles fixed range.
-#' #' Directly returns the blockCV folds object ready for SDMtune::train.
-#' #'
-#' #' @param full_swd_data SWD object (output from SDMtune::prepareSWD).
-#' #' @param predictor_stack SpatRaster stack (used for CRS).
-#' #' @param config Project configuration list.
-#' #' @param logger log4r logger object.
-#' #' @param species_log_file Path to species-specific log file.
-#' #' @return A blockCV folds object suitable for SDMtune::train, or NULL on error.
-#' create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
-#'   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
-#' 
-#'   # --- Extract Config Parameters ---
-#'   cv_method      <- config$sdm_spatial_cv_type_to_use
-#'   nfolds         <- config$sdm_n_folds
-#'   auto_range     <- config$blockcv_auto_range
-#'   range_default  <- config$blockcv_range_default # Default fixed range
-#'   range_max      <- config$blockcv_range_max     # Max allowed auto-range
-#'   use_hexagon    <- config$blockcv_hexagon
-#'   selection_type <- config$blockcv_selection
-#'   n_iterate      <- config$blockcv_n_iterate
-#'   # lat_blocks     <- config$blockcv_lat_blocks # Only needed if cv_method=="spatial_lat"
-#' 
-#'   hlog("INFO", paste("Attempting to create", nfolds, "spatial folds (Method:", cv_method, ", blockCV simplified logic)..."))
-#' 
-#'   # --- Prepare sf object from SWD data ---
-#'   swd_coords_df <- as.data.frame(full_swd_data@coords); colnames(swd_coords_df) <- c("X", "Y")
-#'   swd_coords_df$pa <- full_swd_data@pa
-#'   target_crs_str <- terra::crs(predictor_stack, proj=TRUE); if (is.null(target_crs_str)|target_crs_str=="") target_crs_str <- "EPSG:4326"
-#'   swd_sf <- tryCatch({ sf::st_as_sf(swd_coords_df, coords = c("X", "Y"), crs = target_crs_str) },
-#'                      error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
-#'   if(is.null(swd_sf)) return(NULL)
-#'   hlog("DEBUG", paste("Created sf object with", nrow(swd_sf), "rows."))
-#' 
-#'   # --- Determine Range/Block Size ---
-#'   final_range_m <- range_default # Start with default fixed range
-#' 
-#'   if (auto_range) {
-#'     hlog("INFO", "Calculating spatial autocorrelation range...")
-#'     sf::sf_use_s2(FALSE) # Disable S2 for blockCV functions if issues arise
-#'     auto_cor_result <- tryCatch({
-#'       blockCV::cv_spatial_autocor(x = swd_sf, column = "pa", plot = FALSE) # Avoid plotting here
-#'     }, error = function(e) {
-#'       hlog("WARN", paste("cv_spatial_autocor failed:", e$message, "- using default range."))
-#'       NULL
-#'     })
-#'     sf::sf_use_s2(TRUE) # Re-enable S2 if disabled
-#' 
-#'     if (!is.null(auto_cor_result) && !is.na(auto_cor_result$range)) {
-#'       auto_range_val <- auto_cor_result$range
-#'       hlog("INFO", paste("  Autocorrelation range result:", round(auto_range_val, 1), "m"))
-#'       if (auto_range_val < range_max) {
-#'         final_range_m <- auto_range_val
-#'         hlog("INFO", paste("  Using auto-calculated range:", round(final_range_m, 1), "m"))
-#'       } else {
-#'         final_range_m <- range_max
-#'         hlog("WARN", paste("  Autocorrelation range exceeded max allowed (", range_max, "m). Using max range instead."))
-#'       }
-#'     } else {
-#'       hlog("WARN", "  Autocorrelation calculation failed or returned NA. Using default range:", range_default, "m")
-#'       final_range_m <- range_default
-#'     }
-#'   } else {
-#'     hlog("INFO", paste("Using fixed default range:", range_default, "m"))
-#'     final_range_m <- range_default
-#'   }
-#' 
-#'   # Ensure range is positive
-#'   if(final_range_m <= 0) {
-#'     hlog("WARN", paste("Calculated/Default range is not positive (", final_range_m, "). Setting to a small positive value (1000m)."))
-#'     final_range_m <- 1000
-#'   }
-#' 
-#'   # --- Generate Folds based on Method ---
-#'   spatial_folds <- NULL
-#'   tryCatch({
-#'     if (cv_method == "spatial_grid") {
-#'       hlog("INFO", paste("Generating spatial grid blocks with size:", round(final_range_m, 1), "m"))
-#'       spatial_folds <- blockCV::cv_spatial(
-#'         x = swd_sf,
-#'         column = "pa",
-#'         r = predictor_stack[[1]], # Provide first layer for extent/res info if needed
-#'         k = nfolds,
-#'         size = final_range_m,
-#'         hexagon = use_hexagon,
-#'         selection = selection_type,
-#'         iteration = n_iterate,
-#'         progress = FALSE, # Disable internal progress bar
-#'         report = FALSE,   # Disable internal report
-#'         plot = FALSE      # Disable internal plot
-#'       )
-#'       # Optionally plot separately
-#'       # blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack)
-#' 
-#'     } else if (cv_method == "spatial_lat") {
-#'       hlog("INFO", "Generating latitudinal blocks.")
-#'       lat_blocks_n <- config$blockcv_lat_blocks # Get from config
-#'       if(is.null(lat_blocks_n) || !is.numeric(lat_blocks_n) || lat_blocks_n < 2) {
-#'         hlog("WARN", "blockcv_lat_blocks invalid in config, defaulting to 5.")
-#'         lat_blocks_n <- 5
-#'       }
-#'       spatial_folds <- blockCV::cv_spatial(
-#'         x = swd_sf,
-#'         column = "pa",
-#'         r = predictor_stack[[1]],
-#'         k = nfolds,
-#'         rows_cols = c(lat_blocks_n, 1), # Use lat blocks from config
-#'         selection = selection_type,
-#'         iteration = n_iterate,
-#'         progress = FALSE, report = FALSE, plot = FALSE
-#'       )
-#'     } else if (cv_method == "random") {
-#'       hlog("WARN", "'random' CV method selected. This is standard k-fold, not spatial. Consider 'spatial_grid' or 'spatial_lat'.")
-#'       # SDMtune handles random folds internally if folds=NULL or folds=integer 'k'
-#'       # To explicitly return folds compatible with SDMtune's expectation for spatial CV:
-#'       # We can create random folds using blockCV as well, but it's less standard.
-#'       # For consistency, let SDMtune handle random k-fold by returning NULL here.
-#'       # SDMtune will use its default random k-fold when `folds` is NULL in `train`.
-#'       # However, the tuning function expects folds. Let's create standard random folds.
-#'       set.seed(config$global_seed) # for reproducibility
-#'       n_pts <- nrow(swd_sf)
-#'       fold_indices <- sample(rep(1:nfolds, length.out = n_pts))
-#'       # Create the list structure SDMtune expects for folds
-#'       spatial_folds <- list(
-#'         train = lapply(1:nfolds, function(k) which(fold_indices != k)),
-#'         test = lapply(1:nfolds, function(k) which(fold_indices == k))
-#'       )
-#'       attr(spatial_folds, "method") <- "Random k-fold" # Add attribute for clarity
-#' 
-#'     } else {
-#'       hlog("ERROR", paste("Unsupported sdm_spatial_cv_type_to_use:", cv_method))
-#'       return(NULL)
-#'     }
-#' 
-#'     if(is.null(spatial_folds)) { hlog("ERROR", "blockCV fold generation returned NULL."); return(NULL) }
-#' 
-#'     hlog("DEBUG", paste("Spatial folds object created using blockCV (k=", nfolds, ")."))
-#'     return(spatial_folds) # Return the blockCV object or random fold list
-#' 
-#'   }, error = function(e) {
-#'     hlog("ERROR", paste("Error during spatial fold creation:", e$message))
-#'     return(NULL)
-#'   })
-#' }
-
-
 #' Create Spatial CV Folds using blockCV (Simplified iobis/mpaeu_sdm Logic)
 #'
-#' Calculates block size via autocorrelation (if requested), applies min/max caps,
-#' and generates spatial_grid folds using the 'size' argument. Optionally handles fixed range.
+#' Calculates block size via autocorrelation (if requested) and generates
+#' spatial_grid folds using the 'size' argument. Optionally handles fixed range.
 #' Directly returns the blockCV folds object ready for SDMtune::train.
 #'
 #' @param full_swd_data SWD object (output from SDMtune::prepareSWD).
@@ -688,25 +717,20 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
 #' @return A blockCV folds object suitable for SDMtune::train, or NULL on error.
 create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, config, logger, species_log_file) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[CreateCVFoldsSimp]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
-
+  
   # --- Extract Config Parameters ---
   cv_method      <- config$sdm_spatial_cv_type_to_use
   nfolds         <- config$sdm_n_folds
   auto_range     <- config$blockcv_auto_range
-  range_default  <- config$blockcv_range_default      # Default fixed range
-
-  # --- NEW/RENAMED ---
-  range_min_auto <- config$blockcv_range_min_for_auto # Min cap for auto-detected range
-  range_max_auto <- config$blockcv_range_max_for_auto # Max cap for auto-detected range
-  # -------------------
-
+  range_default  <- config$blockcv_range_default # Default fixed range
+  range_max      <- config$blockcv_range_max     # Max allowed auto-range
   use_hexagon    <- config$blockcv_hexagon
   selection_type <- config$blockcv_selection
   n_iterate      <- config$blockcv_n_iterate
-  lat_blocks     <- config$blockcv_lat_blocks # Only needed if cv_method=="spatial_lat"
-
+  # lat_blocks     <- config$blockcv_lat_blocks # Only needed if cv_method=="spatial_lat"
+  
   hlog("INFO", paste("Attempting to create", nfolds, "spatial folds (Method:", cv_method, ", blockCV simplified logic)..."))
-
+  
   # --- Prepare sf object from SWD data ---
   swd_coords_df <- as.data.frame(full_swd_data@coords); colnames(swd_coords_df) <- c("X", "Y")
   swd_coords_df$pa <- full_swd_data@pa
@@ -715,10 +739,10 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
                      error = function(e){ hlog("ERROR", paste("Failed create sf from SWD:", e$message)); NULL })
   if(is.null(swd_sf)) return(NULL)
   hlog("DEBUG", paste("Created sf object with", nrow(swd_sf), "rows."))
-
+  
   # --- Determine Range/Block Size ---
   final_range_m <- range_default # Start with default fixed range
-
+  
   if (auto_range) {
     hlog("INFO", "Calculating spatial autocorrelation range...")
     sf::sf_use_s2(FALSE) # Disable S2 for blockCV functions if issues arise
@@ -729,46 +753,32 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       NULL
     })
     sf::sf_use_s2(TRUE) # Re-enable S2 if disabled
-
+    
     if (!is.null(auto_cor_result) && !is.na(auto_cor_result$range)) {
       auto_range_val <- auto_cor_result$range
-      hlog("INFO", paste("  Autocorrelation raw range result:", round(auto_range_val, 1), "m"))
-
-      # --- Apply Min/Max Caps for Auto Range ---
-      if (!is.null(range_min_auto) && auto_range_val < range_min_auto) {
-        final_range_m <- range_min_auto
-        hlog("INFO", paste("  Auto-range", round(auto_range_val,1), "m was below min_cap", range_min_auto, "m. Using min_cap."))
-      } else if (!is.null(range_max_auto) && auto_range_val > range_max_auto) {
-        final_range_m <- range_max_auto
-        hlog("INFO", paste("  Auto-range", round(auto_range_val,1), "m exceeded max_cap", range_max_auto, "m. Using max_cap."))
-        
-        if (grepl("Heteractis_aurora", species_log_file, fixed = TRUE)) {
-          hlog("INFO", "EDGE CASE: Need to make Heteractis_aurora max capped at 500000. Fix later")
-          final_range_m <- 500000
-        }
-      } else {
+      hlog("INFO", paste("  Autocorrelation range result:", round(auto_range_val, 1), "m"))
+      if (auto_range_val < range_max) {
         final_range_m <- auto_range_val
-        hlog("INFO", paste("  Using auto-calculated (and capped, if applicable) range:", round(final_range_m, 1), "m"))
+        hlog("INFO", paste("  Using auto-calculated range:", round(final_range_m, 1), "m"))
+      } else {
+        final_range_m <- range_max
+        hlog("WARN", paste("  Autocorrelation range exceeded max allowed (", range_max, "m). Using max range instead."))
       }
-      # ---------------------------------------
-
     } else {
       hlog("WARN", "  Autocorrelation calculation failed or returned NA. Using default range:", range_default, "m")
       final_range_m <- range_default
     }
   } else {
     hlog("INFO", paste("Using fixed default range:", range_default, "m"))
-    # For non-auto range, min/max caps are not typically applied, it's a fixed default.
-    # If you wanted to cap the default_range too, you'd add logic here.
     final_range_m <- range_default
   }
-
+  
   # Ensure range is positive
   if(final_range_m <= 0) {
     hlog("WARN", paste("Calculated/Default range is not positive (", final_range_m, "). Setting to a small positive value (1000m)."))
-    final_range_m <- 1000 # Or some other sensible small positive default
+    final_range_m <- 1000
   }
-
+  
   # --- Generate Folds based on Method ---
   spatial_folds <- NULL
   tryCatch({
@@ -779,7 +789,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
         column = "pa",
         r = predictor_stack[[1]], # Provide first layer for extent/res info if needed
         k = nfolds,
-        size = final_range_m,     # USE THE FINAL, CAPPED RANGE
+        size = final_range_m,
         hexagon = use_hexagon,
         selection = selection_type,
         iteration = n_iterate,
@@ -788,15 +798,14 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
         plot = FALSE      # Disable internal plot
       )
       # Optionally plot separately
-      # blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack[[1]])
-
+      # blockCV::cv_plot(cv = spatial_folds, x = swd_sf, r = predictor_stack)
+      
     } else if (cv_method == "spatial_lat") {
       hlog("INFO", "Generating latitudinal blocks.")
-      # Ensure 'blockcv_lat_n_blocks' exists in config for this method
-      lat_blocks_n <- config$blockcv_lat_blocks # Use the renamed config variable
+      lat_blocks_n <- config$blockcv_lat_blocks # Get from config
       if(is.null(lat_blocks_n) || !is.numeric(lat_blocks_n) || lat_blocks_n < 2) {
-        hlog("WARN", "sdm_spatial_cv_lat_n_blocks invalid/missing in config, defaulting to 10.")
-        lat_blocks_n <- 10
+        hlog("WARN", "blockcv_lat_blocks invalid in config, defaulting to 5.")
+        lat_blocks_n <- 5
       }
       spatial_folds <- blockCV::cv_spatial(
         x = swd_sf,
@@ -810,32 +819,37 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       )
     } else if (cv_method == "random") {
       hlog("WARN", "'random' CV method selected. This is standard k-fold, not spatial. Consider 'spatial_grid' or 'spatial_lat'.")
-      set.seed(123) # for reproducibility
+      # SDMtune handles random folds internally if folds=NULL or folds=integer 'k'
+      # To explicitly return folds compatible with SDMtune's expectation for spatial CV:
+      # We can create random folds using blockCV as well, but it's less standard.
+      # For consistency, let SDMtune handle random k-fold by returning NULL here.
+      # SDMtune will use its default random k-fold when `folds` is NULL in `train`.
+      # However, the tuning function expects folds. Let's create standard random folds.
+      set.seed(config$global_seed) # for reproducibility
       n_pts <- nrow(swd_sf)
       fold_indices <- sample(rep(1:nfolds, length.out = n_pts))
+      # Create the list structure SDMtune expects for folds
       spatial_folds <- list(
         train = lapply(1:nfolds, function(k) which(fold_indices != k)),
         test = lapply(1:nfolds, function(k) which(fold_indices == k))
       )
-      attr(spatial_folds, "method") <- "Random k-fold"
-
+      attr(spatial_folds, "method") <- "Random k-fold" # Add attribute for clarity
+      
     } else {
       hlog("ERROR", paste("Unsupported sdm_spatial_cv_type_to_use:", cv_method))
       return(NULL)
     }
-
+    
     if(is.null(spatial_folds)) { hlog("ERROR", "blockCV fold generation returned NULL."); return(NULL) }
-
+    
     hlog("DEBUG", paste("Spatial folds object created using blockCV (k=", nfolds, ")."))
-    return(spatial_folds)
-
+    return(spatial_folds) # Return the blockCV object or random fold list
+    
   }, error = function(e) {
     hlog("ERROR", paste("Error during spatial fold creation:", e$message))
     return(NULL)
   })
 }
-
-
 
 
 #' Tune SDM Hyperparameters using SDMtune gridSearch with SPATIAL k-fold CV
@@ -864,46 +878,20 @@ run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, conf
     species_log_file
   )
   if(is.null(spatial_folds_blockcv)) { hlog("ERROR", "Failed to create spatial folds."); return(NULL) }
+  # folds <- tryCatch({ SDMtune::randomFolds(data = full_swd_data, k = config$sdm_n_folds, only_presence = FALSE, seed = config$global_seed)}, error = function(e){ hlog("ERROR", paste("Failed create k-folds:", e$message)); return(NULL)})
+  # if(is.null(folds)) return(NULL)
   
   # --- 3. Train initial CV model ---
   hlog("DEBUG", "Training initial CV base model for gridSearch...")
   initial_cv_model <- tryCatch({
     SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
+    # SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = folds, progress = FALSE)
   }, error = function(e) {
     if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
       hlog("ERROR", paste("Failed train CV base model:", e$message))
       hlog("ERROR", "  ---> glmnet error occurred. Data issues within folds possible or block size might be problematic. Check data or adjust blockcv_auto_range/blockcv_range_m.")
-      
-      
-      hlog("INFO", "Trying lateral blockCV")
-      config$sdm_spatial_cv_type_to_use <- "spatial_lat"
-      spatial_folds_blockcv <- create_spatial_cv_folds_simplified(
-        full_swd_data,
-        predictor_stack, # Pass stack for CRS info
-        config,
-        logger,
-        species_log_file
-      )
-      if(is.null(spatial_folds_blockcv)) {
-        hlog("ERROR", "Failed to create spatial folds.");
-        config$sdm_spatial_cv_type_to_use <- "spatial_grid"
-        return(NULL)
-      }
-      
-      hlog("DEBUG", "LATERAL BLOCKCV Training initial CV base model for gridSearch...")
-      initial_cv_model <- tryCatch({
-        SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
-      }, error = function(e) {
-        if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
-          hlog("ERROR", paste("Failed train CV base model:", e$message))
-          hlog("ERROR", "  ---> glmnet error occurred. Data issues within folds possible or block size might be problematic. Check data or adjust blockcv_auto_range/blockcv_range_m.")
-        } else { hlog("ERROR", paste("Failed train CV base model:", e$message)) }
-        config$sdm_spatial_cv_type_to_use <- "spatial_grid"
-        return(NULL)
-      })
-      if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
-
     } else { hlog("ERROR", paste("Failed train CV base model:", e$message)) }
+    return(NULL)
   })
   if (is.null(initial_cv_model) || !inherits(initial_cv_model, "SDMmodelCV")) { hlog("ERROR", "Failed create valid SDMmodelCV object."); return(NULL)}
   
@@ -976,7 +964,8 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 #' @return Character string with the full path to the expected prediction file.
 construct_prediction_filename <- function(species_name_sanitized, scenario_name, predictor_type_suffix, config) {
   
-  base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  # base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
   
@@ -1121,85 +1110,6 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
   })
 }
 
-
-#' #' Calculate and Save Variable Importance (Handles MaxNet Directly)
-#' #' Calculates permutation importance. For MaxNet models, it extracts the
-#' #' importance calculated during training. For other models, it uses SDMtune::varImp.
-#' #' Saves results to the target structure.
-#' #'
-#' #' @param final_model An `SDMmodel` object (output from `train_final_sdm`).
-#' #' @param training_swd An `SWD` object (potentially needed for varImp on non-MaxNet).
-#' #' @param species_name_sanitized Sanitized species name.
-#' #' @param group_name Group name ("anemone" or "anemonefish").
-#' #' @param predictor_type_suffix Suffix indicating model type. Used in filename.
-#' #' @param config The configuration list.
-#' #' @param logger A log4r logger object.
-#' #' @param species_log_file Optional path for detailed species logs.
-#' #' @return TRUE on success, FALSE on failure.
-#' #' @export
-#' calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept for potential use by other methods
-#'                                   species_name_sanitized, group_name, predictor_type_suffix,
-#'                                   config, logger, species_log_file = NULL) {
-#'   
-#'   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[VarImpHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
-#'   
-#'   # --- Input validation ---
-#'   if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
-#'     hlog("ERROR", "Invalid SDMmodel object provided for VI.")
-#'     return(FALSE)
-#'   }
-#'   
-#'   hlog("INFO", "Calculating/Extracting variable importance...")
-#'   vi_results_df <- NULL
-#'   
-#'   tryCatch({
-#'     # model_method <- final_model@method # Get the method used (e.g., "Maxnet")
-#'     model_method <- "Maxnet"
-#'     
-#'     if (model_method == "Maxnet") {
-#'       hlog("DEBUG", "Maxnet model detected. Extracting pre-calculated permutation importance.")
-#'       raw_maxnet_model <- final_model@model
-#'       hlog("INFO", "HERE 1")
-#'       if (!is.null(raw_maxnet_model) && !is.null(raw_maxnet_model$variable.importance)) {
-#'         hlog("INFO", "HERE 2")
-#'         importance_vector <- raw_maxnet_model$variable.importance
-#'         hlog("INFO", "HERE 3")
-#'         vi_results_df <- data.frame(Variable = names(importance_vector), Importance = as.numeric(importance_vector), stringsAsFactors = FALSE)
-#'         hlog("INFO", "HERE 4")
-#'         vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
-#'         hlog("DEBUG", "Successfully extracted MaxNet variable importance.")
-#'       } else { hlog("WARN", "Could not find pre-calculated variable importance in the MaxNet model object.") }
-#'     } else {
-#'       hlog("DEBUG", paste("Model method is", model_method, ". Attempting SDMtune::varImp..."))
-#'       if (is.null(training_swd) || !inherits(training_swd, "SWD")) { hlog("ERROR", "Training SWD object required for varImp calculation with non-MaxNet models."); return(FALSE) }
-#'       show_progress <- FALSE
-#'       if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE}) }
-#'       vi_results <- SDMtune::varImp(model = final_model, permut = 10, progress = show_progress, test = training_swd)
-#'       if (!is.null(vi_results) && nrow(vi_results) > 0) { vi_results_df <- vi_results; hlog("DEBUG", "SDMtune::varImp successful for non-MaxNet model.") }
-#'       else { hlog("WARN", "SDMtune::varImp returned empty results for non-MaxNet model.") }
-#'     }
-#'     
-#'     # --- Saving Logic ---
-#'     if (is.null(vi_results_df)) { hlog("ERROR", "Variable importance could not be obtained."); return(FALSE) }
-#'     
-#'     # Determine target subdirectory using the map from config
-#'     subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]] # Uses same map as CV results
-#'     if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
-#'     target_subdir <- file.path(config$target_vi_base, subdir_name) # Use config$target_vi_base
-#'     dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
-#'     
-#'     vi_filename <- paste0("VI_", species_name_sanitized, ".csv") # Filename consistent with target repo
-#'     vi_file_path <- file.path(target_subdir, vi_filename)
-#'     
-#'     readr::write_csv(vi_results_df, vi_file_path)
-#'     hlog("INFO", paste("Variable importance saved to:", vi_file_path))
-#'     return(TRUE)
-#'     
-#'   }, error = function(e) {
-#'     hlog("ERROR", paste("Variable importance processing/saving failed:", e$message))
-#'     return(FALSE)
-#'   })
-#' }
 
 #' Calculate and Save Variable Importance for Maxnet Models
 #' Calculates permutation importance specifically for Maxnet models using SDMtune::varImp.
@@ -1438,6 +1348,7 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   metrics_df[numeric_cols] <- lapply(metrics_df[numeric_cols], round, digits = 4) # Round numerics
   if("AICc" %in% names(metrics_df)) metrics_df$AICc <- round(metrics_df$AICc, 2) # Different rounding for AICc
   
+  hlog("INFO", "WOW WE GOT HERasdadasdasE")
   
   # Determine target subdirectory using the map from config
   subdir_name <- paste0(group_name, config$model_output_subdir_map[[predictor_type_suffix]])
@@ -1447,7 +1358,10 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   
   # Construct filenames matching the target repo style
   target_base_name <- paste0("CV_Results_", species_name_sanitized) # Using sanitized name
-
+  
+  
+  hlog("INFO", "WOW WE GOasdasdasdasdasdasdasdasdasdT HERE")
+  
   # 2. Save results table (CSV - for target analysis mirroring target)
   csv_file <- file.path(target_subdir, paste0(target_base_name, ".csv"))
   results_df <- tuning_output@results
@@ -1945,3 +1859,17 @@ save_biomod2_projection <- function(prediction_raster, species_name_sanitized_fo
     TRUE
   }, error = function(e) { b2_hlog_save("ERROR", paste("Failed save BIOMOD2 prediction raster:", e$message)); FALSE })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

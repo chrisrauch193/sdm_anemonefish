@@ -8,14 +8,14 @@
 cat("--- Running Script 06a: Run Standard Anemone SDMs (v5 - Tweaking Integrated) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
-if (file.exists("scripts/config.R")) {
-  source("scripts/config.R")
-  if (!exists("config") || !is.list(config)) {
-    stop("FATAL: 'config' list object not found or invalid after sourcing scripts/config.R")
-  }
-} else {
-  stop("FATAL: Configuration file 'scripts/config.R' not found.")
-}
+# if (file.exists("scripts/config.R")) {
+#   source("scripts/config.R")
+#   if (!exists("config") || !is.list(config)) {
+#     stop("FATAL: 'config' list object not found or invalid after sourcing scripts/config.R")
+#   }
+# } else {
+#   stop("FATAL: Configuration file 'scripts/config.R' not found.")
+# }
 
 # --- 2. Load Required Packages ---
 if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
@@ -132,13 +132,27 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   slog("DEBUG", "GLOBAL Tuning predictor stack loaded.")
   raster_crs_terra <- terra::crs(tuning_predictor_stack_global)
   
+  
+  # TODO: REMOVE OLD THINNING
+  # config_for_occ_load <- config; config_for_occ_load$predictor_stack_for_thinning <- tuning_predictor_stack_global
+  # slog("DEBUG", "Loading/cleaning/thinning occurrences.")
+  # occ_data_result <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger=NULL, species_log_file=species_log_file)
+  # if (is.null(occ_data_result) || is.null(occ_data_result$coords) || occ_data_result$count < config$min_occurrences_sdm) { msg <- paste0("Skipping: Insufficient valid/thinned occurrences (found ", occ_data_result$count %||% 0, ")."); slog("WARN", msg); return(list(status = "skipped_occurrences", species = species_name, occurrence_count = occ_data_result$count %||% 0, message = msg)) }
+  # occs_coords <- occ_data_result$coords;
+  # occs_sf_clean <- sf::st_as_sf(as.data.frame(occs_coords), coords=c("decimalLongitude","decimalLatitude"), crs=config$occurrence_crs) # sf for spatial ops
+  # if(sf::st_crs(occs_sf_clean) != sf::st_crs(raster_crs_terra)){ occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(raster_crs_terra))}
+  # occurrence_count_after_thinning <- occ_data_result$count
+  # slog("INFO", "Occurrence count after clean/thin:", occurrence_count_after_thinning)
+  # 
+  
+  
   # --- Load and Clean Initial Occurrences (NO CELL THINNING HERE) ---
   config_for_occ_load <- config # Copy config
   # Ensure cell thinning is disabled in the loading function call
   config_for_occ_load$thinning_method <- NULL
   slog("DEBUG", "Loading/cleaning initial occurrences (before SAC thinning).")
   occ_data_result_raw <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger=NULL, species_log_file=species_log_file)
-  
+
   if (is.null(occ_data_result_raw) || is.null(occ_data_result_raw$coords) || occ_data_result_raw$count < config$min_occurrences_sdm) {
     msg <- paste0("Skipping: Insufficient occurrences before SAC thinning (", occ_data_result_raw$count %||% 0, ").");
     slog("WARN", msg);
@@ -147,12 +161,12 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   occs_coords_raw <- occ_data_result_raw$coords
   occurrence_count_raw <- occ_data_result_raw$count
   slog("INFO", paste("Occurrence count after basic cleaning:", occurrence_count_raw))
-  
+
   # --- <<< Spatial Autocorrelation (SAC) Thinning >>> ---
   occs_coords_thinned <- occs_coords_raw # Default to raw if thinning skipped/fails
   occurrence_count_after_thinning <- occurrence_count_raw # Use raw count initially
   thinning_dist_applied <- NA
-  
+
   sac_thin_result <- thin_occurrences_by_sac(
     occs_coords = occs_coords_raw,
     predictor_stack = tuning_predictor_stack_global, # Use the GLOBAL stack for env data extraction during SAC check
@@ -160,7 +174,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     logger = NULL, # Pass NULL logger to helper if needed
     species_log_file = species_log_file
   )
-  
+
   if (!is.null(sac_thin_result)) {
     occs_coords_thinned <- sac_thin_result$coords_thinned
     occurrence_count_after_thinning <- sac_thin_result$n_thinned # Update count
@@ -177,23 +191,25 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     # occs_coords_thinned and occurrence_count_after_thinning retain original values
   }
   # --- <<< END SPATIAL AUTOCORRELATION THINNING >>> ---
-  
+
   # --- Use thinned coordinates for subsequent steps ---
   occs_coords <- occs_coords_thinned # Use potentially thinned coords from now on
   # Convert to sf object for background generation
   occs_sf_clean <- sf::st_as_sf(as.data.frame(occs_coords), coords=c("longitude","latitude"), crs=config$occurrence_crs)
+
   # Add AphiaID column needed by generate_sdm_background_obis
   occs_sf_clean$AphiaID <- species_aphia_id
   # Ensure CRS matches raster
   if(sf::st_crs(occs_sf_clean) != sf::st_crs(raster_crs_terra)){
     occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(raster_crs_terra))
   }
+
   
   # --- Check Existing Model (Optional) ---
   final_model <- NULL; tuning_output <- NULL; load_existing_model <- FALSE
   full_swd_data <- NULL # Initialize SWD object
   species_specific_stack <- NULL # Initialize species specific stack
-  
+  slog("INFO", "hereasdasdasdasdasdre")
   if (!config$force_rerun$run_standard_sdms && file.exists(final_model_file)) {
     slog("INFO", "Final model file exists. Attempting to load...")
     final_model <- tryCatch(readRDS(final_model_file), error=function(e) { slog("ERROR", "Failed to load existing model:", e$message); NULL})
@@ -204,6 +220,8 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
       # Regenerate background points and species stack for VI/Eval using OBIS method
       slog("DEBUG", "Regenerating background points and species stack for loaded model VI/Eval...")
       background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
+      # TODO: REMOVE OLD BACKGROUND GEN
+      # background_points_for_eval <- generate_sdm_background(tuning_predictor_stack_global, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = config$global_seed)
       
       if(!is.null(background_return_eval) && !is.null(background_return_eval$background_points) && !is.null(background_return_eval$species_specific_stack)) {
         background_points_eval <- background_return_eval$background_points
@@ -238,6 +256,12 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     background_points <- background_return$background_points
     species_specific_stack <- background_return$species_specific_stack # Use this masked stack
     slog("DEBUG", "Background points generated and stack masked for training.")
+    
+    # TODO: REMOVE OLD BACKGROUND GEN
+    # background_points <- generate_sdm_background(tuning_predictor_stack_global, config$background_points_n, config, logger=NULL, species_log_file=species_log_file, seed = config$global_seed)
+    # if (is.null(background_points)) { msg <- paste0("Skipping: Failed background point generation."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg)) }
+    # slog("DEBUG", "Background points generated.")
+    # species_specific_stack <- tuning_predictor_stack_global
     
     # Prepare SWD data using the species_specific_stack
     full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points, env = species_specific_stack, verbose = FALSE) }, error = function(e) { slog("ERROR", paste("Failed prepareSWD for tuning/training:", e$message)); NULL })
@@ -331,64 +355,59 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   }
   
   # --- Prediction Loop ---
-  if (config$do_final_prediction) {
-    # Requires the GLOBAL predictor stacks, not species_specific_stack
-    predictions_made = 0; prediction_errors = 0
-    scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
-    slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
-    
-    if (!is.null(final_model)) {
-      for (pred_scenario in scenarios_to_predict) {
-        slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
-        target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
-        if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
-        
-        # Check force_rerun flag
-        rerun_flag <- config$force_rerun$run_standard_sdms
-        if (!rerun_flag && file.exists(target_pred_file_path)) {
-          slog("DEBUG", "  Prediction exists in target location. Skipping."); next
-        }
-        
-        # --- Load GLOBAL predictor stack for this prediction scenario ---
-        pred_predictor_stack_global <- NULL
-        if(use_pca) {
-          pred_predictor_path <- predictor_paths_or_list[[pred_scenario]]
-          if (is.null(pred_predictor_path) || !file.exists(pred_predictor_path)) { slog("WARN", paste("  GLOBAL PCA stack path missing:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
-          pred_predictor_stack_global <- tryCatch(terra::rast(pred_predictor_path), error = function(e) {slog("WARN", paste("  Error loading GLOBAL PCA stack:", e$message)); NULL})
-        } else {
-          # VIF logic (currently inactive)
-          scenario_vif_vars <- generate_scenario_variable_list(predictor_paths_or_list, pred_scenario, config)
-          if(length(scenario_vif_vars) < 1) { slog("WARN", paste("  No VIF vars for scenario:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
-          pred_predictor_stack_global <- load_selected_env_data(pred_scenario, scenario_vif_vars, config) # Assumes this loads global extent
-        }
-        if(is.null(pred_predictor_stack_global)) { slog("WARN", paste("  Failed load GLOBAL predictor stack:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
-        # --- END Load GLOBAL predictor stack ---
-        
-        # Predict using the final model and the GLOBAL stack
-        prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
-        
-        if (inherits(prediction_output, "SpatRaster")) {
-          save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
-          if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
-          rm(prediction_output); gc()
-        } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
-        rm(pred_predictor_stack_global); gc() # Clean up the global stack for this scenario
-      } # End prediction scenario loop
-    } else {
-      prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping all predictions: Final model was not available."); slog("ERROR", msg)
-      status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
-    }
-    
-    # --- Prepare return status ---
-    final_status <- "success"
-    status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
-    if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
-    else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) }
-    else { slog("INFO", status_message) }
+  # Requires the GLOBAL predictor stacks, not species_specific_stack
+  predictions_made = 0; prediction_errors = 0
+  scenarios_to_predict <- if(use_pca) names(predictor_paths_or_list) else config$env_scenarios
+  slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
+  
+  if (!is.null(final_model)) {
+    for (pred_scenario in scenarios_to_predict) {
+      slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
+      target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config)
+      if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
+      
+      # Check force_rerun flag
+      rerun_flag <- config$force_rerun$run_standard_sdms
+      if (!rerun_flag && file.exists(target_pred_file_path)) {
+        slog("DEBUG", "  Prediction exists in target location. Skipping."); next
+      }
+      
+      # --- Load GLOBAL predictor stack for this prediction scenario ---
+      pred_predictor_stack_global <- NULL
+      if(use_pca) {
+        pred_predictor_path <- predictor_paths_or_list[[pred_scenario]]
+        if (is.null(pred_predictor_path) || !file.exists(pred_predictor_path)) { slog("WARN", paste("  GLOBAL PCA stack path missing:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
+        pred_predictor_stack_global <- tryCatch(terra::rast(pred_predictor_path), error = function(e) {slog("WARN", paste("  Error loading GLOBAL PCA stack:", e$message)); NULL})
+      } else {
+        # VIF logic (currently inactive)
+        scenario_vif_vars <- generate_scenario_variable_list(predictor_paths_or_list, pred_scenario, config)
+        if(length(scenario_vif_vars) < 1) { slog("WARN", paste("  No VIF vars for scenario:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
+        pred_predictor_stack_global <- load_selected_env_data(pred_scenario, scenario_vif_vars, config) # Assumes this loads global extent
+      }
+      if(is.null(pred_predictor_stack_global)) { slog("WARN", paste("  Failed load GLOBAL predictor stack:", pred_scenario)); prediction_errors <- prediction_errors + 1; next }
+      # --- END Load GLOBAL predictor stack ---
+      
+      # Predict using the final model and the GLOBAL stack
+      prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
+      
+      if (inherits(prediction_output, "SpatRaster")) {
+        save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)
+        if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
+        rm(prediction_output); gc()
+      } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
+      rm(pred_predictor_stack_global); gc() # Clean up the global stack for this scenario
+    } # End prediction scenario loop
   } else {
-    final_status <- "success"
-    status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Predictions Skipped")
+    prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping all predictions: Final model was not available."); slog("ERROR", msg)
+    status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
   }
+  
+  # --- Prepare return status ---
+  final_status <- "success"
+  status_message <- paste0("Finished Std Env SDM. Occs:", occurrence_count_after_thinning, ". Preds attempted:", length(scenarios_to_predict), ". Made:", predictions_made, ". Errors/Skipped:", prediction_errors, ".")
+  if (prediction_errors > 0 && predictions_made == 0) { final_status <- "error_prediction_all"; slog("ERROR", status_message) }
+  else if (prediction_errors > 0) { final_status <- "success_with_pred_errors"; slog("WARN", status_message) }
+  else { slog("INFO", status_message) }
   
   # --- Clean up ---
   if (!is.null(species_specific_stack)) rm(species_specific_stack)
