@@ -3,7 +3,7 @@
 # Configuration Settings for Anemone/Anemonefish SDM Project (v5 - Correct Path Definitions)
 #-------------------------------------------------------------------------------
 
-setwd("~/a0236995/sdm_anemonefish")
+# setwd("~/a0236995/sdm_anemonefish")
 
 # Using pacman for streamlined package management
 if (!require("pacman")) install.packages("pacman")
@@ -105,7 +105,7 @@ env_scenarios <- c("current", "ssp119_2050", "ssp119_2100", "ssp585_2050", "ssp5
 scenario_folder_map <- list(current = file.path(env_data_dir, "current"), ssp119_2050 = file.path(env_data_dir, "future", "ssp119"), ssp119_2100 = file.path(env_data_dir, "future", "ssp119"), ssp585_2050 = file.path(env_data_dir, "future", "ssp585"), ssp585_2100 = file.path(env_data_dir, "future", "ssp585"))
 terrain_folder <- file.path(env_data_dir, "terrain")
 ssp_scenario_map <- list(ssp119_2050 = "ssp119", ssp119_2100 = "ssp119", ssp585_2050 = "ssp585", ssp585_2100 = "ssp585")
-model_output_subdir_map <- list(`_pca` = "", `_biotic_pc4` = "biotic_pc4", `_combined_pca` = "combined_pca")
+model_output_subdir_map <- list(`_pca` = "_pca", `_biotic_only` = "_biotic_only", `_combined_pca` = "_combined_pca")
 
 # Predictor Selection Switch
 use_pca_predictors <- TRUE
@@ -125,7 +125,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
 sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
-apply_coral_mask <- FALSE; apply_depth_filter <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
+apply_coral_mask <- FALSE; apply_depth_filter <- FALSE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
 use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1
@@ -138,19 +138,20 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 
 # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
 # ("spatial_grid" or "spatial_lat" or "random")
-sdm_spatial_cv_type_to_use <- "spatial_grid"
+sdm_spatial_cv_type_to_use <- "spatial_lat"
 blockcv_auto_range <- TRUE
-blockcv_range_default <- 300000 # 20000
-blockcv_range_max <- 1000000
+blockcv_range_default <- 20000 # 20000 300000
+blockcv_range_max <- 1000000 # 1000000
 blockcv_hexagon <- TRUE
 # ("systematic", "random")
 blockcv_selection <- "systematic"
 blockcv_n_iterate <- 300
+blockcv_lat_blocks <- 10
 
 # OBIS stuff
 ecoregion_shapefile <- file.path(shapefile_dir, "MarineRealms_BO.shp")
 bathymetry_file     <- file.path(terrain_folder, "bathymetry_mean.tif")
-limit_by_depth_obis <- TRUE  # Or FALSE
+limit_by_depth_obis <- FALSE  # Or FALSE
 depth_buffer_obis   <- 500
 poly_buffer_obis    <- 0.2 # Small degree buffer for adjacency
 poly_buffer_final   <- 0.5 # Larger degree buffer for final extent (optional, replicating OBIS)
@@ -163,6 +164,7 @@ autocor_maxdist <- 1000000   # 1000 km max distance for correlogram
 autocor_signif <- 0.05      # Significance level for non-correlation
 sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on BlockCV results)
 
+do_final_prediction <- TRUE
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -241,7 +243,9 @@ config <- list(
   autocor_classdist = autocor_classdist,
   autocor_maxdist = autocor_maxdist,
   autocor_signif = autocor_signif,
-  sac_prune_threshold = sac_prune_threshold
+  sac_prune_threshold = sac_prune_threshold,
+  
+  do_final_prediction = do_final_prediction
 )
 
 
