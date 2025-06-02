@@ -964,8 +964,8 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 #' @return Character string with the full path to the expected prediction file.
 construct_prediction_filename <- function(species_name_sanitized, scenario_name, predictor_type_suffix, config) {
   
-  # base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
-  base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  # base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
   
