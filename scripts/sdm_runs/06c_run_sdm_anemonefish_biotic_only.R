@@ -10,14 +10,14 @@
 cat("--- Running Script 06c: Run Anemonefish Biotic Only SDMs (v7 - Tweaking Integrated, based on 06d logic) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
-if (file.exists("scripts/config.R")) {
-  source("scripts/config.R")
-  if (!exists("config") || !is.list(config)) {
-    stop("FATAL: 'config' list object not found or invalid after sourcing scripts/config.R")
-  }
-} else {
-  stop("FATAL: Configuration file 'scripts/config.R' not found.")
-}
+# if (file.exists("scripts/config.R")) {
+#   source("scripts/config.R")
+#   if (!exists("config") || !is.list(config)) {
+#     stop("FATAL: 'config' list object not found or invalid after sourcing scripts/config.R")
+#   }
+# } else {
+#   stop("FATAL: Configuration file 'scripts/config.R' not found.")
+# }
 
 # --- 2. Load Required Packages ---
 if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
@@ -46,7 +46,7 @@ host_group_name <- "anemone"
 # NOTE: The logic below currently uses PCA env predictors due to copying from 06d.
 # User will tweak this script to remove env predictors for a true biotic-only model.
 if(!config$use_pca_predictors) { log4r::fatal(logger, "Script 06c (currently based on 06d logic) requires config$use_pca_predictors=TRUE."); stop("This script (currently based on 06d logic) requires PCA env predictors.") }
-predictor_type_suffix <- "_biotic_pc4" # Original 06c naming for outputs
+predictor_type_suffix <- "_biotic_only" # Original 06c naming for outputs
 host_predictor_type_suffix <- "_pca" # Suffix of host predictions to load (from 06a)
 
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
@@ -165,9 +165,24 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     max_host_suitability_tuning <- terra::app(host_stack_tuning, fun = "max", na.rm = TRUE); names(max_host_suitability_tuning) <- "host_suitability_max"
     slog("DEBUG", "Max host suitability layer created for tuning scenario.")
     
-    # Combine Env PC4 + Max Host
-    # TODO: Convert to faked env layer
-    tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
+    # # Combine Env PC4 + Max Host
+    # # TODO: Convert to faked env layer
+    # tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
+    
+    # --- Create Dummy Environmental Layer with Random Noise ---
+    slog("DEBUG", "Creating dummy environmental layer (random noise) for host-only model.")
+    dummy_env_layer_noise <- max_host_suitability_tuning
+    # Generate random noise with a very small range (e.g., 0 to 0.01)
+    set.seed(config$global_seed) # For reproducibility
+    noise_values <- runif(ncell(dummy_env_layer_noise), min = 0, max = 0.001)
+    dummy_env_layer_noise[] <- noise_values
+    # Mask it by the valid cells of the host suitability layer
+    dummy_env_layer_noise[is.na(max_host_suitability_tuning)] <- NA 
+    names(dummy_env_layer_noise) <- "PC4"
+    
+    # Combine for prediction
+    tuning_predictor_stack_global <- c(dummy_env_layer_noise, max_host_suitability_tuning)
+    
     slog("INFO", paste("GLOBAL Tuning predictor stack (06d logic: Env PCA + Host) created:", paste(names(tuning_predictor_stack_global), collapse=", ")))
     rm(tuning_env_stack, host_stack_tuning, max_host_suitability_tuning, host_rasters_tuning_list); gc()
     
@@ -235,7 +250,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
       load_existing_model <- TRUE
       slog("DEBUG", "Regenerating background points and species stack for loaded model VI/Eval...")
       # Uses tuning_predictor_stack_global (Env PCA + Host from 06d logic)
-      background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+      background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
       if(!is.null(background_return_eval) && !is.null(background_return_eval$background_points) && !is.null(background_return_eval$species_specific_stack)) {
         background_points_eval <- background_return_eval$background_points
         species_specific_stack <- background_return_eval$species_specific_stack # This is the masked stack
@@ -257,7 +272,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points and species stack for training...")
     # Uses tuning_predictor_stack_global (Env PCA + Host from 06d logic)
-    background_return <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+    background_return <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
     if (is.null(background_return) || is.null(background_return$background_points) || is.null(background_return$species_specific_stack)) {
       msg <- paste0("Skipping: Failed background point/stack generation for training."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
     }
@@ -282,9 +297,9 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     }
     best_hypers <- attr(tuning_output, "best_hypers")
     
-    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { # predictor_type_suffix is _biotic_only
-      rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
-    }
+    # if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file, group_name=group_name)) { # predictor_type_suffix is _biotic_only
+    #   rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
+    # }
     
     slog("INFO", "Starting final model training.")
     final_model <- train_final_sdm(occs_coords, species_specific_stack, background_points, best_hypers, config, logger=NULL, species_name, species_log_file=species_log_file)
