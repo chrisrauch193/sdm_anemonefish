@@ -8,7 +8,7 @@
 # - Added spatial CV fold creation and metric logging.
 #-------------------------------------------------------------------------------
 pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2, ecospat, spThin, geosphere,
-               biomod2, presenceabsence, randomForest, gbm, mda, gam) # Added biomod2 and dependencies
+               biomod2, randomForest, gbm, mda, gam) # Added biomod2 and dependencies
 
 
 #' #' Load, Clean, and Get Coordinates for Individual Species Occurrences
@@ -966,6 +966,7 @@ construct_prediction_filename <- function(species_name_sanitized, scenario_name,
   
   base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   # base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  # base_filename <- paste0("600-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
   
@@ -1244,7 +1245,7 @@ calculate_and_save_vi <- function(final_model, training_swd,
 #' @param logger A log4r logger object (can be NULL).
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor_stack, tuning_output,
+log_final_model_metrics <- function(final_model, train_swd, test_swd, tuning_predictor_stack, tuning_output,
                                     species_name_sanitized, group_name, predictor_type_suffix,
                                     config, logger = NULL, species_log_file = NULL) {
   
@@ -1253,7 +1254,7 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   # --- Input validation ---
   if (is.null(final_model) || !inherits(final_model, "SDMmodel")) { hlog("ERROR", "Invalid SDMmodel provided."); return(FALSE) }
   # SWD data is needed for training metrics, warn if missing
-  if (is.null(full_swd_data) || !inherits(full_swd_data, "SWD")) { hlog("WARN", "SWD object missing, cannot calculate training metrics.") }
+  if (is.null(train_swd) || !inherits(train_swd, "SWD")) { hlog("WARN", "SWD object missing, cannot calculate training metrics.") }
   # Stack is needed for AICc
   if (is.null(tuning_predictor_stack) || !inherits(tuning_predictor_stack, "SpatRaster")) { hlog("ERROR", "Predictor stack required for AICc."); return(FALSE) }
   # Tuning output is needed for test metrics
@@ -1286,8 +1287,8 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
     AICc = NA_real_
   )
   
-  # --- Calculate Training Metrics (from final_model using full_swd_data) ---
-  if (!is.null(full_swd_data)) {
+  # --- Calculate Training Metrics (from final_model using train_swd) ---
+  if (!is.null(train_swd)) {
     tryCatch({ metrics$AUC_train <- SDMtune::auc(final_model, test = NULL) }, error = function(e) { hlog("WARN", paste("Could not calculate Training AUC:", e$message)) })
     tryCatch({ metrics$TSS_train <- SDMtune::tss(final_model, test = NULL) }, error = function(e) { hlog("WARN", paste("Could not calculate Training TSS:", e$message)) })
   } else {
@@ -1330,10 +1331,16 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
             hlog("DEBUG", paste("  Extracted test_AUC (CV):", round(metrics$AUC_test_CV, 4)))
           } else { hlog("WARN", "test_AUC column not found in tuning results table.") }
           
-          if ("test_TSS" %in% colnames(res_df)) {
-            metrics$TSS_test_CV <- res_df$test_TSS[best_row_index]
-            hlog("DEBUG", paste("  Extracted test_TSS (CV):", round(metrics$TSS_test_CV, 4)))
-          } else { hlog("WARN", "test_TSS column not found in tuning results table.") }
+          # if ("test_TSS" %in% colnames(res_df)) {
+          #   metrics$TSS_test_CV <- res_df$test_TSS[best_row_index]
+          #   hlog("DEBUG", paste("  Extracted test_TSS (CV):", round(metrics$TSS_test_CV, 4)))
+          # } else { hlog("WARN", "test_TSS column not found in tuning results table.") }
+          
+          metrics$AUC_test_CV <- SDMtune::auc(final_model, test = test_swd)
+          hlog("DEBUG", paste("  Extracted test_AUC (test dataset):", round(metrics$AUC_test_CV, 4)))
+          
+          metrics$TSS_test_CV <- SDMtune::tss(final_model, test = test_swd)
+          hlog("DEBUG", paste("  Extracted test_TSS (test dataset):", round(metrics$TSS_test_CV, 4)))
           
         } else {
           hlog("WARN", "Could not determine best row index from tuning results to extract test metrics.")
@@ -1359,20 +1366,10 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   # Construct filenames matching the target repo style
   target_base_name <- paste0("CV_Results_", species_name_sanitized) # Using sanitized name
   
-  
-  hlog("INFO", "WOW WE GOasdasdasdasdasdasdasdasdasdT HERE")
-  
   # 2. Save results table (CSV - for target analysis mirroring target)
-  csv_file <- file.path(target_subdir, paste0(target_base_name, ".csv"))
+  csv_file <- file.path(target_subdir, paste0(target_base_name, "_depth_", config$depth_min, ".csv"))
   results_df <- tuning_output@results
   if (is.null(results_df) || nrow(results_df) == 0) { hlog("WARN", "No results table found in tuning object."); return(TRUE) } # Return TRUE as RDS might have saved
-  
-  # tryCatch({ readr::write_csv(results_df, file = csv_file); hlog("DEBUG", "Tuning results table saved (CSV to target):", basename(csv_file)); TRUE },
-  #          error = function(e) { hlog("ERROR", paste("Failed save tuning CSV:", e$message)); FALSE })
-  # 
-  
-  
-  hlog("INFO", "WOasdasdasdasdasdasdasdasdasdasasdasdasdasdasdasdasdW WE GOT HERE")
   
   # return(TRUE)
   tryCatch({
@@ -1406,12 +1403,12 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
 #-------------------------------------------------------------------------------
 # Helper functions for SDM Modeling (SDMtune & BIOMOD2)
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
-               blockCV, ggplot2, ecospat, spThin, geosphere,
-               biomod2, maxnet, # For BIOMOD2 MAXNET
-               # Common dependencies for other biomod2 models if used later:
-               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
-)
+# pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
+#                blockCV, ggplot2, ecospat, spThin, geosphere,
+#                biomod2, maxnet, # For BIOMOD2 MAXNET
+#                # Common dependencies for other biomod2 models if used later:
+#                presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
+# )
 
 # --- SDMtune Specific Helpers (Keep all your existing ones) ---
 # load_clean_individual_occ_coords
@@ -1437,11 +1434,11 @@ pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr,
 #-------------------------------------------------------------------------------
 # Helper functions for SDM Modeling (SDMtune & BIOMOD2)
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
-               blockCV, ggplot2, ecospat, spThin, geosphere,
-               biomod2, maxnet, # For BIOMOD2 MAXNET
-               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
-)
+# pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
+#                blockCV, ggplot2, ecospat, spThin, geosphere,
+#                biomod2, maxnet, # For BIOMOD2 MAXNET
+#                presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
+# )
 
 # --- SDMtune Specific Helpers (Keep all your existing ones) ---
 # load_clean_individual_occ_coords

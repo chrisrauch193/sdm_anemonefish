@@ -125,7 +125,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
 sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
-apply_coral_mask <- TRUE; depth_min <- -500; depth_max <- 0; min_occurrences_sdm <- 15
+apply_coral_mask <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
 use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1
@@ -138,9 +138,9 @@ get_display_name <- function(technical_name, lookup = NULL) { if (is.null(lookup
 
 # --- Spatial Cross-Validation Settings (Simplified blockCV) ---
 # ("spatial_grid" or "spatial_lat" or "random")
-sdm_spatial_cv_type_to_use <- "spatial_lat"
+sdm_spatial_cv_type_to_use <- "spatial_grid"
 blockcv_auto_range <- TRUE
-blockcv_range_default <- 20000 # 20000 300000
+blockcv_range_default <- 300000 # 20000 300000
 blockcv_range_max <- 1000000 # 1000000
 blockcv_hexagon <- TRUE
 # ("systematic", "random")
@@ -164,6 +164,8 @@ autocor_signif <- 0.05      # Significance level for non-correlation
 sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on BlockCV results)
 
 do_final_prediction <- TRUE
+
+global_seed = 1
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -243,7 +245,9 @@ config <- list(
   autocor_signif = autocor_signif,
   sac_prune_threshold = sac_prune_threshold,
   
-  do_final_prediction = do_final_prediction
+  do_final_prediction = do_final_prediction,
+  
+  global_seed = global_seed
 )
 
 
