@@ -152,7 +152,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   config_for_occ_load$thinning_method <- NULL
   slog("DEBUG", "Loading/cleaning initial occurrences (before SAC thinning).")
   occ_data_result_raw <- load_clean_individual_occ_coords(species_aphia_id, occurrence_dir, config_for_occ_load, logger=NULL, species_log_file=species_log_file)
-
+  
   if (is.null(occ_data_result_raw) || is.null(occ_data_result_raw$coords) || occ_data_result_raw$count < config$min_occurrences_sdm) {
     msg <- paste0("Skipping: Insufficient occurrences before SAC thinning (", occ_data_result_raw$count %||% 0, ").");
     slog("WARN", msg);
@@ -161,12 +161,12 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
   occs_coords_raw <- occ_data_result_raw$coords
   occurrence_count_raw <- occ_data_result_raw$count
   slog("INFO", paste("Occurrence count after basic cleaning:", occurrence_count_raw))
-
+  
   # --- <<< Spatial Autocorrelation (SAC) Thinning >>> ---
   occs_coords_thinned <- occs_coords_raw # Default to raw if thinning skipped/fails
   occurrence_count_after_thinning <- occurrence_count_raw # Use raw count initially
   thinning_dist_applied <- NA
-
+  
   sac_thin_result <- thin_occurrences_by_sac(
     occs_coords = occs_coords_raw,
     predictor_stack = tuning_predictor_stack_global, # Use the GLOBAL stack for env data extraction during SAC check
@@ -174,7 +174,7 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     logger = NULL, # Pass NULL logger to helper if needed
     species_log_file = species_log_file
   )
-
+  
   if (!is.null(sac_thin_result)) {
     occs_coords_thinned <- sac_thin_result$coords_thinned
     occurrence_count_after_thinning <- sac_thin_result$n_thinned # Update count
@@ -191,19 +191,19 @@ process_species_sdm <- function(species_row, config, predictor_paths_or_list, gr
     # occs_coords_thinned and occurrence_count_after_thinning retain original values
   }
   # --- <<< END SPATIAL AUTOCORRELATION THINNING >>> ---
-
+  
   # --- Use thinned coordinates for subsequent steps ---
   occs_coords <- occs_coords_thinned # Use potentially thinned coords from now on
   # Convert to sf object for background generation
   occs_sf_clean <- sf::st_as_sf(as.data.frame(occs_coords), coords=c("longitude","latitude"), crs=config$occurrence_crs)
-
+  
   # Add AphiaID column needed by generate_sdm_background_obis
   occs_sf_clean$AphiaID <- species_aphia_id
   # Ensure CRS matches raster
   if(sf::st_crs(occs_sf_clean) != sf::st_crs(raster_crs_terra)){
     occs_sf_clean <- sf::st_transform(occs_sf_clean, crs=sf::st_crs(raster_crs_terra))
   }
-
+  
   
   # --- Check Existing Model (Optional) ---
   final_model <- NULL; tuning_output <- NULL; load_existing_model <- FALSE

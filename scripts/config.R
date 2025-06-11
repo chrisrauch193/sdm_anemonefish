@@ -125,7 +125,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
 sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
-apply_coral_mask <- TRUE; depth_min <- -50; depth_max <- 0; min_occurrences_sdm <- 15
+apply_coral_mask <- TRUE; depth_min <- -500; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
 use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1
@@ -151,7 +151,7 @@ blockcv_lat_blocks <- 10
 # OBIS stuff
 ecoregion_shapefile <- file.path(shapefile_dir, "MarineRealms_BO.shp")
 bathymetry_file     <- file.path(terrain_folder, "bathymetry_mean.tif")
-limit_by_depth_obis <- TRUE  # Or FALSE
+limit_by_depth_obis <- FALSE  # Or FALSE
 poly_buffer_obis    <- 0.2 # Small degree buffer for adjacency
 poly_buffer_final   <- 0.5 # Larger degree buffer for final extent (optional, replicating OBIS)
 
@@ -166,6 +166,8 @@ sac_prune_threshold <- 20000   # Thin if non-sig distance >= 20 km (based on Blo
 do_final_prediction <- TRUE
 
 global_seed = 1
+
+meow_provinces_shapefile <- file.path(shapefile_dir, "meow_ecos.shp")
 
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
@@ -247,7 +249,9 @@ config <- list(
   
   do_final_prediction = do_final_prediction,
   
-  global_seed = global_seed
+  global_seed = global_seed,
+  
+  meow_provinces_shapefile = meow_provinces_shapefile
 )
 
 

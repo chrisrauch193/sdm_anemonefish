@@ -964,8 +964,8 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 #' @return Character string with the full path to the expected prediction file.
 construct_prediction_filename <- function(species_name_sanitized, scenario_name, predictor_type_suffix, config) {
   
-  base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
-  # base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  # base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   # base_filename <- paste0("600-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
@@ -1088,10 +1088,32 @@ save_final_model <- function(final_model, species_name_sanitized, predictor_type
 #' @param logger A log4r logger object.
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scenario_name, predictor_type_suffix, config, logger, species_log_file = NULL) {
+save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scenario_name, predictor_type_suffix, config, logger, species_log_file = NULL, mask_vector = NULL) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SavePredHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
   
   if (is.null(prediction_raster) || !inherits(prediction_raster, "SpatRaster")) { hlog("ERROR", "Invalid prediction raster provided."); return(FALSE) }
+  
+  
+  # 
+  # # --- START: New Masking Logic ---
+  # if (!is.null(mask_vector) && inherits(mask_vector, "SpatVector")) {
+  #   hlog("DEBUG", "Applying final MEOW province mask to prediction raster...")
+  #   tryCatch({
+  #     # Ensure CRS matches before masking
+  #     if (terra::crs(mask_vector, proj=TRUE) != terra::crs(prediction_raster, proj=TRUE)) {
+  #       hlog("WARN", "CRS mismatch between prediction and MEOW mask. Projecting mask...")
+  #       mask_vector <- terra::project(mask_vector, terra::crs(prediction_raster))
+  #     }
+  #     prediction_raster <- terra::mask(prediction_raster, mask_vector)
+  #     hlog("INFO", "Successfully applied final MEOW province mask.")
+  #   }, error = function(e) {
+  #     hlog("ERROR", paste("Failed to apply MEOW province mask:", e$message, "- saving unmasked raster instead."))
+  #   })
+  # }
+  # # --- END: New Masking Logic ---
+  # 
+  
+  
   
   # Construct the target filename using the dedicated helper
   pred_file_path <- construct_prediction_filename(species_name_sanitized, scenario_name, predictor_type_suffix, config)

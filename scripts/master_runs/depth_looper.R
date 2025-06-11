@@ -14,7 +14,7 @@ for (depth in depths) {
   config$do_final_prediction <- TRUE
   
   
-  for (i in 1:50) {
+  for (i in 10:50) {
     # Print a message to track progress
     cat(paste0("\n[", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "] --- Run ", i, " for depth: ", depth, " with global_seed = ", config$global_seed, " ---\n"))
     

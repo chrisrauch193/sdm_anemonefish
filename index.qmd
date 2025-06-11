@@ -19,7 +19,7 @@ This section replicates the initial data loading and processing steps from the d
 
 # Using pacman for streamlined package management
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, tools)
+pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, tools, naturalearth, tidyterra)
 
 # Load project configuration
 # Ensure your working directory is the root of your sdm_anemonefish project
@@ -80,7 +80,99 @@ scenario_label_converter <- c(
   # Add any other scenarios your project uses
 )
 
+
+#' Construct Target Prediction Filename
+#' Builds the expected filename and path for a prediction raster based on target structure.
+#' Used for checking if a prediction file already exists.
+#'
+#' @param species_name_sanitized Sanitized species name (e.g., "Genus_species").
+#' @param scenario_name The name of the scenario (e.g., "current", "ssp119_2050").
+#' @param predictor_type_suffix Suffix indicating model type (e.g., "_pca", "_combined_pca").
+#' @param config The configuration list.
+#' @return Character string with the full path to the expected prediction file.
+construct_prediction_filename <- function(species_name_sanitized, scenario_name, predictor_type_suffix, config) {
+  
+  # base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  
+  # base_filename <- paste0(501, "-pred_", species_name_sanitized)
+  target_dir <- NULL
+  target_filename_stem <- NULL # Filename without extension
+  
+  if (scenario_name == "current") {
+    target_dir <- config$target_predictions_current_dir
+    target_filename_stem <- paste0(base_filename, predictor_type_suffix) # Add suffix
+  } else {
+    ssp_dir_name <- config$ssp_scenario_map[[scenario_name]]
+    if (is.null(ssp_dir_name)) { warning("No SSP directory mapping for scenario: ", scenario_name, call. = FALSE); return(NULL) }
+    target_dir <- file.path(config$target_predictions_future_base, ssp_dir_name)
+    time_tag_clean <- ifelse(grepl("2050$", scenario_name), "dec50", ifelse(grepl("2100$", scenario_name), "dec100", "UNKNOWN"))
+    if(time_tag_clean == "UNKNOWN") { warning("Cannot extract time tag from scenario: ", scenario_name, call. = FALSE); return(NULL) }
+    target_filename_stem <- paste0(base_filename, "_", ssp_dir_name, "_", time_tag_clean, predictor_type_suffix) # Add suffix
+  }
+  
+  if(is.null(target_dir) || is.null(target_filename_stem)) { warning("Could not construct target path components.", call. = FALSE); return(NULL) }
+  target_filename <- paste0(target_filename_stem, ".tif")
+  return(file.path(target_dir, target_filename))
+}
+
 cat("--- Setup: Scenario label converter defined. ---\n")
+
+# --- Load a world map for plotting ---
+world_map_sf <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
+cat("--- Setup: World map loaded for plotting. ---\n")
+
+
+
+
+
+# Reusable function to create publication-quality prediction maps
+plot_prediction_map <- function(prediction_raster, species_name, world_basemap) {
+  
+  # Ensure the raster has a name for the legend
+  names(prediction_raster) <- "Suitability"
+  
+  # Define the color scale to match the example
+  # It goes from a light yellow-ish color to orange to deep purple
+  custom_color_scale <- scale_fill_gradientn(
+    colors = c("#FFFFFF", "#FEF9C3", "#FDBA74", "#D946EF", "#4F46E5"), # Light Yellow, Orange, Pink/Purple, Deep Purple
+    na.value = "transparent", # IMPORTANT: Makes areas with no prediction transparent
+    limits = c(0, 1), # Assuming suitability is 0-1
+    name = "Occurrence\nprobability"
+  )
+  
+  # Create the plot using ggplot2 and tidyterra
+  p <- ggplot() +
+    # 1. Add the world map as the base layer
+    geom_sf(data = world_basemap, fill = "grey80", color = "white", linewidth = 0.2) +
+    
+    # 2. Add the prediction raster on top
+    geom_spatraster(data = prediction_raster, aes(fill = Suitability)) +
+    
+    # 3. Apply the custom color scale
+    custom_color_scale +
+    
+    # 4. Set map projection and limits to the extent of the raster
+    coord_sf(crs = sf::st_crs(prediction_raster),
+             xlim = ext(prediction_raster)[c(1,2)],
+             ylim = ext(prediction_raster)[c(3,4)],
+             expand = FALSE) +
+    
+    # 5. Add title and use a clean theme
+    labs(title = species_name) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "italic"),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank(),
+      panel.background = element_rect(fill = "white", color = NA), # Set background color
+      legend.position = "right"
+    )
+    
+  return(p)
+}
 ```
 
 if (!is.null(host_pred_stack_cropped)) {
@@ -248,6 +340,10 @@ if (config$apply_indo_pacific_crop) {
   fish_richness_sum_cropped <- fish_richness_sum
 }
 
+
+
+
+
 # --- 4. Plot Cropped Richness Maps AND SAVE THEM ---
 cat("\n--- Plotting and Saving Cropped Richness Maps ---\n")
 
@@ -323,6 +419,84 @@ if (!is.null(fish_pred_stack_cropped)) {
 cat("\n--- First section of results processing finished. ---\n")
 # The objects host_pred_stack_cropped, host_richness_sum_cropped, 
 # fish_pred_stack_cropped, and fish_richness_sum_cropped are now available.
+
+
+
+
+
+
+
+# --- 4. Plot Cropped Richness Maps ---
+cat("\n--- Plotting Cropped Richness Maps with ggplot2 ---\n")
+
+# Plot Host Anemone Richness
+if (!is.null(host_richness_sum_cropped)) {
+  # The richness values might be > 1, so we need to normalize them to 0-1 for the color scale
+  host_richness_normalized <- host_richness_sum_cropped / global(host_richness_sum_cropped, "max", na.rm = TRUE)$max
+
+  host_richness_plot <- plot_prediction_map(
+    prediction_raster = host_richness_normalized,
+    species_name = "Summed Host Anemone Richness",
+    world_basemap = world_map_sf
+  )
+
+  print(host_richness_plot)
+
+  # Save the plot
+  host_plot_filename <- file.path(figure_output_dir, "host_richness_current_ggplot.png")
+  ggsave(host_plot_filename, plot = host_richness_plot, width = 10, height = 7, dpi = 300)
+  cat("Saved host richness ggplot to:", host_plot_filename, "\n")
+}
+
+
+# Plot Anemonefish (Env-Only) Richness
+if (!is.null(fish_richness_sum_cropped)) {
+  fish_richness_normalized <- fish_richness_sum_cropped / global(fish_richness_sum_cropped, "max", na.rm = TRUE)$max
+
+  fish_richness_plot <- plot_prediction_map(
+    prediction_raster = fish_richness_normalized,
+    species_name = "Summed Anemonefish Richness (Env-Only)",
+    world_basemap = world_map_sf
+  )
+
+  print(fish_richness_plot)
+
+  # Save the plot
+  fish_plot_filename <- file.path(figure_output_dir, "fish_richness_env_only_ggplot.png")
+  ggsave(fish_plot_filename, plot = fish_richness_plot, width = 10, height = 7, dpi = 300)
+  cat("Saved fish richness ggplot to:", fish_plot_filename, "\n")
+}
+
+# 
+# # --- PLOT INDIVIDUAL SPECIES TO REPLICATE THE EXAMPLE ---
+# # Let's plot the first anemone to demonstrate
+# if (!is.null(host_pred_stack_cropped)) {
+#   
+#   first_anemone_raster <- host_pred_stack_cropped[[1]] # Get the first layer
+#   first_anemone_name <- names(first_anemone_raster)   # Get its name
+#   
+#   # The species name might be like "Radianthus_aurora", so we make it pretty for the title
+#   pretty_species_name <- gsub("_", " ", first_anemone_name) 
+#   
+#   # Create the plot
+#   individual_species_plot <- plot_prediction_map(
+#     prediction_raster = first_anemone_raster,
+#     species_name = pretty_species_name,
+#     world_basemap = world_map_sf
+#   )
+#   
+#   print(individual_species_plot)
+#   
+#   # Save it
+#   individual_plot_filename <- file.path(figure_output_dir, paste0(first_anemone_name, "_prediction_map.png"))
+#   ggsave(individual_plot_filename, plot = individual_species_plot, width = 10, height = 7, dpi = 300)
+#   cat("Saved individual species map to:", individual_plot_filename, "\n")
+# }
+# 
+# 
+# cat("\n--- First section of results processing finished. ---\n")
+# # The objects host_pred_stack_cropped, host_richness_sum_cropped, 
+# # fish_pred_stack_cropped, and fish_richness_sum_cropped are now available.
 ```
 
 ## Evaluate models
@@ -345,7 +519,7 @@ host_cv_results_dir <- file.path(config$target_results_base, paste0("anemone", h
 
 cat("Loading Host Sea Anemone CV results from:", host_cv_results_dir, "\n")
 host_cv_files <- list.files(host_cv_results_dir,
-                            pattern = "^CV_Results_.*\\.csv$", # Files start with CV_Results_
+                            pattern = "^CV_Results_.*_depth_-500\\.csv$", # Files start with CV_Results_
                             full.names = TRUE)
 
 if (length(host_cv_files) > 0) {
@@ -385,7 +559,7 @@ fish_env_cv_results_dir <- file.path(config$target_results_base, paste0("anemone
 
 cat("\nLoading Anemonefish (Environmental-Only) CV results from:", fish_env_cv_results_dir, "\n")
 fish_env_cv_files <- list.files(fish_env_cv_results_dir,
-                                pattern = "^CV_Results_.*\\.csv$",
+                                pattern = "^CV_Results_.*_depth_-500\\.csv$",
                                 full.names = TRUE)
 
 if (length(fish_env_cv_files) > 0) {
@@ -592,7 +766,7 @@ anemonefish_host_counts <- host_associations_df %>%
   summarise(n_hosts = n_distinct(AssociatedAnemoneScientificName), .groups = "drop")
 
 anemonefish_specialization_df <- anemonefish_host_counts %>%
-  mutate(specialization_type = factor(ifelse(n_hosts <= 1, "Specialist", "Generalist"),
+  mutate(specialization_type = factor(ifelse(n_hosts == 1, "Specialist", "Generalist"),
                                  levels = c("Generalist", "Specialist"))) %>%
   rename(species = AnemonefishScientificName)
 
@@ -1029,7 +1203,32 @@ if (!is.null(df_fish_comparison) && nrow(df_fish_comparison) > 0 && "AUC_test_CV
         panel.grid.minor = element_blank()
       ) +
       coord_cartesian(ylim = c(y_lower_limit, y_upper_limit)) # Apply dynamic y-limits
-
+    
+    
+    
+    species_specific_figure_output_dir <- paste0(figure_output_dir, "/AUC_boxplots")
+    
+    
+    if (!dir.exists(species_specific_figure_output_dir)) {
+      dir.create(species_specific_figure_output_dir, recursive = TRUE)
+      cat("Created directory for figures at:", species_specific_figure_output_dir, "\n")
+    }
+    
+    # Define filename for host richness plot
+    host_plot_filename <- file.path(species_specific_figure_output_dir, paste0("AUC_boxplot_", current_species_name_sanitized, ".png"))
+    
+    # Open PNG device
+    png(filename = host_plot_filename, width = 800, height = 600, units = "px", res = 100)
+    
+    # Plot host richness (use the plot_params list)
+    print(plot_auc_species_specific)
+         
+    # Close PNG device
+    dev.off()
+    cat("Saved species specific plot to:", host_plot_filename, "\n")
+    
+    
+    
     print(plot_auc_species_specific)
     
   } # End loop through species
@@ -2322,65 +2521,73 @@ This section calculates Schoener's D niche overlap index between each host sea a
 This section calculates Schoener's D niche overlap index between each host sea anemone and its potential anemonefish mutualists (using anemonefish environmental-only models). This is done for the current period and projected future scenarios to assess potential changes in spatial co-occurrence.
 
 ```{r schoeners-d-calculation-anemonefish}
-#| label: schoeners-d-calculation-anemonefish
-#| message: false
-#| warning: false
-#| fig-width: 10 
-#| fig-height: 8
-
-library(ENMeval) # For calc.niche.overlap
-library(dplyr)
-library(tidyr)   # For pivot_longer, pivot_wider
-library(ggplot2)
-library(corrplot)
-library(stringr) # For str_replace_all
-
-# --- Verify Prerequisites ---
-if (!exists("host_pred_stack_cropped") || is.null(host_pred_stack_cropped)) {
-  stop("`host_pred_stack_cropped` not found. Run previous chunks.")
-}
-if (!exists("fish_pred_stack_cropped") || is.null(fish_pred_stack_cropped)) {
-  stop("`fish_pred_stack_cropped` (env-only models) not found. Run previous chunks.")
-}
-if (!exists("host_pred_stacks_future_individual") || !is.list(host_pred_stacks_future_individual)) {
-  stop("`host_pred_stacks_future_individual` not found or not a list. Run previous chunks.")
-}
-if (!exists("fish_pred_stacks_future_individual") || !is.list(fish_pred_stacks_future_individual)) {
-  stop("`fish_pred_stacks_future_individual` (env-only models) not found or not a list. Run previous chunks.")
-}
-if (!exists("future_scenarios_to_load")) {
-  future_scenarios_to_load <- config$env_scenarios[config$env_scenarios != "current"]
-  if (length(future_scenarios_to_load) == 0) stop("No future scenarios defined.")
-}
-if (!exists("anemone_species_df") || !exists("anemonefish_species_df")) {
-    stop("Species data frames (anemone_species_df, anemonefish_species_df) not found.")
-}
-
-
-# --- 1. Calculate Current Overlap ---
-cat("--- Calculating Current Niche Overlap (Schoener's D) ---\n")
-
-# Ensure layer names are consistent and usable (Genus_species format)
-names_hosts_current <- names(host_pred_stack_cropped)
-names_fish_current <- names(fish_pred_stack_cropped) # These are from env-only models
-
-all_preds_current_for_overlap <- c(host_pred_stack_cropped, fish_pred_stack_cropped)
-# Ensure all layer names are unique before stacking for calc.niche.overlap
-# This shouldn't be an issue if host and fish names are distinct.
-if (any(duplicated(names(all_preds_current_for_overlap)))){
-    warning("Duplicate layer names found before calculating current overlap. This may cause issues.")
-}
-
-overlap_current_matrix_d <- NULL
-if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
-  overlap_current_matrix_d <- tryCatch({
-    ENMeval::calc.niche.overlap(all_preds_current_for_overlap, "D")
-  }, error = function(e) {
-    cat("Error calculating current niche overlap:", e$message, "\n"); NULL
-  })
-} else {
-  cat("Not enough layers in the combined current stack to calculate overlap.\n")
-}
+# #| label: schoeners-d-calculation-anemonefish
+# #| message: false
+# #| warning: false
+# #| fig-width: 10 
+# #| fig-height: 8
+# 
+# library(ENMeval) # For calc.niche.overlap
+# library(dplyr)
+# library(tidyr)   # For pivot_longer, pivot_wider
+# library(ggplot2)
+# library(corrplot)
+# library(stringr) # For str_replace_all
+# 
+# # --- Verify Prerequisites ---
+# if (!exists("host_pred_stack_cropped") || is.null(host_pred_stack_cropped)) {
+#   stop("`host_pred_stack_cropped` not found. Run previous chunks.")
+# }
+# if (!exists("fish_pred_stack_cropped") || is.null(fish_pred_stack_cropped)) {
+#   stop("`fish_pred_stack_cropped` (env-only models) not found. Run previous chunks.")
+# }
+# if (!exists("host_pred_stacks_future_individual") || !is.list(host_pred_stacks_future_individual)) {
+#   stop("`host_pred_stacks_future_individual` not found or not a list. Run previous chunks.")
+# }
+# if (!exists("fish_pred_stacks_future_individual") || !is.list(fish_pred_stacks_future_individual)) {
+#   stop("`fish_pred_stacks_future_individual` (env-only models) not found or not a list. Run previous chunks.")
+# }
+# if (!exists("future_scenarios_to_load")) {
+#   future_scenarios_to_load <- config$env_scenarios[config$env_scenarios != "current"]
+#   if (length(future_scenarios_to_load) == 0) stop("No future scenarios defined.")
+# }
+# if (!exists("anemone_species_df") || !exists("anemonefish_species_df")) {
+#     stop("Species data frames (anemone_species_df, anemonefish_species_df) not found.")
+# }
+# 
+# 
+# # --- 1. Calculate Current Overlap ---
+# cat("--- Calculating Current Niche Overlap (Schoener's D) ---\n")
+# 
+# # Ensure layer names are consistent and usable (Genus_species format)
+# names_hosts_current <- names(host_pred_stack_cropped)
+# names_fish_current <- names(fish_pred_stack_cropped) # These are from env-only models
+# 
+# all_preds_current_for_overlap <- c(host_pred_stack_cropped, fish_pred_stack_cropped)
+# # Ensure all layer names are unique before stacking for calc.niche.overlap
+# # This shouldn't be an issue if host and fish names are distinct.
+# if (any(duplicated(names(all_preds_current_for_overlap)))){
+#     warning("Duplicate layer names found before calculating current overlap. This may cause issues.")
+# }
+# 
+# overlap_current_matrix_d <- NULL
+# if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
+#   overlap_current_matrix_d <- tryCatch({
+#     ENMeval::calc.niche.overlap(all_preds_current_for_overlap, "D")
+#   }, error = function(e) {
+#     cat("Error calculating current niche overlap:", e$message, "\n"); NULL
+#   })
+# } else {
+#   cat("Not enough layers in the combined current stack to calculate overlap.\n")
+# }
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 # 
 # if (is.null(overlap_current_matrix_d)) {
 #   stop("Failed to calculate current niche overlap matrix. Cannot proceed.")
@@ -2441,8 +2648,15 @@ if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
 #   stop("No valid host or fish names found to subset the current overlap matrix. Check layer naming of input stacks.")
 # }
 # 
+# 
+# 
+# 
+# 
+# 
+# 
+# 
 # # Extract the host-fish interaction part of the matrix
-# current_host_fish_overlap_raw <- overlap_current_matrix_d[valid_host_rows, valid_fish_cols, drop = FALSE]
+# current_host_fish_overlap_raw <- overlap_current_matrix_d[valid_fish_cols, valid_host_rows, drop = FALSE]
 # 
 # # Convert to long format
 # current_host_fish_overlap_long <- current_host_fish_overlap_raw %>%
@@ -2470,7 +2684,7 @@ if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
 #     next
 #   }
 # 
-#   future_host_fish_overlap_raw_chosen <- overlap_future_chosen_matrix[valid_host_rows, valid_fish_cols, drop = FALSE]
+#   future_host_fish_overlap_raw_chosen <- overlap_future_chosen_matrix[valid_fish_cols, valid_host_rows, drop = FALSE]
 # 
 #   future_host_fish_overlap_long_chosen <- future_host_fish_overlap_raw_chosen %>%
 #     as.data.frame() %>%
@@ -2505,13 +2719,13 @@ if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
 #     # Proportional Change Matrix Plot
 #     # Prepare display names (full scientific names with spaces)
 #     host_display_names_map <- anemone_species_df %>%
-#       select(scientificName) %>%
+#       dplyr::select(scientificName) %>%
 #       mutate(sanitized_name = gsub(" ", "_", scientificName)) %>%
 #       distinct(sanitized_name, .keep_all = TRUE) %>%
 #       tibble::deframe()
 # 
 #     fish_display_names_map <- anemonefish_species_df %>%
-#       select(scientificName) %>%
+#       dplyr::select(scientificName) %>%
 #       mutate(sanitized_name = gsub(" ", "_", scientificName)) %>%
 #       distinct(sanitized_name, .keep_all = TRUE) %>%
 #       tibble::deframe()
@@ -2527,7 +2741,7 @@ if (terra::nlyr(all_preds_current_for_overlap) >= 2) {
 #         )
 #       ) %>%
 #       mutate(proportional_change_capped = pmax(-1, pmin(1, proportional_change))) %>%
-#       select(host_species, fish_species, proportional_change_capped)
+#       dplyr::select(host_species, fish_species, proportional_change_capped)
 # 
 #     if(nrow(prop_change_df) > 0) {
 #         prop_change_matrix <- prop_change_df %>%
