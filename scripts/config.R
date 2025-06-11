@@ -151,7 +151,7 @@ blockcv_lat_blocks <- 10
 # OBIS stuff
 ecoregion_shapefile <- file.path(shapefile_dir, "MarineRealms_BO.shp")
 bathymetry_file     <- file.path(terrain_folder, "bathymetry_mean.tif")
-limit_by_depth_obis <- FALSE  # Or FALSE
+limit_by_depth_obis <- TRUE  # Or FALSE
 poly_buffer_obis    <- 0.2 # Small degree buffer for adjacency
 poly_buffer_final   <- 0.5 # Larger degree buffer for final extent (optional, replicating OBIS)
 
