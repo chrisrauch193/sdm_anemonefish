@@ -4,12 +4,12 @@
 # - Scree Plot (Variance Explained)
 # - Biplot (PC1 vs PC2)
 # - Individual PC Loadings Bar Plots
+# - Eigenvalue check (Kaiser-Guttman)
 #-------------------------------------------------------------------------------
 cat("--- Running Script: PCA Visualization Plotting ---\n")
 
 # --- 1. Setup ---
-# Ensure config is loaded. If running standalone, uncomment and adjust path.
-# if (!exists("config")) { source("scripts/config.R"); if (!exists("config")) stop("Failed to load config.") }
+# ... (your existing setup code remains the same) ...
 if (!exists("config")) {
   if (file.exists("scripts/config.R")) {
     source("scripts/config.R")
@@ -27,6 +27,7 @@ if (!exists("config")) {
 pacman::p_load(ggplot2, dplyr, tidyr, tools, ggrepel, scales)
 
 # --- 2. Define Output Directory ---
+# ... (your existing code remains the same) ...
 pca_plots_output_dir <- file.path(config$log_dir_base, "pca_visualizations")
 if (!dir.exists(pca_plots_output_dir)) {
   dir.create(pca_plots_output_dir, recursive = TRUE)
@@ -34,6 +35,7 @@ if (!dir.exists(pca_plots_output_dir)) {
 }
 
 # --- 3. Load PCA Model ---
+# ... (your existing code remains the same) ...
 pca_model_path <- config$pca_models_rds_path # From config.R
 if (!file.exists(pca_model_path)) {
   stop("PCA model RDS file not found at:", pca_model_path,
@@ -46,9 +48,32 @@ if (!inherits(pca_model, "prcomp")) {
   stop("Loaded object is not a 'prcomp' PCA model.")
 }
 
+# Print standard PCA summary
+cat("\n--- Standard PCA Summary (summary(pca_model)) ---\n")
+print(summary(pca_model))
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# --- ADD THIS SECTION: Kaiser-Guttman Criterion Check ---
+cat("\n--- Kaiser-Guttman Criterion (Eigenvalues > 1) ---\n")
+if (!is.null(pca_model$sdev)) {
+  eigenvalues <- pca_model$sdev^2
+  cat("Eigenvalues for each Principal Component:\n")
+  # Print eigenvalues with their corresponding PC number
+  eigen_df <- data.frame(PC = paste0("PC", 1:length(eigenvalues)), Eigenvalue = eigenvalues)
+  print(eigen_df, row.names = FALSE)
+  
+  num_pcs_eigen_gt_1 <- sum(eigenvalues > 1)
+  cat("\nNumber of Principal Components with Eigenvalue > 1 (Kaiser-Guttman Criterion):", num_pcs_eigen_gt_1, "\n")
+  
+  # You can also explicitly list which PCs meet the criterion
+  pcs_meeting_criterion <- paste0("PC", which(eigenvalues > 1))
+  cat("PCs meeting the criterion:", paste(pcs_meeting_criterion, collapse=", "), "\n")
+} else {
+  cat("Could not find '$sdev' component in pca_model. Unable to calculate eigenvalues.\n")
+}
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 n_components_to_plot <- config$n_pca_components %||% 4 # Default to 4 if not in config
-
-
 # --- 4. Plot 1: Variance Explained (Scree Plot) ---
 cat("Generating Scree Plot...\n")
 # It's often easier to work with the summary$importance as a matrix for this
@@ -190,3 +215,65 @@ for (pc_choice in paste0("PC", 1:n_components_to_plot)) {
 }
 
 cat("--- PCA Visualization Plotting Script Finished ---\n")
+
+
+# --- 5. Plot 1: Variance Explained (Scree Plot - Individual and Cumulative) ---
+cat("\n--- Generating Scree Plot (Individual & Cumulative Variance) ---\n")
+pca_importance_matrix <- summary(pca_model)$importance
+
+variance_explained_df <- data.frame(
+  PC_Num = 1:ncol(pca_importance_matrix), # Numeric PC number for plotting line
+  PC_Factor = factor(colnames(pca_importance_matrix), levels = colnames(pca_importance_matrix)),
+  Proportion_of_Variance = as.numeric(pca_importance_matrix["Proportion of Variance", ]),
+  Cumulative_Proportion = as.numeric(pca_importance_matrix["Cumulative Proportion", ])
+)
+
+
+# Plot for "Elbow" detection using individual variances
+p_scree_individual <- ggplot(variance_explained_df, aes(x = PC_Num, y = Proportion_of_Variance)) +
+  geom_line(color = "darkblue", linewidth = 1) +
+  geom_point(color = "darkblue", size = 3) +
+  geom_text(aes(label = scales::percent(Proportion_of_Variance, accuracy = 0.1)),
+            vjust = -0.8, color = "darkblue", size = 3.5) +
+  scale_x_continuous(breaks = variance_explained_df$PC_Num, labels = variance_explained_df$PC_Factor) + # Show all PC labels
+  scale_y_continuous(name = "Proportion of Variance Explained (Individual PC)",
+                     labels = scales::percent_format(accuracy = 1),
+                     expand = expansion(mult = c(0, 0.05))) +
+  labs(title = "Scree Plot: Individual Variance per PC (for Elbow Method)",
+       x = "Principal Component") +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+scree_individual_plot_filename <- file.path(pca_plots_output_dir, "pca_scree_plot_individual_variance.png")
+ggsave(scree_individual_plot_filename, p_scree_individual, width = 10, height = 6, dpi = 300)
+cat("Saved Scree Plot (Individual Variance for Elbow) to:", scree_individual_plot_filename, "\n")
+cat("  -> Visually inspect this plot for an 'elbow' to help determine number of PCs to retain.\n")
+
+
+
+
+
+
+
+
+
+cat("\n--- Kaiser-Guttman Criterion (Eigenvalues > 1) ---\n")
+if (!is.null(pca_model$sdev)) {
+  eigenvalues <- pca_model$sdev^2
+  cat("Eigenvalues for each Principal Component:\n")
+  # Print eigenvalues with their corresponding PC number
+  eigen_df <- data.frame(PC = paste0("PC", 1:length(eigenvalues)), Eigenvalue = eigenvalues)
+  print(eigen_df, row.names = FALSE)
+  
+  num_pcs_eigen_gt_1 <- sum(eigenvalues > 1)
+  cat("\nNumber of Principal Components with Eigenvalue > 1 (Kaiser-Guttman Criterion):", num_pcs_eigen_gt_1, "\n")
+  
+  # You can also explicitly list which PCs meet the criterion
+  pcs_meeting_criterion <- paste0("PC", which(eigenvalues > 1))
+  cat("PCs meeting the criterion:", paste(pcs_meeting_criterion, collapse=", "), "\n")
+} else {
+  cat("Could not find '$sdev' component in pca_model. Unable to calculate eigenvalues.\n")
+}

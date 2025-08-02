@@ -103,23 +103,25 @@ target_env_vars_current_names <- c(
 # )
 # 
 
-# 
-# 
-# # General ones
-# c(
-#   "par_baseline_depthsurf_mean",
-#   "sws_baseline_depthsurf_mean",
-#   "thetao_baseline_depthmax_mean",
-#   "thetao_baseline_depthmax_range",
-#   "so_baseline_depthmax_mean",
-#   "no3_baseline_depthmax_mean",
-#   "no3_baseline_depthmax_range",
-#   "chl_baseline_depthmax_mean",
-#   "o2_baseline_depthmax_range",
-#   "bathymetry_mean",
-#   "distcoast",
-#   "rugosity"
-# )
+
+
+# Experiment
+target_env_vars_current_names <- c(
+  "sws_baseline_depthsurf_mean",
+  "so_baseline_depthmax_mean",
+  "thetao_baseline_depthmax_mean",
+  "no3_baseline_depthmax_mean",
+  "no3_baseline_depthmax_range",
+  "chl_baseline_depthmax_mean",
+  "o2_baseline_depthmax_range",
+  "phyc_baseline_depthmax_mean",
+
+  
+
+  # "bathymetry_mean",
+  # "distcoast"
+  "rugosity"
+)
 
 
 cat("--- Target variables for PCA:", paste(target_env_vars_current_names, collapse=", "), "---\n")
