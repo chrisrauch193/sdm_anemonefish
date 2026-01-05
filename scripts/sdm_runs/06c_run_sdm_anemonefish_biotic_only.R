@@ -10,14 +10,14 @@
 cat("--- Running Script 06c: Run Anemonefish Biotic Only SDMs (v7 - Tweaking Integrated, based on 06d logic) ---\n")
 
 # --- 1. Setup: Load Config FIRST ---
-if (file.exists("scripts/config.R")) {
-  source("scripts/config.R")
-  if (!exists("config") || !is.list(config)) {
-    stop("FATAL: 'config' list object not found or invalid after sourcing scripts/config.R")
-  }
-} else {
-  stop("FATAL: Configuration file 'scripts/config.R' not found.")
-}
+# if (file.exists("scripts/config.R")) {
+#   source("scripts/config.R")
+#   if (!exists("config") || !is.list(config)) {
+#     stop("FATAL: 'config' list object not found or invalid after sourcing scripts/config.R")
+#   }
+# } else {
+#   stop("FATAL: Configuration file 'scripts/config.R' not found.")
+# }
 
 # --- 2. Load Required Packages ---
 if (!require("pacman")) install.packages("pacman", dependencies = TRUE)
@@ -46,7 +46,7 @@ host_group_name <- "anemone"
 # NOTE: The logic below currently uses PCA env predictors due to copying from 06d.
 # User will tweak this script to remove env predictors for a true biotic-only model.
 if(!config$use_pca_predictors) { log4r::fatal(logger, "Script 06c (currently based on 06d logic) requires config$use_pca_predictors=TRUE."); stop("This script (currently based on 06d logic) requires PCA env predictors.") }
-predictor_type_suffix <- "_biotic_pc4" # Original 06c naming for outputs
+predictor_type_suffix <- "_biotic_only" # Original 06c naming for outputs
 host_predictor_type_suffix <- "_pca" # Suffix of host predictions to load (from 06a)
 
 log4r::info(logger, paste("--- Processing Group:", group_name, "---"))
@@ -165,9 +165,24 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     max_host_suitability_tuning <- terra::app(host_stack_tuning, fun = "max", na.rm = TRUE); names(max_host_suitability_tuning) <- "host_suitability_max"
     slog("DEBUG", "Max host suitability layer created for tuning scenario.")
     
-    # Combine Env PC4 + Max Host
-    # TODO: Convert to faked env layer
-    tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
+    # # Combine Env PC4 + Max Host
+    # # TODO: Convert to faked env layer
+    # tuning_predictor_stack_global <- c(tuning_env_stack[[4]], max_host_suitability_tuning) 
+    
+    # --- Create Dummy Environmental Layer with Random Noise ---
+    slog("DEBUG", "Creating dummy environmental layer (random noise) for host-only model.")
+    dummy_env_layer_noise <- max_host_suitability_tuning
+    # Generate random noise with a very small range (e.g., 0 to 0.01)
+    set.seed(config$global_seed) # For reproducibility
+    noise_values <- runif(ncell(dummy_env_layer_noise), min = 0, max = 0.001)
+    dummy_env_layer_noise[] <- noise_values
+    # Mask it by the valid cells of the host suitability layer
+    dummy_env_layer_noise[is.na(max_host_suitability_tuning)] <- NA 
+    names(dummy_env_layer_noise) <- "PC4"
+    
+    # Combine for prediction
+    tuning_predictor_stack_global <- c(dummy_env_layer_noise, max_host_suitability_tuning)
+    
     slog("INFO", paste("GLOBAL Tuning predictor stack (06d logic: Env PCA + Host) created:", paste(names(tuning_predictor_stack_global), collapse=", ")))
     rm(tuning_env_stack, host_stack_tuning, max_host_suitability_tuning, host_rasters_tuning_list); gc()
     
@@ -224,7 +239,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
   
   # --- Check Existing Model ---
   final_model <- NULL; tuning_output <- NULL; load_existing_model <- FALSE
-  full_swd_data <- NULL; species_specific_stack <- NULL
+  train_swd <- NULL; species_specific_stack <- NULL
   
   # Note: config$force_rerun$run_biotic_sdms is from 06d. User may adapt this flag later.
   if (!config$force_rerun$run_biotic_sdms && file.exists(final_model_file)) {
@@ -235,11 +250,11 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
       load_existing_model <- TRUE
       slog("DEBUG", "Regenerating background points and species stack for loaded model VI/Eval...")
       # Uses tuning_predictor_stack_global (Env PCA + Host from 06d logic)
-      background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+      background_return_eval <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
       if(!is.null(background_return_eval) && !is.null(background_return_eval$background_points) && !is.null(background_return_eval$species_specific_stack)) {
         background_points_eval <- background_return_eval$background_points
         species_specific_stack <- background_return_eval$species_specific_stack # This is the masked stack
-        full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_eval, env = species_specific_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI/Eval on loaded model:", e$message); NULL })
+        train_swd <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points_eval, env = species_specific_stack, verbose = FALSE) }, error = function(e) { slog("WARN", "Failed prepareSWD for VI/Eval on loaded model:", e$message); NULL })
         rm(background_points_eval); gc()
       } else { slog("WARN", "Failed background/stack generation for VI/Eval on loaded model.") }
       if(file.exists(tuning_rds_file)) {
@@ -257,7 +272,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     slog("INFO", "Final model not found/invalid or rerun forced. Proceeding with tuning/training.")
     slog("DEBUG", "Generating background points and species stack for training...")
     # Uses tuning_predictor_stack_global (Env PCA + Host from 06d logic)
-    background_return <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = species_aphia_id)
+    background_return <- generate_sdm_background_obis(occs_sf_clean, tuning_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file, seed_offset = config$global_seed)
     if (is.null(background_return) || is.null(background_return$background_points) || is.null(background_return$species_specific_stack)) {
       msg <- paste0("Skipping: Failed background point/stack generation for training."); slog("ERROR", msg); return(list(status = "error_background", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
     }
@@ -265,36 +280,73 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
     species_specific_stack <- background_return$species_specific_stack # Use this masked stack (Env PCA + Host)
     slog("DEBUG", "Background points generated and stack masked for training.")
     
-    full_swd_data <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points, env = species_specific_stack, verbose = FALSE) }, error = function(e) { slog("ERROR", paste("Failed prepareSWD for tuning/training:", e$message)); NULL })
-    if (is.null(full_swd_data)) { rm(background_points, species_specific_stack); gc(); return(list(status = "error_swd_preparation", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("SWD prep failed."))) }
+    train_swd <- tryCatch({ SDMtune::prepareSWD(species = species_name, p = occs_coords, a = background_points, env = species_specific_stack, verbose = FALSE) }, error = function(e) { slog("ERROR", paste("Failed prepareSWD for tuning/training:", e$message)); NULL })
+    if (is.null(train_swd)) { rm(background_points, species_specific_stack); gc(); return(list(status = "error_swd_preparation", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("SWD prep failed."))) }
     slog("DEBUG", "SWD object prepared for tuning/training.")
     
+    # --- <<< SPLIT SWD INTO TRAINING AND TESTING FOR INDEPENDENT EVALUATION >>> ---
+    slog("INFO", "Splitting SWD data into training and testing sets (e.g., 80/20)...")
+    test_proportion <- config$sdm_test_proportion %||% 0.2 # Add sdm_test_proportion to config, default 0.2
+    
+    # Ensure reproducibility of the split
+    split_seed <- config$global_seed + species_aphia_id # Species-specific seed for the split
+    
+    swd_parts <- tryCatch({
+      SDMtune::trainValTest(train_swd, test = test_proportion, only_presence = FALSE, seed = split_seed)
+    }, error = function(e) {
+      slog("ERROR", paste("Failed to split SWD data:", e$message)); NULL
+    })
+    
+    if (is.null(swd_parts) || length(swd_parts) != 2) {
+      msg <- "Data splitting into train/test failed. Halting species processing."
+      slog("ERROR", msg)
+      rm(background_points_full, species_specific_stack, initial_swd_data); gc()
+      return(list(status = "error_swd_split", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+    } else {
+      train_swd <- swd_parts[[1]]
+      test_swd  <- swd_parts[[2]]
+      slog("INFO", paste("SWD data split: Train (", nrow(train_swd@data), " total points), Test (", nrow(test_swd@data), " total points)"))
+      slog("DEBUG", paste("  Train Presences:", sum(train_swd@pa == 1), "Absences:", sum(train_swd@pa == 0)))
+      slog("DEBUG", paste("  Test Presences:", sum(test_swd@pa == 1), "Absences:", sum(test_swd@pa == 0)))
+      if (nrow(train_swd@data) < config$min_occurrences_sdm * 2 || sum(train_swd@pa == 1) < config$min_occurrences_sdm ) { 
+        slog("WARN", "Training set size or presence count after split might be too small (Total:", nrow(train_swd@data), "Pres:", sum(train_swd@pa==1), "). Model performance may be affected.")
+        # Decide if this should be a fatal error
+        # msg <- "Training set too small after split."; slog("ERROR", msg)
+        # return(list(status = "error_train_set_too_small", species = species_name, message = msg))
+      }
+      if (nrow(test_swd@data) == 0 || sum(test_swd@pa == 1) == 0 || sum(test_swd@pa == 0) == 0) {
+        slog("WARN", "Test set is empty or lacks presences/absences. Independent test metrics will be NA.")
+        test_swd <- NULL # Set to NULL if unusable
+      }
+    }
+    # --- <<< END SWD SPLIT >>> ---
+    
     slog("DEBUG", "Creating spatial folds...")
-    spatial_folds <- create_spatial_cv_folds_simplified(full_swd_data, species_specific_stack, config, logger=NULL, species_log_file)
+    spatial_folds <- create_spatial_cv_folds_simplified(train_swd, species_specific_stack, config, logger=NULL, species_log_file)
     if(is.null(spatial_folds)) {
-      msg <- "Failed to create spatial folds."; slog("ERROR", msg); rm(background_points, species_specific_stack, full_swd_data); gc(); return(list(status = "error_cv_folds", species=species_name, occurrence_count = occurrence_count_after_thinning, message=msg))
+      msg <- "Failed to create spatial folds."; slog("ERROR", msg); rm(background_points, species_specific_stack, train_swd); gc(); return(list(status = "error_cv_folds", species=species_name, occurrence_count = occurrence_count_after_thinning, message=msg))
     }
     
     slog("INFO", "Starting hyperparameter tuning.")
     tuning_output <- run_sdm_tuning_scv(occs_coords, species_specific_stack, background_points, config, logger=NULL, species_name, species_log_file=species_log_file)
     if (is.null(tuning_output) || is.null(attr(tuning_output, "best_hypers"))) {
-      msg <- paste0("Skipping: Tuning failed."); slog("ERROR", msg); rm(background_points, species_specific_stack, full_swd_data, spatial_folds); gc(); return(list(status = "error_tuning", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+      msg <- paste0("Skipping: Tuning failed."); slog("ERROR", msg); rm(background_points, species_specific_stack, train_swd, spatial_folds); gc(); return(list(status = "error_tuning", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
     }
     best_hypers <- attr(tuning_output, "best_hypers")
     
-    if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file)) { # predictor_type_suffix is _biotic_only
-      rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
-    }
+    # if(!save_tuning_results(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file, group_name=group_name)) { # predictor_type_suffix is _biotic_only
+    #   rm(background_points, species_specific_stack, train_swd, spatial_folds, tuning_output); gc(); return(list(status = "error_saving_tuning_results", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save tuning results.")))
+    # }
     
     slog("INFO", "Starting final model training.")
     final_model <- train_final_sdm(occs_coords, species_specific_stack, background_points, best_hypers, config, logger=NULL, species_name, species_log_file=species_log_file)
     if(is.null(final_model)){
-      msg <- paste0("Skipping: Training failed."); slog("ERROR", msg); rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output); gc(); return(list(status = "error_training", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+      msg <- paste0("Skipping: Training failed."); slog("ERROR", msg); rm(background_points, species_specific_stack, train_swd, spatial_folds, tuning_output); gc(); return(list(status = "error_training", species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
     }
     slog("INFO", "Final model training complete.")
     
     if(!save_final_model(final_model, species_name_sanitized, predictor_type_suffix, group_name, config, logger=NULL, species_log_file=species_log_file)) { # predictor_type_suffix is _biotic_only
-      rm(background_points, species_specific_stack, full_swd_data, spatial_folds, tuning_output, final_model); gc(); return(list(status = "error_saving_model", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save final model.")))
+      rm(background_points, species_specific_stack, train_swd, spatial_folds, tuning_output, final_model); gc(); return(list(status = "error_saving_model", species = species_name, occurrence_count = occurrence_count_after_thinning, message = paste0("Failed save final model.")))
     }
     rm(background_points, spatial_folds); gc()
   }
@@ -302,7 +354,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
   # --- Log Metrics ---
   if (!is.null(final_model) && !is.null(species_specific_stack)) {
     log_final_model_metrics(
-      final_model = final_model, full_swd_data = full_swd_data,
+      final_model = final_model, train_swd = train_swd, test_swd = test_swd,
       tuning_predictor_stack = species_specific_stack, # This is the masked (Env PCA + Host) stack
       tuning_output = tuning_output,
       species_name_sanitized = species_name_sanitized, group_name = group_name,
@@ -312,10 +364,10 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
   
   # --- Variable Importance ---
   if (!is.null(final_model)) {
-    if(!is.null(full_swd_data)){ # SWD was built with Env PCA + Host
+    if(!is.null(train_swd)){ # SWD was built with Env PCA + Host
       slog("INFO", "Calculating and saving variable importance...")
       vi_success <- calculate_and_save_vi(
-        final_model = final_model, training_swd = full_swd_data,
+        final_model = final_model, training_swd = train_swd,
         species_name_sanitized = species_name_sanitized, group_name = group_name,
         predictor_type_suffix = predictor_type_suffix, config = config, logger = NULL, # predictor_type_suffix is _biotic_only
         species_log_file = species_log_file)
@@ -327,67 +379,69 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
   # Requires GLOBAL predictor stacks (Env PCA + Host from 06d logic)
   predictions_made = 0; prediction_errors = 0
   scenarios_to_predict <- names(env_predictor_paths_list)
-  slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
-  
-  if (!is.null(final_model)) {
-    for (pred_scenario in scenarios_to_predict) {
-      slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
-      target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config) # predictor_type_suffix is _biotic_only
-      if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
-      rerun_flag <- config$force_rerun$run_biotic_sdms # From 06d logic
-      if (!rerun_flag && file.exists(target_pred_file_path)) { slog("DEBUG", "  Prediction exists. Skipping."); next }
-      
-      # --- Prepare GLOBAL Stack for Prediction Scenario (06d logic: Env PCA + Host) ---
-      pred_predictor_stack_global <- NULL
-      tryCatch({
-        # This part loads ENV PREDICTORS (PCA) - part of 06d logic to be modified by user later
-        pred_env_path <- env_predictor_paths_list[[pred_scenario]]
-        if (is.null(pred_env_path) || !file.exists(pred_env_path)) stop(paste("Env PCA stack missing (06d logic):", pred_scenario))
-        pred_env_stack <- terra::rast(pred_env_path) 
-        reference_geom_pred <- pred_env_stack[[1]]
+  if (config$do_final_prediction) {
+    slog("INFO", paste("Starting predictions for", length(scenarios_to_predict), "scenarios."))
+    
+    if (!is.null(final_model)) {
+      for (pred_scenario in scenarios_to_predict) {
+        slog("DEBUG", paste("  Predicting scenario:", pred_scenario))
+        target_pred_file_path <- construct_prediction_filename(species_name_sanitized, pred_scenario, predictor_type_suffix, config) # predictor_type_suffix is _biotic_only
+        if (is.null(target_pred_file_path)) { slog("WARN", "  Could not construct prediction filename. Skipping."); prediction_errors <- prediction_errors + 1; next }
+        rerun_flag <- config$force_rerun$run_biotic_sdms # From 06d logic
+        if (!rerun_flag && file.exists(target_pred_file_path)) { slog("DEBUG", "  Prediction exists. Skipping."); next }
         
-        host_paths_for_pred <- all_host_prediction_paths[[pred_scenario]][names(all_host_prediction_paths[[pred_scenario]]) %in% associated_hosts_sanitized]
-        if (length(host_paths_for_pred) == 0) stop(paste("No host paths found:", pred_scenario))
-        
-        host_rasters_pred_list <- list()
-        for(host_name in names(host_paths_for_pred)){
-          host_path <- host_paths_for_pred[[host_name]]
-          host_rast <- tryCatch(terra::rast(host_path), error=function(e){slog("WARN",paste("Failed load host",basename(host_path),":",e$message)); NULL})
-          if(!is.null(host_rast)){
-            if (!terra::compareGeom(reference_geom_pred, host_rast, stopOnError=FALSE, res=TRUE)) { slog("DEBUG", paste("Resampling host", basename(host_path))); host_rast <- tryCatch(terra::resample(host_rast, reference_geom_pred, method="bilinear"), error=function(e){slog("ERROR",paste("Failed resample",basename(host_path),":",e$message)); NULL}) }
-            if(!is.null(host_rast)){ names(host_rast) <- host_name; host_rasters_pred_list[[host_name]] <- host_rast }
+        # --- Prepare GLOBAL Stack for Prediction Scenario (06d logic: Env PCA + Host) ---
+        pred_predictor_stack_global <- NULL
+        tryCatch({
+          # This part loads ENV PREDICTORS (PCA) - part of 06d logic to be modified by user later
+          pred_env_path <- env_predictor_paths_list[[pred_scenario]]
+          if (is.null(pred_env_path) || !file.exists(pred_env_path)) stop(paste("Env PCA stack missing (06d logic):", pred_scenario))
+          pred_env_stack <- terra::rast(pred_env_path) 
+          reference_geom_pred <- pred_env_stack[[1]]
+          
+          host_paths_for_pred <- all_host_prediction_paths[[pred_scenario]][names(all_host_prediction_paths[[pred_scenario]]) %in% associated_hosts_sanitized]
+          if (length(host_paths_for_pred) == 0) stop(paste("No host paths found:", pred_scenario))
+          
+          host_rasters_pred_list <- list()
+          for(host_name in names(host_paths_for_pred)){
+            host_path <- host_paths_for_pred[[host_name]]
+            host_rast <- tryCatch(terra::rast(host_path), error=function(e){slog("WARN",paste("Failed load host",basename(host_path),":",e$message)); NULL})
+            if(!is.null(host_rast)){
+              if (!terra::compareGeom(reference_geom_pred, host_rast, stopOnError=FALSE, res=TRUE)) { slog("DEBUG", paste("Resampling host", basename(host_path))); host_rast <- tryCatch(terra::resample(host_rast, reference_geom_pred, method="bilinear"), error=function(e){slog("ERROR",paste("Failed resample",basename(host_path),":",e$message)); NULL}) }
+              if(!is.null(host_rast)){ names(host_rast) <- host_name; host_rasters_pred_list[[host_name]] <- host_rast }
+            }
           }
-        }
-        if (length(host_rasters_pred_list) == 0) stop(paste("Failed load/resample hosts:", pred_scenario))
+          if (length(host_rasters_pred_list) == 0) stop(paste("Failed load/resample hosts:", pred_scenario))
+          
+          host_stack_scenario <- terra::rast(host_rasters_pred_list)
+          max_host_suitability_scenario <- terra::app(host_stack_scenario, fun = "max", na.rm = TRUE); names(max_host_suitability_scenario) <- "host_suitability_max"
+          # Combine Env PCA + Max Host (06d logic)
+          pred_predictor_stack_global <- c(pred_env_stack, max_host_suitability_scenario)
+          slog("DEBUG", paste("  GLOBAL Predictor stack (06d logic: Env PCA + Host) for prediction:", paste(names(pred_predictor_stack_global), collapse=", ")))
+          rm(pred_env_stack, host_stack_scenario, max_host_suitability_scenario, host_rasters_pred_list); gc()
+          
+        }, error = function(e) {
+          slog("ERROR", paste("  Failed preparing GLOBAL predictor stack (06d logic) for prediction:", pred_scenario, "Error:", e$message))
+          if (exists("pred_env_stack")) rm(pred_env_stack); if (exists("host_stack_scenario")) rm(host_stack_scenario); if (exists("max_host_suitability_scenario")) rm(max_host_suitability_scenario); if (exists("host_rasters_pred_list")) rm(host_rasters_pred_list)
+          gc(); pred_predictor_stack_global <- NULL
+        })
+        # --- End GLOBAL Stack Prep ---
         
-        host_stack_scenario <- terra::rast(host_rasters_pred_list)
-        max_host_suitability_scenario <- terra::app(host_stack_scenario, fun = "max", na.rm = TRUE); names(max_host_suitability_scenario) <- "host_suitability_max"
-        # Combine Env PCA + Max Host (06d logic)
-        pred_predictor_stack_global <- c(pred_env_stack, max_host_suitability_scenario)
-        slog("DEBUG", paste("  GLOBAL Predictor stack (06d logic: Env PCA + Host) for prediction:", paste(names(pred_predictor_stack_global), collapse=", ")))
-        rm(pred_env_stack, host_stack_scenario, max_host_suitability_scenario, host_rasters_pred_list); gc()
+        if(is.null(pred_predictor_stack_global)) { prediction_errors <- prediction_errors + 1; next }
         
-      }, error = function(e) {
-        slog("ERROR", paste("  Failed preparing GLOBAL predictor stack (06d logic) for prediction:", pred_scenario, "Error:", e$message))
-        if (exists("pred_env_stack")) rm(pred_env_stack); if (exists("host_stack_scenario")) rm(host_stack_scenario); if (exists("max_host_suitability_scenario")) rm(max_host_suitability_scenario); if (exists("host_rasters_pred_list")) rm(host_rasters_pred_list)
-        gc(); pred_predictor_stack_global <- NULL
-      })
-      # --- End GLOBAL Stack Prep ---
-      
-      if(is.null(pred_predictor_stack_global)) { prediction_errors <- prediction_errors + 1; next }
-      
-      # Predict & Save
-      prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
-      if (inherits(prediction_output, "SpatRaster")) {
-        save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file) # predictor_type_suffix is _biotic_only
-        if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
-        rm(prediction_output); gc()
-      } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
-      rm(pred_predictor_stack_global); gc()
-    } # End prediction scenario loop
-  } else {
-    prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping predictions: Final model unavailable."); slog("ERROR", msg)
-    status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+        # Predict & Save
+        prediction_output <- predict_sdm_suitability(final_model, pred_predictor_stack_global, config, logger=NULL, species_log_file=species_log_file)
+        if (inherits(prediction_output, "SpatRaster")) {
+          save_success <- save_sdm_prediction(prediction_output, species_name_sanitized, pred_scenario, predictor_type_suffix, config, logger=NULL, species_log_file=species_log_file) # predictor_type_suffix is _biotic_only
+          if(save_success) predictions_made <- predictions_made + 1 else prediction_errors <- prediction_errors + 1
+          rm(prediction_output); gc()
+        } else { slog("WARN", paste("  Prediction failed:", prediction_output)); prediction_errors <- prediction_errors + 1 }
+        rm(pred_predictor_stack_global); gc()
+      } # End prediction scenario loop
+    } else {
+      prediction_errors <- length(scenarios_to_predict); msg <- paste0("Skipping predictions: Final model unavailable."); slog("ERROR", msg)
+      status <- if(load_existing_model) "error_loading_model" else "error_training"; return(list(status = status, species = species_name, occurrence_count = occurrence_count_after_thinning, message = msg))
+    }
   }
   
   # --- Prepare return status ---
@@ -400,7 +454,7 @@ process_species_sdm_biotic_only <- function(species_row, config, env_predictor_p
   if (!is.null(species_specific_stack)) rm(species_specific_stack)
   if (!is.null(tuning_predictor_stack_global)) rm(tuning_predictor_stack_global)
   if (!is.null(occs_coords)) rm(occs_coords)
-  if (!is.null(full_swd_data)) rm(full_swd_data)
+  if (!is.null(train_swd)) rm(train_swd)
   if (!load_existing_model && !is.null(tuning_output) && inherits(tuning_output, "SDMtune")) rm(tuning_output)
   if (exists("final_model", inherits=FALSE)) rm(final_model)
   gc()

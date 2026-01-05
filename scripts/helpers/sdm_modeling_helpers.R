@@ -8,7 +8,117 @@
 # - Added spatial CV fold creation and metric logging.
 #-------------------------------------------------------------------------------
 pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV, ggplot2, ecospat, spThin, geosphere,
-               biomod2, presenceabsence, randomForest, gbm, mda, gam) # Added biomod2 and dependencies
+               biomod2, randomForest, gbm, mda, gam) # Added biomod2 and dependencies
+
+
+#' #' Load, Clean, and Get Coordinates for Individual Species Occurrences
+#' #' (Returns list with data and count)
+#' #'
+#' #' @param species_aphia_id AphiaID of the target species.
+#' #' @param occurrence_dir Directory containing individual species CSV files.
+#' #' @param config Project configuration list (needs `occurrence_crs`, `thinning_method`, `min_occurrences_sdm`, and optionally `predictor_stack_for_thinning` if thinning is 'cell').
+#' #' @param logger A log4r logger object (can be NULL for less verbose output).
+#' #' @param species_log_file Optional path to a species-specific log file for detailed messages.
+#' #' @return A list containing cleaned coordinates `coords` (matrix) and the final `count`, or NULL on error.
+#' load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, config, logger, species_log_file = NULL) {
+#'   
+#'   # Local logging function for this helper
+#'   hlog <- function(level, ...) {
+#'     msg <- paste(Sys.time(), paste0("[",level,"]"), "[OccLoadHelper]", paste0(..., collapse = " "))
+#'     if (!is.null(species_log_file)) { # Prefer species log if provided
+#'       cat(msg, "\n", file = species_log_file, append = TRUE)
+#'     } else if (!is.null(logger)) { # Fallback to main logger
+#'       log_level_func <- switch(level, DEBUG=log4r::debug, INFO=log4r::info, WARN=log4r::warn, log4r::error)
+#'       log_level_func(logger, msg) # Log to main logger
+#'     } else {
+#'       # cat(msg, "\n") # Fallback to console if no loggers provided
+#'     }
+#'   }
+#'   
+#'   hlog("DEBUG", paste("Loading occurrences for AphiaID:", species_aphia_id))
+#'   occ_file <- file.path(occurrence_dir, paste0(species_aphia_id, ".csv"))
+#'   if (!file.exists(occ_file)) {
+#'     hlog("WARN", paste("Occurrence file not found:", basename(occ_file)))
+#'     return(list(coords = NULL, count = 0))
+#'   }
+#'   
+#'   tryCatch({
+#'     occ_df <- readr::read_csv(occ_file, col_types = readr::cols(.default = "c"), show_col_types = FALSE)
+#'     
+#'     if (!all(c("decimalLongitude", "decimalLatitude") %in% names(occ_df))) {
+#'       hlog("WARN", paste("Missing coordinate columns in file:", basename(occ_file)))
+#'       return(list(coords = NULL, count = 0))
+#'     }
+#'     
+#'     occ_clean <- occ_df %>%
+#'       dplyr::mutate(
+#'         decimalLongitude = suppressWarnings(as.numeric(decimalLongitude)),
+#'         decimalLatitude = suppressWarnings(as.numeric(decimalLatitude))
+#'       ) %>%
+#'       dplyr::filter(
+#'         !is.na(decimalLongitude), !is.na(decimalLatitude),
+#'         decimalLongitude >= -180, decimalLongitude <= 180,
+#'         decimalLatitude >= -90, decimalLatitude <= 90
+#'       )
+#'     
+#'     count_after_clean <- nrow(occ_clean)
+#'     hlog("DEBUG", paste("  Retained", count_after_clean, "records after coordinate cleaning."))
+#'     
+#'     if (count_after_clean == 0) {
+#'       hlog("WARN", "No valid coordinates after cleaning.")
+#'       return(list(coords = NULL, count = 0))
+#'     }
+#'     
+#'     # --- Spatial Thinning (Optional) ---
+#'     if (!is.null(config$thinning_method) && config$thinning_method == "cell" && !is.null(config$predictor_stack_for_thinning)) {
+#'       hlog("DEBUG", "  Applying cell-based thinning...")
+#'       predictor_stack_thin <- config$predictor_stack_for_thinning
+#'       if (is.null(predictor_stack_thin) || !inherits(predictor_stack_thin, "SpatRaster") || terra::nlyr(predictor_stack_thin) == 0) {
+#'         hlog("WARN", " predictor_stack_for_thinning invalid/missing. Skipping thinning.")
+#'         occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'       } else {
+#'         occs_sf <- sf::st_as_sf(occ_clean, coords = c("decimalLongitude", "decimalLatitude"), crs = config$occurrence_crs)
+#'         target_crs <- terra::crs(predictor_stack_thin)
+#'         if (sf::st_crs(occs_sf) != sf::st_crs(target_crs)) {
+#'           occs_sf <- sf::st_transform(occs_sf, crs = target_crs)
+#'         }
+#'         occs_spatvector <- terra::vect(occs_sf)
+#'         occs_cells <- tryCatch(terra::extract(predictor_stack_thin[[1]], occs_spatvector, cells = TRUE), error=function(e){hlog("WARN",paste("Error extracting cells:",e$message));NULL})
+#'         
+#'         if(is.null(occs_cells)){
+#'           hlog("WARN", " Cell extraction failed. Skipping thinning.")
+#'           occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'         } else {
+#'           valid_cells_indices <- which(!is.na(occs_cells$cell))
+#'           if(length(valid_cells_indices) > 0) {
+#'             unique_cell_indices_in_valid <- which(!duplicated(occs_cells$cell[valid_cells_indices]))
+#'             original_indices_to_keep <- valid_cells_indices[unique_cell_indices_in_valid]
+#'             occs_thinned_sf <- occs_sf[original_indices_to_keep, ]
+#'             occ_thinned_coords <- sf::st_coordinates(occs_thinned_sf)
+#'             colnames(occ_thinned_coords) <- c("decimalLongitude", "decimalLatitude") # Ensure names
+#'           } else {
+#'             hlog("WARN", " No valid cells found for occurrences on thinning raster. Skipping thinning.")
+#'             occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'           }
+#'         }
+#'       }
+#'       count_after_thin <- nrow(occ_thinned_coords)
+#'       hlog("DEBUG", paste("  Retained", count_after_thin, "records after thinning."))
+#'       if (count_after_thin == 0) {hlog("WARN", "No records left after thinning."); return(list(coords = NULL, count = 0))}
+#'     } else {
+#'       hlog("DEBUG", "  Skipping spatial thinning or method not 'cell'.")
+#'       occ_thinned_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
+#'       count_after_thin <- nrow(occ_thinned_coords)
+#'     }
+#'     
+#'     return(list(coords = occ_thinned_coords, count = count_after_thin))
+#'     
+#'   }, error = function(e) {
+#'     hlog("ERROR", paste("Error processing occurrences for AphiaID", species_aphia_id, ":", e$message))
+#'     return(list(coords = NULL, count = 0))
+#'   })
+#' }
+
 
 #' Load, Clean, and Get Coordinates for Individual Species Occurrences
 #' (Returns list with data and count) - Modified to NOT do cell thinning internally.
@@ -20,7 +130,7 @@ pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, blockCV,
 #' @param species_log_file Optional path to a species-specific log file for detailed messages.
 #' @return A list containing cleaned coordinates `coords` (matrix) and the final `count`, or NULL on error.
 load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, config, logger, species_log_file = NULL) {
-  
+
   # Local logging function for this helper
   hlog <- function(level, ...) {
     msg <- paste(Sys.time(), paste0("[",level,"]"), "[OccLoadHelper]", paste0(..., collapse = " "))
@@ -36,22 +146,22 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
       # cat(msg, "\n") # Fallback to console if no loggers provided
     }
   }
-  
+
   hlog("DEBUG", paste("Loading occurrences for AphiaID:", species_aphia_id))
   occ_file <- file.path(occurrence_dir, paste0(species_aphia_id, ".csv"))
   if (!file.exists(occ_file)) {
     hlog("WARN", paste("Occurrence file not found:", basename(occ_file)))
     return(list(coords = NULL, count = 0))
   }
-  
+
   tryCatch({
     occ_df <- readr::read_csv(occ_file, col_types = readr::cols(.default = "c"), show_col_types = FALSE)
-    
+
     if (!all(c("decimalLongitude", "decimalLatitude") %in% names(occ_df))) {
       hlog("WARN", paste("Missing coordinate columns in file:", basename(occ_file)))
       return(list(coords = NULL, count = 0))
     }
-    
+
     occ_clean <- occ_df %>%
       dplyr::mutate(
         decimalLongitude = suppressWarnings(as.numeric(decimalLongitude)),
@@ -62,23 +172,23 @@ load_clean_individual_occ_coords <- function(species_aphia_id, occurrence_dir, c
         decimalLongitude >= -180, decimalLongitude <= 180,
         decimalLatitude >= -90, decimalLatitude <= 90
       )
-    
+
     count_after_clean <- nrow(occ_clean)
     hlog("DEBUG", paste("  Retained", count_after_clean, "records after basic coordinate cleaning (NA removal)."))
-    
+
     if (count_after_clean == 0) {
       hlog("WARN", "No valid coordinates after cleaning.")
       return(list(coords = NULL, count = 0))
     }
-    
+
     # --- NO SPATIAL THINNING HERE ---
     # Thinning is now handled by a separate function `thin_occurrences_by_sac`
     hlog("DEBUG", "  Skipping internal spatial thinning. Raw cleaned coordinates returned.")
     occ_final_coords <- as.matrix(occ_clean[, c("decimalLongitude", "decimalLatitude")])
     colnames(occ_final_coords) <- c("longitude", "latitude") # Ensure consistent names
-    
+
     return(list(coords = occ_final_coords, count = count_after_clean))
-    
+
   }, error = function(e) {
     hlog("ERROR", paste("Error processing occurrences for AphiaID", species_aphia_id, ":", e$message))
     return(list(coords = NULL, count = 0))
@@ -132,7 +242,7 @@ thin_occurrences_by_sac <- function(occs_coords, predictor_stack, config, logger
   # Limit points for correlogram calculation if dataset is very large
   if (nrow(pts_df) > 1000) {
     hlog("DEBUG", "Subsampling to 1000 points for Mantel correlogram calculation.")
-    set.seed(123) # for reproducibility of subsampling
+    set.seed(config$global_seed) # for reproducibility of subsampling
     pts_for_mantel <- pts_df[sample(1:nrow(pts_df), 1000, replace = FALSE), ]
   } else {
     pts_for_mantel <- pts_df
@@ -290,6 +400,74 @@ thin_occurrences_by_sac <- function(occs_coords, predictor_stack, config, logger
               n_thinned = n_final,
               thinning_distance_km = thin_dist_km_final))
 }
+
+
+
+
+
+
+
+
+
+
+
+#' Generate Background Points within the Raster Extent (v2 - with Coral Masking)
+#' Can optionally mask sampling to coral reef areas defined in config.
+#' @param predictor_stack SpatRaster stack (used for extent/masking).
+#' @param n_background Number of points to attempt generating.
+#' @param config Project configuration list (needs `mask_background_points_to_coral`, `apply_coral_mask`, `coral_shapefile`). #<< ADDED config
+#' @param logger A log4r logger object (can be NULL).
+#' @param species_log_file Optional path to a species-specific log file.
+#' @param seed Optional random seed for reproducibility.
+#' @return A data frame of background point coordinates (x, y), or NULL on error.
+generate_sdm_background <- function(predictor_stack, n_background, config, logger, species_log_file = NULL, seed = 123) { #<< ADDED config
+  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[BgGenHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) log4r::log(logger, level, msg) else {}}#cat(msg, "\n")} }
+  
+  hlog("DEBUG", paste("Generating up to", n_background, "background points...")) # Changed log level
+  if (is.null(predictor_stack) || !inherits(predictor_stack, "SpatRaster") || terra::nlyr(predictor_stack) == 0) { hlog("ERROR", "Predictor stack is required."); return(NULL) }
+  if (!is.null(seed)) set.seed(seed)
+  
+  # --- Determine the layer to sample from ---
+  sampling_layer <- predictor_stack[[1]] # Start with the first layer
+  sampling_mask <- NULL # Initialize
+  
+  # Apply Coral Mask (if configured in config)
+  if (config$mask_background_points_to_coral && config$apply_coral_mask) {
+    hlog("DEBUG", "  Attempting coral reef mask for background point sampling...")
+    if (!is.null(config$coral_shapefile) && file.exists(config$coral_shapefile)) {
+      coral_areas_sf <- tryCatch({ sf::st_read(config$coral_shapefile, quiet = TRUE) }, error = function(e) {hlog("WARN",paste("   Failed load coral shapefile:", e$message)); NULL})
+      if (!is.null(coral_areas_sf)) {
+        coral_areas_vect <- tryCatch({ terra::vect(coral_areas_sf) }, error = function(e) {hlog("WARN",paste("   Failed convert coral sf to vect:", e$message)); NULL})
+        if (!is.null(coral_areas_vect)) {
+          if(terra::crs(coral_areas_vect) != terra::crs(sampling_layer)){
+            hlog("DEBUG", "    Projecting coral shapefile CRS...")
+            coral_areas_vect <- tryCatch(terra::project(coral_areas_vect, terra::crs(sampling_layer)), error = function(e){hlog("WARN",paste("     Failed project coral shapefile:", e$message)); NULL})
+          }
+          if(!is.null(coral_areas_vect)){
+            sampling_mask <- tryCatch(terra::mask(sampling_layer, coral_areas_vect), error=function(e){hlog("WARN",paste("     Failed mask sampling layer:", e$message)); NULL})
+            if(!is.null(sampling_mask)) { hlog("DEBUG", "  Coral reef mask applied for sampling.") }
+            else { hlog("WARN", "  Failed to create mask. Sampling from unmasked layer.") }
+          } else { hlog("WARN", "  CRS projection failed. Sampling from unmasked layer.") }
+        } else { hlog("WARN", "  sf to vect conversion failed. Sampling from unmasked layer.") }
+      } else { hlog("WARN", "  Coral shapefile loading failed. Sampling from unmasked layer.") }
+    } else { hlog("WARN", "  Coral shapefile path missing/invalid. Sampling from unmasked layer.") }
+  } else { hlog("DEBUG", "  Background point sampling not masked to coral reefs.") }
+  
+  # Use the masked layer if created, otherwise the original first layer
+  layer_to_sample_from <- if(!is.null(sampling_mask)) sampling_mask else sampling_layer
+  
+  # --- Sample Points ---
+  tryCatch({
+    bg_points <- terra::spatSample(layer_to_sample_from, size = n_background, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
+    if (nrow(bg_points) < n_background) { hlog("WARN", paste("Could only sample", nrow(bg_points), "background points (requested", n_background, ", likely due to mask/raster extent).")) }
+    if (nrow(bg_points) == 0) { hlog("ERROR", "Failed to generate ANY background points from the sampling area."); return(NULL) }
+    hlog("INFO", paste("Generated", nrow(bg_points), "background points.")) # Changed log level
+    return(as.data.frame(bg_points[, c("x", "y")]))
+  }, error = function(e) { hlog("ERROR", paste("Error generating background points:", e$message)); return(NULL) })
+}
+
+
+
 
 
 #' Generate Background Points using OBIS/MPAEU Ecoregion/Depth Method (Returns List v4)
@@ -499,8 +677,8 @@ generate_sdm_background_obis <- function(occs_sf, global_predictor_stack, config
   # --- 5. Sample Background Points ---
   hlog("INFO", "Generating background points using OBIS Part2 logic & stack...\n")
   # Ensure seed includes species ID and offset for reproducibility
-  seed_value <- config$background_seed %||% 111
-  set.seed(seed_value + species_aphia_id_internal + seed_offset)
+  seed_value <- config$global_seed
+  set.seed(config$global_seed)
   
   bg_obis_part2_df <- tryCatch({
     terra::spatSample(predictor_stack_obis_part2, size = quad_n_final, method = "random", na.rm = TRUE, xy = TRUE, warn = FALSE)
@@ -647,7 +825,7 @@ create_spatial_cv_folds_simplified <- function(full_swd_data, predictor_stack, c
       # For consistency, let SDMtune handle random k-fold by returning NULL here.
       # SDMtune will use its default random k-fold when `folds` is NULL in `train`.
       # However, the tuning function expects folds. Let's create standard random folds.
-      set.seed(123) # for reproducibility
+      set.seed(config$global_seed) # for reproducibility
       n_pts <- nrow(swd_sf)
       fold_indices <- sample(rep(1:nfolds, length.out = n_pts))
       # Create the list structure SDMtune expects for folds
@@ -700,11 +878,14 @@ run_sdm_tuning_scv <- function(occs_coords, predictor_stack, background_df, conf
     species_log_file
   )
   if(is.null(spatial_folds_blockcv)) { hlog("ERROR", "Failed to create spatial folds."); return(NULL) }
+  # folds <- tryCatch({ SDMtune::randomFolds(data = full_swd_data, k = config$sdm_n_folds, only_presence = FALSE, seed = config$global_seed)}, error = function(e){ hlog("ERROR", paste("Failed create k-folds:", e$message)); return(NULL)})
+  # if(is.null(folds)) return(NULL)
   
   # --- 3. Train initial CV model ---
   hlog("DEBUG", "Training initial CV base model for gridSearch...")
   initial_cv_model <- tryCatch({
     SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = spatial_folds_blockcv, progress = FALSE)
+    # SDMtune::train(method = config$sdm_method, data = full_swd_data, folds = folds, progress = FALSE)
   }, error = function(e) {
     if (grepl("glmnet failed", e$message, ignore.case = TRUE)) {
       hlog("ERROR", paste("Failed train CV base model:", e$message))
@@ -783,7 +964,9 @@ train_final_sdm <- function(occs_coords, predictor_stack, background_df, best_hy
 #' @return Character string with the full path to the expected prediction file.
 construct_prediction_filename <- function(species_name_sanitized, scenario_name, predictor_type_suffix, config) {
   
-  base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  # base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  # base_filename <- paste0("501-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
   
@@ -834,13 +1017,13 @@ predict_sdm_suitability <- function(final_sdm_model, predictor_stack, config, lo
 #' @param logger A log4r logger object.
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-save_tuning_results <- function(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger, species_log_file = NULL) {
+save_tuning_results <- function(tuning_output, species_name_sanitized, predictor_type_suffix, config, logger, species_log_file = NULL, group_name) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SaveTuneHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
   
   if (is.null(tuning_output) || !inherits(tuning_output, "SDMtune")) { hlog("ERROR", "Invalid tuning object provided."); return(FALSE) }
   
   # Determine target subdirectory using the map from config
-  subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]]
+  subdir_name <- paste0(group_name, config$model_output_subdir_map[[predictor_type_suffix]])
   if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
   target_subdir <- file.path(config$target_results_base, subdir_name)
   dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
@@ -905,10 +1088,32 @@ save_final_model <- function(final_model, species_name_sanitized, predictor_type
 #' @param logger A log4r logger object.
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scenario_name, predictor_type_suffix, config, logger, species_log_file = NULL) {
+save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scenario_name, predictor_type_suffix, config, logger, species_log_file = NULL, mask_vector = NULL) {
   hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[SavePredHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
   
   if (is.null(prediction_raster) || !inherits(prediction_raster, "SpatRaster")) { hlog("ERROR", "Invalid prediction raster provided."); return(FALSE) }
+  
+  
+  # 
+  # # --- START: New Masking Logic ---
+  # if (!is.null(mask_vector) && inherits(mask_vector, "SpatVector")) {
+  #   hlog("DEBUG", "Applying final MEOW province mask to prediction raster...")
+  #   tryCatch({
+  #     # Ensure CRS matches before masking
+  #     if (terra::crs(mask_vector, proj=TRUE) != terra::crs(prediction_raster, proj=TRUE)) {
+  #       hlog("WARN", "CRS mismatch between prediction and MEOW mask. Projecting mask...")
+  #       mask_vector <- terra::project(mask_vector, terra::crs(prediction_raster))
+  #     }
+  #     prediction_raster <- terra::mask(prediction_raster, mask_vector)
+  #     hlog("INFO", "Successfully applied final MEOW province mask.")
+  #   }, error = function(e) {
+  #     hlog("ERROR", paste("Failed to apply MEOW province mask:", e$message, "- saving unmasked raster instead."))
+  #   })
+  # }
+  # # --- END: New Masking Logic ---
+  # 
+  
+  
   
   # Construct the target filename using the dedicated helper
   pred_file_path <- construct_prediction_filename(species_name_sanitized, scenario_name, predictor_type_suffix, config)
@@ -929,13 +1134,12 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 }
 
 
-#' Calculate and Save Variable Importance (Handles MaxNet Directly)
-#' Calculates permutation importance. For MaxNet models, it extracts the
-#' importance calculated during training. For other models, it uses SDMtune::varImp.
+#' Calculate and Save Variable Importance for Maxnet Models
+#' Calculates permutation importance specifically for Maxnet models using SDMtune::varImp.
 #' Saves results to the target structure.
 #'
-#' @param final_model An `SDMmodel` object (output from `train_final_sdm`).
-#' @param training_swd An `SWD` object (potentially needed for varImp on non-MaxNet).
+#' @param final_model An `SDMmodel` object (output from `train_final_sdm`, assumed to be Maxnet).
+#' @param training_swd An `SWD` object (required for `SDMtune::varImp`).
 #' @param species_name_sanitized Sanitized species name.
 #' @param group_name Group name ("anemone" or "anemonefish").
 #' @param predictor_type_suffix Suffix indicating model type. Used in filename.
@@ -944,61 +1148,103 @@ save_sdm_prediction <- function(prediction_raster, species_name_sanitized, scena
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
 #' @export
-calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept for potential use by other methods
+calculate_and_save_vi <- function(final_model, training_swd,
                                   species_name_sanitized, group_name, predictor_type_suffix,
                                   config, logger, species_log_file = NULL) {
   
-  hlog <- function(level, ...) { msg <- paste(Sys.time(), paste0("[",level,"]"), "[VarImpHelper]", paste0(..., collapse = " ")); if (!is.null(species_log_file)) cat(msg, "\n", file = species_log_file, append = TRUE) else if (!is.null(logger)) {if(level=="INFO") log4r::info(logger, msg) else if(level=="WARN") log4r::warn(logger, msg) else if(level=="ERROR") log4r::error(logger, msg) else log4r::debug(logger, msg)}}
+  hlog <- function(level, ...) {
+    msg <- paste(Sys.time(), paste0("[", level, "]"), "[VarImpHelper]", paste0(..., collapse = " "))
+    if (!is.null(species_log_file)) {
+      cat(msg, "\n", file = species_log_file, append = TRUE)
+    } else if (!is.null(logger)) {
+      if (level == "INFO") log4r::info(logger, msg)
+      else if (level == "WARN") log4r::warn(logger, msg)
+      else if (level == "ERROR") log4r::error(logger, msg)
+      else log4r::debug(logger, msg) # Assumes DEBUG for other levels
+    }
+  }
   
   # --- Input validation ---
   if (is.null(final_model) || !inherits(final_model, "SDMmodel")) {
     hlog("ERROR", "Invalid SDMmodel object provided for VI.")
     return(FALSE)
   }
+  # Optional: Add a check if final_model@method is indeed "Maxnet" if there's any doubt
+  # if (final_model@method != "Maxnet") {
+  #   hlog("WARN", paste("This function is optimized for Maxnet models, but received:", final_model@method))
+  #   # Could still proceed or return FALSE depending on strictness
+  # }
   
-  hlog("INFO", "Calculating/Extracting variable importance...")
+  
+  hlog("INFO", "Calculating permutation importance for Maxnet model using SDMtune::varImp...")
   vi_results_df <- NULL
   
   tryCatch({
-    model_method <- final_model@method # Get the method used (e.g., "Maxnet")
+    if (is.null(training_swd) || !inherits(training_swd, "SWD")) {
+      hlog("ERROR", "Training SWD object (as 'test' argument) is required for SDMtune::varImp with Maxnet models.")
+      return(FALSE)
+    }
     
-    if (model_method == "Maxnet") {
-      hlog("DEBUG", "Maxnet model detected. Extracting pre-calculated permutation importance.")
-      raw_maxnet_model <- final_model@model
-      if (!is.null(raw_maxnet_model) && !is.null(raw_maxnet_model$variable.importance)) {
-        importance_vector <- raw_maxnet_model$variable.importance
-        vi_results_df <- data.frame(Variable = names(importance_vector), Importance = as.numeric(importance_vector), stringsAsFactors = FALSE)
-        vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
-        hlog("DEBUG", "Successfully extracted MaxNet variable importance.")
-      } else { hlog("WARN", "Could not find pre-calculated variable importance in the MaxNet model object.") }
+    show_progress_vi <- FALSE
+    # Using %||% operator, ensure rlang is available or define it, e.g., `'%||%' <- function(a, b) if (is.null(a)) b else a`
+    # If not, use a more explicit check:
+    # log_level_for_progress <- if (is.null(config$log_level)) "INFO" else config$log_level
+    if (!is.null(logger)) {
+      tryCatch({
+        current_log_level_num <- log4r::log_level(config$log_level %||% "INFO") # Use %||% for default
+        debug_level_num <- log4r::log_level("DEBUG")
+        show_progress_vi <- current_log_level_num <= debug_level_num
+      }, error = function(e) {
+        hlog("WARN", paste("Error determining log level for progress bar display:", e$message))
+        show_progress_vi <- FALSE # Default to no progress on error
+      })
+    }
+    
+    permut_val <- 10 # Number of permutations, as in your original code for non-MaxNet
+    
+    # SDMtune::varImp calculates permutation importance for Maxnet models
+    temp_vi_calc <- SDMtune::varImp(model = final_model,
+                                    permut = permut_val,
+                                    progress = show_progress_vi)
+    
+    if (!is.null(temp_vi_calc) && nrow(temp_vi_calc) > 0 && "Permutation_importance" %in% colnames(temp_vi_calc) && "Variable" %in% colnames(temp_vi_calc)) {
+      # Ensure the output format is exactly "Variable" and "Importance"
+      vi_results_df <- data.frame(Variable = temp_vi_calc$Variable,
+                                  Importance = temp_vi_calc$Permutation_importance,
+                                  stringsAsFactors = FALSE)
+      vi_results_df <- vi_results_df[order(-vi_results_df$Importance), ] # Order descending
+      hlog("DEBUG", "SDMtune::varImp calculation successful for Maxnet model.")
     } else {
-      hlog("DEBUG", paste("Model method is", model_method, ". Attempting SDMtune::varImp..."))
-      if (is.null(training_swd) || !inherits(training_swd, "SWD")) { hlog("ERROR", "Training SWD object required for varImp calculation with non-MaxNet models."); return(FALSE) }
-      show_progress <- FALSE
-      if (!is.null(logger)) { tryCatch({current_log_level_num <- log4r::log_level(config$log_level %||% "INFO"); debug_level_num <- log4r::log_level("DEBUG"); show_progress <- current_log_level_num <= debug_level_num}, error=function(e){show_progress<-FALSE}) }
-      vi_results <- SDMtune::varImp(model = final_model, permut = 10, progress = show_progress, test = training_swd)
-      if (!is.null(vi_results) && nrow(vi_results) > 0) { vi_results_df <- vi_results; hlog("DEBUG", "SDMtune::varImp successful for non-MaxNet model.") }
-      else { hlog("WARN", "SDMtune::varImp returned empty results for non-MaxNet model.") }
+      hlog("WARN", "SDMtune::varImp returned empty, malformed, or NULL results for Maxnet model.")
+      # vi_results_df remains NULL
     }
     
     # --- Saving Logic ---
-    if (is.null(vi_results_df)) { hlog("ERROR", "Variable importance could not be obtained."); return(FALSE) }
+    if (is.null(vi_results_df)) {
+      hlog("ERROR", "Variable importance could not be obtained for the Maxnet model.")
+      return(FALSE)
+    }
     
-    # Determine target subdirectory using the map from config
-    subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]] # Uses same map as CV results
-    if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
-    target_subdir <- file.path(config$target_vi_base, subdir_name) # Use config$target_vi_base
+    subdir_name <- config$model_output_subdir_map[[predictor_type_suffix]]
+    if (is.null(subdir_name)) {
+      hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix))
+      return(FALSE)
+    }
+    target_subdir <- file.path(config$target_vi_base, subdir_name)
     dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
     
-    vi_filename <- paste0("VI_", species_name_sanitized, ".csv") # Filename consistent with target repo
+    vi_filename <- paste0("VI_", species_name_sanitized, ".csv")
     vi_file_path <- file.path(target_subdir, vi_filename)
     
+    # Ensure readr is available, or use utils::write.csv
+    # utils::write.csv(vi_results_df, vi_file_path, row.names = FALSE)
     readr::write_csv(vi_results_df, vi_file_path)
     hlog("INFO", paste("Variable importance saved to:", vi_file_path))
     return(TRUE)
     
   }, error = function(e) {
-    hlog("ERROR", paste("Variable importance processing/saving failed:", e$message))
+    hlog("ERROR", paste("Variable importance processing/saving failed for Maxnet model:", e$message))
+    # Optionally print stack trace for debugging: print(sys.calls())
     return(FALSE)
   })
 }
@@ -1021,7 +1267,7 @@ calculate_and_save_vi <- function(final_model, training_swd, # training_swd kept
 #' @param logger A log4r logger object (can be NULL).
 #' @param species_log_file Optional path for detailed species logs.
 #' @return TRUE on success, FALSE on failure.
-log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor_stack, tuning_output,
+log_final_model_metrics <- function(final_model, train_swd, test_swd, tuning_predictor_stack, tuning_output,
                                     species_name_sanitized, group_name, predictor_type_suffix,
                                     config, logger = NULL, species_log_file = NULL) {
   
@@ -1030,7 +1276,7 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   # --- Input validation ---
   if (is.null(final_model) || !inherits(final_model, "SDMmodel")) { hlog("ERROR", "Invalid SDMmodel provided."); return(FALSE) }
   # SWD data is needed for training metrics, warn if missing
-  if (is.null(full_swd_data) || !inherits(full_swd_data, "SWD")) { hlog("WARN", "SWD object missing, cannot calculate training metrics.") }
+  if (is.null(train_swd) || !inherits(train_swd, "SWD")) { hlog("WARN", "SWD object missing, cannot calculate training metrics.") }
   # Stack is needed for AICc
   if (is.null(tuning_predictor_stack) || !inherits(tuning_predictor_stack, "SpatRaster")) { hlog("ERROR", "Predictor stack required for AICc."); return(FALSE) }
   # Tuning output is needed for test metrics
@@ -1043,6 +1289,15 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   
   # --- Initialize Metrics List ---
   metrics <- list(
+    nrowrep = config$global_seed,
+    AUC_train = NA_real_,
+    TSS_train = NA_real_,
+    AUC_test_CV = NA_real_, # Mean test AUC from CV tuning results
+    TSS_test_CV = NA_real_, # Mean test TSS from CV tuning results
+    AICc = NA_real_
+  )
+  
+  metrics <- list(
     Timestamp = format(Sys.time(), "%Y-%m-%d %H:%M:%S"),
     GroupName = group_name,
     SpeciesName = species_name_sanitized,
@@ -1054,8 +1309,8 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
     AICc = NA_real_
   )
   
-  # --- Calculate Training Metrics (from final_model using full_swd_data) ---
-  if (!is.null(full_swd_data)) {
+  # --- Calculate Training Metrics (from final_model using train_swd) ---
+  if (!is.null(train_swd)) {
     tryCatch({ metrics$AUC_train <- SDMtune::auc(final_model, test = NULL) }, error = function(e) { hlog("WARN", paste("Could not calculate Training AUC:", e$message)) })
     tryCatch({ metrics$TSS_train <- SDMtune::tss(final_model, test = NULL) }, error = function(e) { hlog("WARN", paste("Could not calculate Training TSS:", e$message)) })
   } else {
@@ -1098,10 +1353,16 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
             hlog("DEBUG", paste("  Extracted test_AUC (CV):", round(metrics$AUC_test_CV, 4)))
           } else { hlog("WARN", "test_AUC column not found in tuning results table.") }
           
-          if ("test_TSS" %in% colnames(res_df)) {
-            metrics$TSS_test_CV <- res_df$test_TSS[best_row_index]
-            hlog("DEBUG", paste("  Extracted test_TSS (CV):", round(metrics$TSS_test_CV, 4)))
-          } else { hlog("WARN", "test_TSS column not found in tuning results table.") }
+          # if ("test_TSS" %in% colnames(res_df)) {
+          #   metrics$TSS_test_CV <- res_df$test_TSS[best_row_index]
+          #   hlog("DEBUG", paste("  Extracted test_TSS (CV):", round(metrics$TSS_test_CV, 4)))
+          # } else { hlog("WARN", "test_TSS column not found in tuning results table.") }
+          
+          metrics$AUC_test_CV <- SDMtune::auc(final_model, test = test_swd)
+          hlog("DEBUG", paste("  Extracted test_AUC (test dataset):", round(metrics$AUC_test_CV, 4)))
+          
+          metrics$TSS_test_CV <- SDMtune::tss(final_model, test = test_swd)
+          hlog("DEBUG", paste("  Extracted test_TSS (test dataset):", round(metrics$TSS_test_CV, 4)))
           
         } else {
           hlog("WARN", "Could not determine best row index from tuning results to extract test metrics.")
@@ -1116,13 +1377,30 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
   metrics_df[numeric_cols] <- lapply(metrics_df[numeric_cols], round, digits = 4) # Round numerics
   if("AICc" %in% names(metrics_df)) metrics_df$AICc <- round(metrics_df$AICc, 2) # Different rounding for AICc
   
+  hlog("INFO", "WOW WE GOT HERasdadasdasE")
+  
+  # Determine target subdirectory using the map from config
+  subdir_name <- paste0(group_name, config$model_output_subdir_map[[predictor_type_suffix]])
+  if (is.null(subdir_name)) { hlog("ERROR", paste("No output subdirectory mapping found for suffix:", predictor_type_suffix)); return(FALSE) }
+  target_subdir <- file.path(config$target_results_base, subdir_name)
+  dir.create(target_subdir, recursive = TRUE, showWarnings = FALSE)
+  
+  # Construct filenames matching the target repo style
+  target_base_name <- paste0("CV_Results_", species_name_sanitized) # Using sanitized name
+  
+  # 2. Save results table (CSV - for target analysis mirroring target)
+  csv_file <- file.path(target_subdir, paste0(target_base_name, "_depth_", config$depth_min, ".csv"))
+  results_df <- tuning_output@results
+  if (is.null(results_df) || nrow(results_df) == 0) { hlog("WARN", "No results table found in tuning object."); return(TRUE) } # Return TRUE as RDS might have saved
+  
+  # return(TRUE)
   tryCatch({
-    write_headers <- !file.exists(output_log_file)
-    readr::write_csv(metrics_df, output_log_file, append = !write_headers, col_names = write_headers)
+    write_headers <- !file.exists(csv_file)
+    readr::write_csv(metrics_df, csv_file, append = !write_headers, col_names = write_headers)
     hlog("INFO", paste("Successfully logged final model metrics for", species_name_sanitized))
     return(TRUE)
   }, error = function(e) {
-    hlog("ERROR", paste("Failed to write metrics to log file:", output_log_file, "Error:", e$message))
+    hlog("ERROR", paste("Failed to write metrics to log file:", csv_file, "Error:", e$message))
     return(FALSE)
   })
 }
@@ -1147,12 +1425,12 @@ log_final_model_metrics <- function(final_model, full_swd_data, tuning_predictor
 #-------------------------------------------------------------------------------
 # Helper functions for SDM Modeling (SDMtune & BIOMOD2)
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
-               blockCV, ggplot2, ecospat, spThin, geosphere,
-               biomod2, maxnet, # For BIOMOD2 MAXNET
-               # Common dependencies for other biomod2 models if used later:
-               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
-)
+# pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
+#                blockCV, ggplot2, ecospat, spThin, geosphere,
+#                biomod2, maxnet, # For BIOMOD2 MAXNET
+#                # Common dependencies for other biomod2 models if used later:
+#                presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
+# )
 
 # --- SDMtune Specific Helpers (Keep all your existing ones) ---
 # load_clean_individual_occ_coords
@@ -1178,11 +1456,11 @@ pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr,
 #-------------------------------------------------------------------------------
 # Helper functions for SDM Modeling (SDMtune & BIOMOD2)
 #-------------------------------------------------------------------------------
-pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
-               blockCV, ggplot2, ecospat, spThin, geosphere,
-               biomod2, maxnet, # For BIOMOD2 MAXNET
-               presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
-)
+# pacman::p_load(SDMtune, terra, sf, dplyr, tools, stringr, log4r, readr, 
+#                blockCV, ggplot2, ecospat, spThin, geosphere,
+#                biomod2, maxnet, # For BIOMOD2 MAXNET
+#                presenceabsence, randomForest, gbm, mda, gam, earth, xgboost 
+# )
 
 # --- SDMtune Specific Helpers (Keep all your existing ones) ---
 # load_clean_individual_occ_coords
@@ -1473,7 +1751,7 @@ run_biomod2_models_with_blockcv <- function(biomod_formatted_data, biomod_model_
       var.import = 0, # Set to >0 if you want BIOMOD2's VI
       metric.eval = c('ROC', 'TSS'), 
       do.full.models = TRUE, 
-      seed.val = config$AphiaID_for_seed %||% 42 
+      seed.val = config$global_seed
     )
   }, error = function(e) {
     b2_hlog_run("ERROR", paste("Error in BIOMOD_Modeling:", e$message))
@@ -1600,3 +1878,17 @@ save_biomod2_projection <- function(prediction_raster, species_name_sanitized_fo
     TRUE
   }, error = function(e) { b2_hlog_save("ERROR", paste("Failed save BIOMOD2 prediction raster:", e$message)); FALSE })
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
