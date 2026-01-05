@@ -11,10 +11,10 @@ for (depth in depths) {
   
   # Save the loop counter to config$global_seed
   config$depth_min <- -depth
-  config$limit_by_depth_obis <- TRUE  # Or FALSE
+  config$limit_by_depth_obis <- FALSE  # Or FALSE
 
   
-  for (i in 26:50) {
+  for (i in 1:50) {
     # Print a message to track progress
     cat(paste0("\n[", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "] --- Run ", i, " for depth: ", depth, " with global_seed = ", config$global_seed, " ---\n"))
     

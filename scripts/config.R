@@ -169,6 +169,8 @@ global_seed = 1
 
 meow_provinces_shapefile <- file.path(shapefile_dir, "meow_ecos.shp")
 
+depth_raster_path <- file.path(env_data_dir, "terrain/bathymetry_mean.tif")
+
 # --- Bundle settings into a list named 'config' ---
 # *** Make sure intermediate paths are included here ***
 config <- list(
@@ -251,7 +253,9 @@ config <- list(
   
   global_seed = global_seed,
   
-  meow_provinces_shapefile = meow_provinces_shapefile
+  meow_provinces_shapefile = meow_provinces_shapefile,
+  
+  depth_raster_path = depth_raster_path
 )
 
 

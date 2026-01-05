@@ -155,6 +155,50 @@ ggsave(biplot_filename, p_biplot, width = 10, height = 8, dpi = 300)
 cat("Saved Biplot to:", biplot_filename, "\n")
 
 
+
+# --- 6. Plot 2.5: Biplot (PC3 vs PC4) ---
+cat("Generating Biplot for PC3 vs PC4...\n")
+# Get PC3 and PC4 loadings by selecting columns 3 and 4
+loadings_data_34 <- as.data.frame(pca_model$rotation[,3:4]) 
+loadings_data_34$OriginalVariable <- rownames(loadings_data_34)
+# Use your config's display name function
+loadings_data_34$Variable <- sapply(loadings_data_34$OriginalVariable, config$get_display_name, USE.NAMES = FALSE)
+
+# Calculate scaling factor for arrows using the standard deviations of PC3 and PC4
+arrow_scale_34 <- 6 * mean(sqrt(pca_model$sdev[3:4]^2))
+
+p_biplot_34 <- ggplot() +
+  # Use PC3 for x-axis and PC4 for y-axis
+  geom_segment(data = loadings_data_34,
+               aes(x = 0, y = 0, xend = PC3 * arrow_scale_34, yend = PC4 * arrow_scale_34),
+               arrow = arrow(length = unit(0.25, "cm")), color = "blue4", linewidth=0.8) +
+  geom_text_repel(data = loadings_data_34,
+                  aes(x = PC3 * arrow_scale_34, y = PC4 * arrow_scale_34, label = Variable),
+                  size = 3.5, color = "black",
+                  segment.color = "grey50", 
+                  segment.alpha = 0.7,
+                  box.padding = unit(0.35, "lines"),
+                  point.padding = unit(0.5, "lines"),
+                  max.overlaps = Inf) +
+  # Update title and axis labels for PC3 and PC4
+  labs(title = "PCA Biplot (Loadings of PC3 vs PC4)",
+       x = paste0("PC3 (", scales::percent(summary(pca_model)$importance[2,3], accuracy = 0.1), ")"),
+       y = paste0("PC4 (", scales::percent(summary(pca_model)$importance[2,4], accuracy = 0.1), ")")) +
+  coord_fixed() + # Maintain 1:1 aspect ratio for PCs
+  theme_minimal(base_size = 12) +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold")) +
+  geom_hline(yintercept = 0, linetype="dashed", color="grey70", linewidth=0.5) +
+  geom_vline(xintercept = 0, linetype="dashed", color="grey70", linewidth=0.5)
+
+# Save the new plot with a new filename
+biplot_filename_34 <- file.path(pca_plots_output_dir, "pca_biplot_pc3_pc4.png")
+ggsave(biplot_filename_34, p_biplot_34, width = 10, height = 8, dpi = 300)
+cat("Saved Biplot to:", biplot_filename_34, "\n")
+
+
+
+
+
 # --- 6. Plot 3: Individual PC Loadings Bar Plots ---
 cat("Generating individual PC loading plots...\n")
 loadings_matrix_all <- pca_model$rotation
