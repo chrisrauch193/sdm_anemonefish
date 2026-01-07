@@ -19,7 +19,7 @@ This section replicates the initial data loading and processing steps from the d
 
 # Using pacman for streamlined package management
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, tools, naturalearth, tidyterra)
+pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, tools, naturalearth, tidyterra, lwgeom)
 
 # Load project configuration
 # Ensure your working directory is the root of your sdm_anemonefish project
@@ -42,7 +42,7 @@ construct_mean_prediction_filename <- function(species_name_sanitized, scenario_
   # base_filename <- paste0(config$global_seed, "-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   # base_filename <- paste0("mean_pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   # base_filename <- paste0("501-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
-  base_filename <- paste0("1-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
+  base_filename <- paste0("2-pred_", species_name_sanitized) # Using SDMtune mean convention implicitly
   target_dir <- NULL
   target_filename_stem <- NULL # Filename without extension
   
@@ -149,6 +149,110 @@ cat("--- Setup: Scenario label converter defined. ---\n")
 world_map_sf <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
 cat("--- Setup: World map loaded for plotting. ---\n")
 
+
+
+# TODO: NEW CODE
+# --- Load MEOW ecoregions once (for native/reachable polygons later) ---
+
+sf::sf_use_s2(FALSE)
+
+meow_path <- file.path(config$base_dir, "data", "shapefiles", "meow_ecos.shp")
+if (!file.exists(meow_path)) stop("MEOW shapefile not found: ", meow_path)
+
+# Keep your old variable name to avoid breaking other code if you already reference it
+marine_realms_sf <- sf::st_read(meow_path, quiet = TRUE)
+
+# ---- helper: make_valid that works across sf/lwgeom versions ----
+make_valid <- function(x) {
+  if ("st_make_valid" %in% getNamespaceExports("sf")) {
+    return(sf::st_make_valid(x))
+  }
+  if (requireNamespace("lwgeom", quietly = TRUE) &&
+      "lwgeom_make_valid" %in% getNamespaceExports("lwgeom")) {
+    return(lwgeom::lwgeom_make_valid(x))
+  }
+  stop("No st_make_valid available: please update sf (preferred) or lwgeom.")
+}
+
+# ---- helper: wrap_dateline if available; otherwise skip ----
+wrap_dateline_if_available <- function(x) {
+  if ("st_wrap_dateline" %in% getNamespaceExports("sf")) {
+    return(sf::st_wrap_dateline(
+      x,
+      options = c("WRAPDATELINE=YES", "DATELINEOFFSET=180"),
+      quiet = TRUE
+    ))
+  }
+  if (requireNamespace("lwgeom", quietly = TRUE) &&
+      "st_wrap_dateline" %in% getNamespaceExports("lwgeom")) {
+    return(lwgeom::st_wrap_dateline(
+      x,
+      options = c("WRAPDATELINE=YES", "DATELINEOFFSET=180"),
+      quiet = TRUE
+    ))
+  }
+  message("ℹ️ st_wrap_dateline() not available in your sf/lwgeom; skipping dateline wrap.")
+  x
+}
+
+# Basic validity + zero-width buffer (cheap first pass)
+marine_realms_sf <- make_valid(marine_realms_sf)
+marine_realms_sf <- suppressWarnings(sf::st_buffer(marine_realms_sf, 0))
+marine_realms_sf <- marine_realms_sf[!sf::st_is_empty(marine_realms_sf), ]
+cat("Loaded MEOW polygons (raw rows):", nrow(marine_realms_sf), "\n")
+
+# Dissolve to a single geometry per ecoregion ID (so selection is “whole ecoregions”)
+meow_id_candidates <- c("ECOREGION", "ECO_CODE", "ECO_ID", "ECO_NAME")
+meow_id_col <- meow_id_candidates[meow_id_candidates %in% names(marine_realms_sf)][1]
+if (is.na(meow_id_col)) {
+  stop("Could not find an ecoregion ID column in meow_ecos.shp. Columns are: ",
+       paste(names(marine_realms_sf), collapse = ", "))
+}
+
+meow_ecos_sf <- marine_realms_sf %>%
+  dplyr::mutate(.meow_id = .data[[meow_id_col]]) %>%
+  dplyr::group_by(.meow_id) %>%
+  dplyr::summarise(geometry = sf::st_union(geometry), .groups = "drop")
+
+# Dateline wrap only if your install supports it (otherwise skip)
+meow_ecos_sf <- wrap_dateline_if_available(meow_ecos_sf)
+
+# Repair + keep polygonal types only
+meow_ecos_sf <- make_valid(meow_ecos_sf)
+meow_ecos_sf <- sf::st_collection_extract(meow_ecos_sf, "POLYGON")
+meow_ecos_sf <- sf::st_cast(meow_ecos_sf, "MULTIPOLYGON", warn = FALSE)
+
+# Final heal
+meow_ecos_sf <- suppressWarnings(sf::st_buffer(meow_ecos_sf, 0))
+meow_ecos_sf <- meow_ecos_sf[!sf::st_is_empty(meow_ecos_sf), ]
+
+cat("MEOW dissolved ecoregions:", nrow(meow_ecos_sf), " (ID col:", meow_id_col, ")\n")
+
+# Precompute adjacency (“neighbors”) ONCE for speed (touching polygons)
+# IMPORTANT: use s2 for robust global topology (don’t project to 3857 here)
+old_s2 <- sf::sf_use_s2()
+sf::sf_use_s2(TRUE)
+
+meow_neighbors <- tryCatch(
+  sf::st_touches(meow_ecos_sf),
+  error = function(e) {
+    message("⚠️ st_touches failed; neighbor expansion will be disabled. Error: ", e$message)
+    NULL
+  }
+)
+
+sf::sf_use_s2(old_s2)
+
+if (!is.null(meow_neighbors)) {
+  cat("Computed MEOW adjacency list for", length(meow_neighbors), "ecoregions.\n")
+}
+# TODO: NEW CODE
+
+
+
+
+
+
 bathymetry_raster_path <- file.path(config$base_dir, "data", "env", "terrain", "bathymetry_mean.tif")
 global_bathymetry <- terra::rast(bathymetry_raster_path)
 
@@ -221,84 +325,84 @@ validate_and_align_rasters <- function(raster_list, reference_raster, method = "
 
 # Reusable function to create publication-quality prediction maps
 # MODIFIED to accept and plot occurrence points
-plot_prediction_map <- function(prediction_raster, species_name, world_basemap, occurrence_points_sf = NULL) {
-  max_display_depth <- -50
-  target_crs <- terra::crs(prediction_raster)
-  target_res <- terra::res(prediction_raster)
-  mask_extent <- terra::ext(config$indo_pacific_bbox)
-  dummy_raster_for_resample <- terra::rast(ext=mask_extent, res=target_res, crs=target_crs)
-  bathymetry_for_masking <- terra::project(global_bathymetry, dummy_raster_for_resample, method = "average")
-  prediction_raster <- terra::ifel(is.na(bathymetry_for_masking) | bathymetry_for_masking < max_display_depth, NA, prediction_raster)
-  
-  
-  # Define the bounding box for the area you want to keep
-  display_bbox <- c(xmin = 30, xmax = 180, ymin = -31, ymax = 35)
-  
-  # Get the x (longitude) and y (latitude) coordinates of the raster cells
-  x_coords <- terra::xFromCell(prediction_raster, 1:terra::ncell(prediction_raster))
-  y_coords <- terra::yFromCell(prediction_raster, 1:terra::ncell(prediction_raster))
-  
-  # Create a logical mask. It's TRUE for all cells *outside* the bounding box.
-  # We also need to get the number of columns and rows to properly handle the x and y coordinates.
-  # A simpler and more direct approach is to use the `terra::ext()` function and then check
-  # the raster's coordinates against it.
-  
-  # Let's start with a new approach that is more robust
-  # Get the coordinates for each cell of the raster
-  coords <- terra::xyFromCell(prediction_raster, 1:terra::ncell(prediction_raster))
-  
-  # Create a logical vector that is TRUE for cells outside the bbox
-  mask_indices <- which(coords[,1] < display_bbox["xmin"] |
-                          coords[,1] > display_bbox["xmax"] |
-                          coords[,2] < display_bbox["ymin"] |
-                          coords[,2] > display_bbox["ymax"])
-  
-  # Set the values for those cells to NA
-  prediction_raster[mask_indices] <- NA
-  
-  # Now prediction_raster has the same extent, but values outside the bbox are NA.
-  
-  # Ensure the raster has a name for the legend
+plot_prediction_map <- function(prediction_raster, species_name, world_basemap,
+                                occurrence_points_sf = NULL,
+                                native_poly_sf = NULL,
+                                reachable_poly_sf = NULL,
+                                mask_poly_sf = NULL,          # NEW
+                                max_display_depth = -750,
+                                display_bbox = c(xmin = 30, xmax = 180, ymin = -31, ymax = 35)) {
+
+  # --- Mask 1: crop to display bbox (fast) ---
+  prediction_raster <- terra::crop(prediction_raster, terra::ext(display_bbox))
+
+  # --- Mask 2: bathymetry cutoff (align bathy to raster grid) ---
+  bathy_aligned <- terra::project(global_bathymetry, prediction_raster, method = "average")
+  prediction_raster <- terra::ifel(is.na(bathy_aligned) | bathy_aligned < max_display_depth, NA, prediction_raster)
+
+  # --- Mask 3: optional polygon mask (native or reachable) ---
+  if (!is.null(mask_poly_sf)) {
+    # accept sf or sfc
+    if (inherits(mask_poly_sf, "sfc")) mask_poly_sf <- sf::st_as_sf(mask_poly_sf)
+    if (!inherits(mask_poly_sf, "sf")) stop("mask_poly_sf must be sf or sfc")
+
+    # transform polygon to raster CRS
+    poly_t <- sf::st_transform(mask_poly_sf, sf::st_crs(terra::crs(prediction_raster)))
+    poly_v <- terra::vect(poly_t)
+
+    # mask raster to polygon footprint
+    prediction_raster <- terra::mask(prediction_raster, poly_v, touches = TRUE)
+  }
+
   names(prediction_raster) <- "Suitability"
-  
-  # Define the color scale to match the example
+
   custom_color_scale <- scale_fill_gradientn(
-    colors = c("#FFFFFF", "#FEF9C3", "#FDBA74", "#D946EF", "#4F46E5"),
+    colors = c("#FEF9C3", "#FDBA74", "#D946EF", "#4F46E5"),
     na.value = "transparent",
     limits = c(0, 1),
     name = "Occurrence\nprobability"
   )
-  
-  # Create the plot using ggplot2 and tidyterra
+
+  # Transform overlays to raster CRS (avoids sf warnings / misalignment)
+  raster_crs <- sf::st_crs(terra::crs(prediction_raster))
+  if (!is.null(occurrence_points_sf) && inherits(occurrence_points_sf, "sf")) {
+    occurrence_points_sf <- sf::st_transform(occurrence_points_sf, raster_crs)
+  }
+  if (!is.null(native_poly_sf) && inherits(native_poly_sf, "sfc")) native_poly_sf <- sf::st_as_sf(native_poly_sf)
+  if (!is.null(reachable_poly_sf) && inherits(reachable_poly_sf, "sfc")) reachable_poly_sf <- sf::st_as_sf(reachable_poly_sf)
+  if (!is.null(native_poly_sf) && inherits(native_poly_sf, "sf")) native_poly_sf <- sf::st_transform(native_poly_sf, raster_crs)
+  if (!is.null(reachable_poly_sf) && inherits(reachable_poly_sf, "sf")) reachable_poly_sf <- sf::st_transform(reachable_poly_sf, raster_crs)
+
   p <- ggplot() +
-    # 1. Add the world map as the base layer
     geom_sf(data = world_basemap, fill = "grey80", color = "white", linewidth = 0.2) +
-    
-    # 2. Add the prediction raster on top
     geom_spatraster(data = prediction_raster, aes(fill = Suitability)) +
-    
-    # 3. Apply the custom color scale
     custom_color_scale
-  
-  # --- NEW: Add occurrence points if they are provided ---
-  # if (!is.null(occurrence_points_sf) && inherits(occurrence_points_sf, "sf") && nrow(occurrence_points_sf) > 0) {
-  #   p <- p + geom_sf(data = occurrence_points_sf, 
-  #                    color = "black", 
-  #                    fill = "yellow", # A fill color makes points more visible
-  #                    shape = 21,       # A shape with a border and fill
-  #                    size = 1.5,       # Adjust size as needed
-  #                    stroke = 0.2,     # Thickness of the point border
-  #                    alpha = 0.7)
-  # }
-  # --- END NEW ---
-  
-  # 4. Set map projection and limits to the extent of the raster
-  p <- p + coord_sf(crs = sf::st_crs(prediction_raster),
-                    xlim = ext(prediction_raster)[c(1,2)],
-                    ylim = ext(prediction_raster)[c(3,4)],
-                    expand = FALSE) +
-    
-    # 5. Add title and use a clean theme
+
+  # overlays (optional; keep for context)
+  if (!is.null(reachable_poly_sf) && inherits(reachable_poly_sf, "sf")) {
+    p <- p + geom_sf(data = reachable_poly_sf, fill = NA, linewidth = 0.4, linetype = "dashed")
+  }
+  if (!is.null(native_poly_sf) && inherits(native_poly_sf, "sf")) {
+    p <- p + geom_sf(data = native_poly_sf, fill = NA, linewidth = 0.5)
+  }
+
+  if (!is.null(occurrence_points_sf) && inherits(occurrence_points_sf, "sf") && nrow(occurrence_points_sf) > 0) {
+    p <- p + geom_sf(
+      data = occurrence_points_sf,
+      color = "black",
+      fill = "yellow",
+      shape = 21,
+      size = 1.5,
+      stroke = 0.2,
+      alpha = 0.7
+    )
+  }
+
+  p +
+    coord_sf(crs = raster_crs,
+             xlim = terra::ext(prediction_raster)[c(1,2)],
+             ylim = terra::ext(prediction_raster)[c(3,4)],
+             expand = FALSE) +
     labs(title = species_name) +
     theme_minimal() +
     theme(
@@ -310,9 +414,9 @@ plot_prediction_map <- function(prediction_raster, species_name, world_basemap, 
       panel.background = element_rect(fill = "white", color = NA),
       legend.position = "right"
     )
-    
-  return(p)
 }
+
+
 ```
 
 ```{r filter-species-for-analysis}
@@ -501,8 +605,136 @@ if (config$apply_indo_pacific_crop) {
   fish_richness_sum_cropped <- fish_richness_sum
 }
 
+
+
+
+
+# TODO: NEW CODE
+# --- 3b) Define MEOW-native (M0) + reachable (M1) polygons per species (NO hard raster masking) ---
+
+# Turn this on/off easily for map overlays
+use_meow_polygons_on_maps <- TRUE
+
+# Small cache so repeated plotting is fast
+.meow_poly_cache <- new.env(parent = emptyenv())
+
+read_occ_sf <- function(occ_file) {
+  if (!file.exists(occ_file)) return(NULL)
+  occ_df <- readr::read_csv(occ_file, show_col_types = FALSE) %>%
+    dplyr::filter(!is.na(decimalLongitude), !is.na(decimalLatitude))
+  if (nrow(occ_df) == 0) return(NULL)
+  sf::st_as_sf(occ_df, coords = c("decimalLongitude", "decimalLatitude"), crs = 4326, remove = FALSE)
+}
+
+drop_far_outliers_simple <- function(pts_sf) {
+  if (is.null(pts_sf) || nrow(pts_sf) < 10) return(pts_sf)
+  pts_m <- sf::st_transform(pts_sf, 3857)
+  xy <- sf::st_coordinates(pts_m)
+  med <- apply(xy, 2, median, na.rm = TRUE)
+  d <- sqrt((xy[,1] - med[1])^2 + (xy[,2] - med[2])^2)
+  keep <- d <= stats::quantile(d, 0.99, na.rm = TRUE)
+  pts_sf[keep, ]
+}
+
+expand_neighbors <- function(seed_idx, neighbors_list, steps = 1) {
+  idx <- unique(seed_idx)
+  if (steps <= 0) return(idx)
+  for (k in seq_len(steps)) {
+    neigh <- unique(unlist(neighbors_list[idx]))
+    idx <- unique(c(idx, neigh))
+  }
+  idx
+}
+
+make_native_poly_meow <- function(occ_sf, meow_ecos_sf, template_r,
+                                  keep_frac = 0.95, min_pts_ecoregion = 2,
+                                  neighbor_steps = 0) {
+  if (is.null(occ_sf) || nrow(occ_sf) == 0) return(NULL)
+
+  crs_t <- sf::st_crs(terra::crs(template_r))
+  occ_t  <- sf::st_transform(occ_sf,  crs_t)
+  ecos_t <- sf::st_transform(meow_ecos_sf, crs_t)
+
+  occ_t <- drop_far_outliers_simple(occ_t)
+
+  hits <- sf::st_intersects(occ_t, ecos_t)
+  idx <- unlist(hits)
+  if (length(idx) == 0) return(NULL)
+
+  counts <- sort(table(idx), decreasing = TRUE)
+  cum <- cumsum(counts) / sum(counts)
+
+  keep_by_frac <- as.integer(names(counts)[cum <= keep_frac])
+  if (length(keep_by_frac) == 0) keep_by_frac <- as.integer(names(counts)[1])
+
+  keep_by_min <- as.integer(names(counts)[counts >= min_pts_ecoregion])
+
+  keep_idx <- unique(c(keep_by_frac, keep_by_min))
+
+  # Expand to neighbors using the precomputed adjacency list
+  if (neighbor_steps > 0) {
+    keep_idx <- expand_neighbors(keep_idx, meow_neighbors, steps = neighbor_steps)
+  }
+
+  poly <- sf::st_union(ecos_t[keep_idx, , drop = FALSE])
+  poly <- sf::st_make_valid(poly)
+  poly <- suppressWarnings(sf::st_buffer(poly, 0))
+  poly
+}
+
+get_species_meow_polys <- function(aphia_id, occ_dir, template_r,
+                                   keep_frac = 0.95, min_pts_ecoregion = 2,
+                                   neighbor_steps_reachable = 1) {
+  if (is.null(aphia_id) || length(aphia_id) != 1 || is.na(aphia_id)) return(list(native = NULL, reachable = NULL))
+
+  cache_key <- paste0(aphia_id, "|", terra::crs(template_r), "|", neighbor_steps_reachable)
+  if (exists(cache_key, envir = .meow_poly_cache, inherits = FALSE)) {
+    return(get(cache_key, envir = .meow_poly_cache, inherits = FALSE))
+  }
+
+  occ_file <- file.path(occ_dir, paste0(aphia_id, ".csv"))
+  occ_sf <- read_occ_sf(occ_file)
+
+  native <- make_native_poly_meow(
+    occ_sf, meow_ecos_sf, template_r,
+    keep_frac = keep_frac, min_pts_ecoregion = min_pts_ecoregion,
+    neighbor_steps = 0
+  )
+
+  reachable <- make_native_poly_meow(
+    occ_sf, meow_ecos_sf, template_r,
+    keep_frac = keep_frac, min_pts_ecoregion = min_pts_ecoregion,
+    neighbor_steps = neighbor_steps_reachable
+  )
+
+  out <- list(native = native, reachable = reachable)
+  assign(cache_key, out, envir = .meow_poly_cache)
+  out
+}
+
+cat("✅ MEOW polygon helpers ready (native=M0, reachable=M1). No hard raster masking applied.\n")
+# TODO: NEW CODE
+
+
+
+
+
+
+
 # --- 4. Plot Cropped Richness Maps AND SAVE THEM ---
 cat("\n--- Plotting and Saving Cropped Richness Maps ---\n")
+
+# Put richness maps in their own folder
+richness_dir <- file.path(figure_output_dir, "community_richness")
+dir.create(richness_dir, recursive = TRUE, showWarnings = FALSE)
+
+# helper: consistent save settings
+save_plot_png <- function(p, out_path, width = 10, height = 7, dpi = 300) {
+  dir.create(dirname(out_path), recursive = TRUE, showWarnings = FALSE)
+  ggplot2::ggsave(out_path, plot = p, width = width, height = height, dpi = dpi, bg = "white")
+  cat("  ✅ Saved:", out_path, "\n")
+}
+
 
 if (!is.null(host_richness_sum_cropped)) {
   host_plot_filename <- file.path(figure_output_dir, "host_richness_current_cropped.png")
@@ -517,9 +749,10 @@ if (!is.null(host_richness_sum_cropped)) {
     species_name = "Summed Host Anemone Richness (Current, Cropped)",
     world_basemap = world_map_sf
   )
-  ggsave(host_plot_filename, plot = host_richness_plot, width = 10, height = 7, dpi = 300, bg="white")
+  # ggsave(host_plot_filename, plot = host_richness_plot, width = 10, height = 7, dpi = 300, bg="white")
+  save_plot_png(host_richness_plot, host_plot_filename)
   cat("Saved host richness plot to:", host_plot_filename, "\n")
-  print(host_richness_plot)
+  # print(host_richness_plot)
 }
 
 if (!is.null(fish_richness_sum_cropped)) {
@@ -534,13 +767,33 @@ if (!is.null(fish_richness_sum_cropped)) {
     species_name = "Summed Anemonefish Richness (Current, Combined, Cropped)",
     world_basemap = world_map_sf
   )
-  ggsave(fish_plot_filename, plot = fish_richness_plot, width = 10, height = 7, dpi = 300, bg="white")
+  # ggsave(fish_plot_filename, plot = fish_richness_plot, width = 10, height = 7, dpi = 300, bg="white")
+  save_plot_png(fish_richness_plot, fish_plot_filename)
   cat("Saved anemonefish richness plot to:", fish_plot_filename, "\n")
-  print(fish_richness_plot)
+  # print(fish_richness_plot)
 }
 
 # --- 5. Plot Cropped Individual Stacks with Occurrences (for display only) ---
-cat("\n--- Displaying Individual Species Suitability Maps with Occurrences ---\n")
+cat("\n--- Saving Individual Species Suitability Maps (3 versions each) ---\n")
+
+# Directory tree for species maps
+species_root <- file.path(figure_output_dir, "species_maps")
+
+host_full_dir      <- file.path(species_root, "hosts", "full")
+host_native_dir    <- file.path(species_root, "hosts", "native_masked")
+host_reachable_dir <- file.path(species_root, "hosts", "reachable_masked")
+
+fish_full_dir      <- file.path(species_root, "fish", "full")
+fish_native_dir    <- file.path(species_root, "fish", "native_masked")
+fish_reachable_dir <- file.path(species_root, "fish", "reachable_masked")
+
+dir.create(host_full_dir,      recursive = TRUE, showWarnings = FALSE)
+dir.create(host_native_dir,    recursive = TRUE, showWarnings = FALSE)
+dir.create(host_reachable_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(fish_full_dir,      recursive = TRUE, showWarnings = FALSE)
+dir.create(fish_native_dir,    recursive = TRUE, showWarnings = FALSE)
+dir.create(fish_reachable_dir, recursive = TRUE, showWarnings = FALSE)
+
 
 # Optional: Plot cropped individual stacks if needed for visual check
 if (!is.null(host_pred_stack_cropped)) {
@@ -548,6 +801,7 @@ if (!is.null(host_pred_stack_cropped)) {
   for(i in 1:nlyr(host_pred_stack_cropped)) {
     species_raster <- host_pred_stack_cropped[[i]]
     sp_name <- names(species_raster)
+    out_base <- paste0(sp_name, ".png")
     
     aphia_id <- anemone_species_df$AphiaID[anemone_species_df$scientificName == gsub("_", " ", sp_name)]
     occ_sf <- NULL
@@ -559,8 +813,70 @@ if (!is.null(host_pred_stack_cropped)) {
       }
     }
     
-    p <- plot_prediction_map(species_raster, gsub("_", " ", sp_name), world_map_sf, occ_sf)
-    print(p)
+    
+    
+    # TODO: NEW CODE
+    # p <- plot_prediction_map(species_raster, gsub("_", " ", sp_name), world_map_sf, occ_sf)
+    # print(p)
+    
+    
+    native_poly <- NULL
+    reachable_poly <- NULL
+    
+    if (exists("use_meow_polygons_on_maps") && isTRUE(use_meow_polygons_on_maps) && length(aphia_id) == 1) {
+      polys <- get_species_meow_polys(
+        aphia_id = aphia_id,
+        occ_dir = config$anemone_occurrence_dir,
+        template_r = species_raster,
+        keep_frac = 0.95,
+        min_pts_ecoregion = 2,
+        neighbor_steps_reachable = 1
+      )
+      native_poly <- polys$native
+      reachable_poly <- polys$reachable
+    }
+    
+    p_full <- plot_prediction_map(
+      prediction_raster = species_raster,
+      species_name = gsub("_", " ", sp_name),
+      world_basemap = world_map_sf,
+      occurrence_points_sf = occ_sf,
+      native_poly_sf = native_poly,
+      reachable_poly_sf = reachable_poly,
+      max_display_depth = -750
+    )
+    save_plot_png(p_full, file.path(host_full_dir, out_base))
+    # print(p)
+    
+    
+    p_native <- plot_prediction_map(
+      prediction_raster = species_raster,
+      species_name = paste0(gsub("_", " ", sp_name), " (native masked)"),
+      world_basemap = world_map_sf,
+      occurrence_points_sf = occ_sf,
+      native_poly_sf = NULL,
+      reachable_poly_sf = reachable_poly,
+      mask_poly_sf = native_poly,      # HERE
+      max_display_depth = -750
+    )
+    save_plot_png(p_native, file.path(host_native_dir, out_base))
+    # print(p_native)
+    
+    p_reachable <- plot_prediction_map(
+      prediction_raster = species_raster,
+      species_name = paste0(gsub("_", " ", sp_name), " (reachable masked)"),
+      world_basemap = world_map_sf,
+      occurrence_points_sf = occ_sf,
+      native_poly_sf = NULL,
+      reachable_poly_sf = NULL,
+      mask_poly_sf = reachable_poly,   # HERE
+      max_display_depth = -750
+    )
+    save_plot_png(p_reachable, file.path(host_reachable_dir, out_base))
+    # print(p_reachable)
+    
+
+    # TODO: NEW CODE
   }
 }
 
@@ -569,6 +885,7 @@ if (!is.null(fish_pred_stack_cropped)) {
   for(i in 1:nlyr(fish_pred_stack_cropped)) {
     species_raster <- fish_pred_stack_cropped[[i]]
     sp_name <- names(species_raster)
+    out_base <- paste0(sp_name, ".png")
     
     aphia_id <- anemonefish_species_df$AphiaID[anemonefish_species_df$scientificName == gsub("_", " ", sp_name)]
     occ_sf <- NULL
@@ -580,8 +897,67 @@ if (!is.null(fish_pred_stack_cropped)) {
       }
     }
     
-    p <- plot_prediction_map(species_raster, gsub("_", " ", sp_name), world_map_sf, occ_sf)
-    print(p)
+    
+    
+    # TODO: NEW CODE
+    # p <- plot_prediction_map(species_raster, gsub("_", " ", sp_name), world_map_sf, occ_sf)
+    # print(p)
+    
+    native_poly <- NULL
+    reachable_poly <- NULL
+    
+    if (exists("use_meow_polygons_on_maps") && isTRUE(use_meow_polygons_on_maps) && length(aphia_id) == 1) {
+      polys <- get_species_meow_polys(
+        aphia_id = aphia_id,
+        occ_dir = config$anemonefish_occurrence_dir,
+        template_r = species_raster,
+        keep_frac = 0.95,
+        min_pts_ecoregion = 2,
+        neighbor_steps_reachable = 1
+      )
+      native_poly <- polys$native
+      reachable_poly <- polys$reachable
+    }
+    
+    p_full <- plot_prediction_map(
+      prediction_raster = species_raster,
+      species_name = gsub("_", " ", sp_name),
+      world_basemap = world_map_sf,
+      occurrence_points_sf = occ_sf,
+      native_poly_sf = native_poly,
+      reachable_poly_sf = reachable_poly,
+      max_display_depth = -750
+    )
+    save_plot_png(p_full, file.path(fish_full_dir, out_base))
+    # print(p)
+
+
+    p_native <- plot_prediction_map(
+      prediction_raster = species_raster,
+      species_name = paste0(gsub("_", " ", sp_name), " (native masked)"),
+      world_basemap = world_map_sf,
+      occurrence_points_sf = occ_sf,
+      native_poly_sf = NULL,
+      reachable_poly_sf = reachable_poly,
+      mask_poly_sf = native_poly,      # HERE
+      max_display_depth = -750
+    )
+    save_plot_png(p_native, file.path(fish_native_dir, out_base))
+    # print(p_native)
+
+    p_reachable <- plot_prediction_map(
+      prediction_raster = species_raster,
+      species_name = paste0(gsub("_", " ", sp_name), " (reachable masked)"),
+      world_basemap = world_map_sf,
+      occurrence_points_sf = occ_sf,
+      native_poly_sf = NULL,
+      reachable_poly_sf = NULL,
+      mask_poly_sf = reachable_poly,   # HERE
+      max_display_depth = -750
+    )
+    save_plot_png(p_reachable, file.path(fish_reachable_dir, out_base))
+    # print(p_reachable)
+    # TODO: NEW CODE
   }
 }
 
@@ -3496,58 +3872,152 @@ if(exists("anemonefish_specialization_df")) {
 }
 ```
 
-## Build Fish Occurences All
+## Build Occurrences Again
 
 ```{r build-fish-occ-all}
 #| label: build-fish-occ-all
 #| message: false
 #| warning: false
 
+# NOTE: This chunk no longer builds fish_occ_all_sf.
+# It prepares MEOW + depth masking inputs in a way that matches your top-of-page plotting.
+
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(dplyr, purrr, readr, sf, stringr)
+pacman::p_load(dplyr, sf, terra)
 
-# Build a single sf with occurrences for ALL fish species in the prediction stack
-stack_species <- names(fish_pred_stack_cropped)
-stack_species_space <- gsub("_", " ", stack_species)
+`%||%` <- function(x, y) if (!is.null(x)) x else y
 
-lookup <- anemonefish_species_df %>%
-  dplyr::filter(.data$scientificName %in% stack_species_space) %>%
-  dplyr::distinct(.data$scientificName, .data$AphiaID) %>%
-  dplyr::mutate(
-    species  = gsub("\\s+", "_", .data$scientificName),
-    occ_file = file.path(config$anemonefish_occurrence_dir, paste0(.data$AphiaID, ".csv"))
-  )
+# -----------------------------
+# 0) Sanity checks: objects created earlier in the QMD
+# -----------------------------
+need <- c(
+  "fish_pred_stack_cropped",
+  "host_pred_stack_cropped",
+  "anemonefish_species_df",
+  "anemone_species_df",
+  "get_species_meow_polys",
+  "global_bathymetry"
+)
+missing <- need[!vapply(need, exists, logical(1))]
+if (length(missing) > 0) stop("Missing required objects: ", paste(missing, collapse = ", "))
 
-fish_occ_all_df <- purrr::map_dfr(seq_len(nrow(lookup)), function(i) {
-  f  <- lookup$occ_file[i]
-  sp <- lookup$species[i]
-  if (!file.exists(f)) return(NULL)
+# -----------------------------
+# 1) Mask controls (these are the only knobs you should touch)
+# -----------------------------
+use_meow <- TRUE
 
-  readr::read_csv(f, show_col_types = FALSE) %>%
-    dplyr::select(dplyr::any_of(c("decimalLongitude", "decimalLatitude"))) %>%
-    dplyr::filter(!is.na(.data$decimalLongitude), !is.na(.data$decimalLatitude)) %>%
-    dplyr::mutate(
-      species = sp,
-      decimalLongitude = as.numeric(.data$decimalLongitude),
-      decimalLatitude  = as.numeric(.data$decimalLatitude)
-    ) %>%
-    dplyr::filter(!is.na(.data$decimalLongitude), !is.na(.data$decimalLatitude))
-})
+# Which MEOW polygon should become the MASK?
+# - "native"    -> M0 (solid outline in your suitability maps)
+# - "reachable" -> M1 (dashed outline in your suitability maps)
+conservation_mask_mode <- "reachable"
 
-if (nrow(fish_occ_all_df) == 0) {
-  stop("No occurrence records were loaded into fish_occ_all_df. Check config$anemonefish_occurrence_dir.")
+# How many MEOW neighbor-expansion steps define "reachable"
+neighbor_steps_reachable <- 1
+if (!exists("meow_neighbors") || is.null(meow_neighbors)) {
+  message("⚠️ meow_neighbors is missing/NULL -> forcing neighbor_steps_reachable = 0 (no expansion).")
+  neighbor_steps_reachable <- 0
 }
 
-# Convert to sf; keep lon/lat columns
-fish_occ_all_sf <- sf::st_as_sf(
-  fish_occ_all_df,
-  coords = c("decimalLongitude", "decimalLatitude"),
-  crs = 4326,
-  remove = FALSE
-)
+# Should the conservation mask be built from fish only, or fish+hosts combined?
+conservation_mask_taxa <- "both"  # "fish" or "both"
 
-cat("fish_occ_all_sf rows:", nrow(fish_occ_all_sf), "\n")
-cat("unique species in fish_occ_all_sf:", length(unique(fish_occ_all_sf$species)), "\n")
+# Depth cutoff (SAME as plot_prediction_map default)
+max_display_depth_conservation <- -750
+
+# Optional: crop final conservation figures to match your other maps
+# (this is purely for consistent figure framing, not ecological masking)
+conservation_display_bbox <- c(xmin = 30, xmax = 180, ymin = -31, ymax = 35)
+
+# -----------------------------
+# 2) Build AphiaID lists that match the species present in the stacks
+# -----------------------------
+fish_species_space <- gsub("_", " ", names(fish_pred_stack_cropped))
+fish_aphia_ids <- anemonefish_species_df$AphiaID[match(fish_species_space, anemonefish_species_df$scientificName)]
+
+host_species_space <- gsub("_", " ", names(host_pred_stack_cropped))
+host_aphia_ids <- anemone_species_df$AphiaID[match(host_species_space, anemone_species_df$scientificName)]
+
+cat("Fish stack species:", length(fish_species_space), " | AphiaIDs matched:", sum(!is.na(fish_aphia_ids)), "\n")
+cat("Host stack species:", length(host_species_space), " | AphiaIDs matched:", sum(!is.na(host_aphia_ids)), "\n")
+
+# -----------------------------
+# 3) Robust MEOW union helpers (fixes sfg/sfc union errors)
+# -----------------------------
+as_sfc <- function(x, crs) {
+  if (is.null(x)) return(NULL)
+  if (inherits(x, "sf")) x <- sf::st_geometry(x)
+  if (inherits(x, "sfg")) x <- sf::st_sfc(x, crs = crs)
+  if (!inherits(x, "sfc")) stop("Expected sf/sfc/sfg geometry; got: ", paste(class(x), collapse = ", "))
+  if (is.na(sf::st_crs(x))) sf::st_crs(x) <- crs
+  x
+}
+
+build_union_meow_poly <- function(aphia_ids, occ_dir, template_r,
+                                 mode = c("native", "reachable"),
+                                 neighbor_steps = 1) {
+  mode <- match.arg(mode)
+  crs_t <- sf::st_crs(terra::crs(template_r))
+
+  aphia_ids <- aphia_ids[!is.na(aphia_ids)]
+  if (length(aphia_ids) == 0) return(NULL)
+
+  polys <- lapply(aphia_ids, function(id) {
+    p <- get_species_meow_polys(
+      aphia_id = id,
+      occ_dir = occ_dir,
+      template_r = template_r,
+      neighbor_steps_reachable = neighbor_steps
+    )
+    if (mode == "native") p$native else p$reachable
+  })
+
+  polys <- lapply(polys, as_sfc, crs = crs_t)
+  polys <- polys[!vapply(polys, is.null, logical(1))]
+  if (length(polys) == 0) return(NULL)
+
+  poly_all <- do.call(c, polys)       # concatenate sfc vectors
+  poly <- sf::st_union(poly_all)      # unary union -> sfc length 1
+  poly <- sf::st_make_valid(poly)
+  poly <- suppressWarnings(sf::st_buffer(poly, 0))
+  poly
+}
+
+get_conservation_union_meow_poly <- function(template_r) {
+  if (!isTRUE(use_meow)) return(NULL)
+
+  if (conservation_mask_taxa == "fish") {
+    return(build_union_meow_poly(
+      fish_aphia_ids, config$anemonefish_occurrence_dir, template_r,
+      mode = conservation_mask_mode,
+      neighbor_steps = neighbor_steps_reachable
+    ))
+  }
+
+  poly_fish <- build_union_meow_poly(
+    fish_aphia_ids, config$anemonefish_occurrence_dir, template_r,
+    mode = conservation_mask_mode,
+    neighbor_steps = neighbor_steps_reachable
+  )
+  poly_host <- build_union_meow_poly(
+    host_aphia_ids, config$anemone_occurrence_dir, template_r,
+    mode = conservation_mask_mode,
+    neighbor_steps = neighbor_steps_reachable
+  )
+
+  crs_t <- sf::st_crs(terra::crs(template_r))
+  poly_fish <- as_sfc(poly_fish, crs_t)
+  poly_host <- as_sfc(poly_host, crs_t)
+
+  if (!is.null(poly_fish) && !is.null(poly_host)) {
+    return(sf::st_union(c(poly_fish, poly_host)))
+  }
+  poly_fish %||% poly_host
+}
+
+cat("✅ Conservation mask setup ready. (mode=", conservation_mask_mode,
+    ", taxa=", conservation_mask_taxa,
+    ", max_display_depth=", max_display_depth_conservation, ")\n", sep = "")
+
 ```
 
 
@@ -3557,36 +4027,42 @@ cat("unique species in fish_occ_all_sf:", length(unique(fish_occ_all_sf$species)
 #| label: masking-plots
 #| message: false
 #| warning: false
-#| fig-cap: "Masking Plots"
-
-cat("\n--- Masking (fast fix): starting ---\n")
+#| fig-cap: "Masking for conservation plots (MEOW + depth cutoff only)"
 
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(terra, sf, dplyr, stringr)
+pacman::p_load(terra, sf, dplyr)
+
+cat("\n--- Masking (MEOW + depth cutoff): starting ---\n")
 
 # -----------------------------
-# Sanity / prerequisites
+# 0) Sanity checks
 # -----------------------------
-if (!exists("fish_pred_stack_cropped")) stop("fish_pred_stack_cropped not found")
+need <- c(
+  "fish_pred_stack_cropped",
+  "host_pred_stack_cropped",
+  "fish_pred_stacks_future_individual",
+  "host_pred_stacks_future_individual",
+  "global_bathymetry",
+  "get_conservation_union_meow_poly",
+  "max_display_depth_conservation"
+)
+missing <- need[!vapply(need, exists, logical(1))]
+if (length(missing) > 0) stop("Missing required objects: ", paste(missing, collapse = ", "))
+
 if (!inherits(fish_pred_stack_cropped, "SpatRaster")) stop("fish_pred_stack_cropped must be a SpatRaster")
-
-# Define safe_align_to if you haven't already (robust fallback)
-if (!exists("safe_align_to")) {
-  safe_align_to <- function(r, ref, method = "bilinear") {
-    if (!inherits(r, "SpatRaster")) stop("safe_align_to expects SpatRaster")
-    if (!inherits(ref, "SpatRaster")) stop("safe_align_to ref must be SpatRaster")
-    if (!identical(terra::crs(r), terra::crs(ref))) r <- terra::project(r, ref, method = method)
-    same_geom <- terra::compareGeom(r, ref, stopOnError = FALSE, crs = TRUE, res = TRUE, ext = TRUE, rowcol = TRUE)
-    if (!isTRUE(same_geom)) r <- terra::resample(r, ref, method = method)
-    r
-  }
-}
-
 template_r <- fish_pred_stack_cropped[[1]]
 
-# -----------------------------
-# Helpers
-# -----------------------------
+safe_align_to <- function(r, ref, method = "bilinear") {
+  if (!inherits(r, "SpatRaster")) stop("safe_align_to expects SpatRaster")
+  if (!inherits(ref, "SpatRaster")) stop("safe_align_to ref must be SpatRaster")
+
+  if (terra::crs(r) != terra::crs(ref)) r <- terra::project(r, ref)
+  same_geom <- terra::compareGeom(r, ref, stopOnError = FALSE, crs = TRUE, ext = TRUE, res = TRUE, rowcol = TRUE)
+  if (!isTRUE(same_geom)) r <- terra::resample(r, ref, method = method)
+  r <- terra::mask(r, ref)
+  r
+}
+
 as_keep_mask <- function(mask_r, template) {
   mask_r <- safe_align_to(mask_r, template, method = "near")
   terra::ifel(!is.na(mask_r) & mask_r > 0, 1, NA)
@@ -3598,271 +4074,64 @@ and_masks <- function(a, b) {
   terra::ifel(!is.na(a) & !is.na(b), 1, NA)
 }
 
-load_poly_sf <- function(shp_path, template, name = "poly") {
-  if (!file.exists(shp_path)) stop("Shapefile not found: ", shp_path)
+# -----------------------------
+# 1) Depth mask (MATCHES plot_prediction_map)
+# keep cells where bathy >= max_display_depth_conservation
+# -----------------------------
+cat("Masking: building depth mask with max_display_depth = ", max_display_depth_conservation, "\n", sep = "")
 
-  # Disable s2 just for this function (prevents loop/edge crossing errors)
-  old_s2 <- sf::sf_use_s2()
-  sf::sf_use_s2(FALSE)
-  on.exit(sf::sf_use_s2(old_s2), add = TRUE)
-
-  x <- sf::st_read(shp_path, quiet = TRUE)
-
-  # Repair geometry (common for global marine layers)
-  x <- sf::st_make_valid(x)
-  # Extra repair pass that often fixes remaining self-intersections
-  x <- suppressWarnings(sf::st_buffer(x, 0))
-
-  # Transform to raster CRS
-  x <- sf::st_transform(x, sf::st_crs(terra::crs(template)))
-
-  # Build bbox polygon in same CRS
-  bb <- sf::st_as_sfc(sf::st_bbox(terra::ext(template), crs = sf::st_crs(x)))
-
-  # Fast spatial filter (avoids st_crop() intersection problems)
-  suppressWarnings({
-    keep <- sf::st_intersects(x, bb, sparse = FALSE)[, 1]
-  })
-  x <- x[keep, , drop = FALSE]
-
-  if (nrow(x) == 0) {
-    warning("After bbox filter, no features left for: ", name)
-  } else {
-    cat("Native-range: kept ", nrow(x), " features for ", name, "\n", sep = "")
-  }
-
-  x
-}
-
+bathy_aligned <- terra::project(global_bathymetry, template_r, method = "average")
+depth_mask <- terra::ifel(is.na(bathy_aligned) | bathy_aligned < max_display_depth_conservation, NA, 1)
+depth_mask <- as_keep_mask(depth_mask, template_r)
 
 # -----------------------------
-# (A) Global reef mask (WCMC reefs)
+# 2) MEOW union mask (native or reachable, fish or both)
 # -----------------------------
-reef_shp <- file.path("data", "shapefiles", "WCMC008_CoralReef2018_Py_v4_1.shp")
-reef_sf <- load_poly_sf(reef_shp, template_r, name = "WCMC reefs")
-reef_mask <- NULL
+meow_mask <- NULL
+union_poly_meow <- get_conservation_union_meow_poly(template_r)
 
-if (!is.null(reef_sf)) {
-  cat("Masking: building reef mask from WCMC reefs\n")
-  reef_v <- terra::vect(reef_sf)
-  reef_mask <- terra::rasterize(reef_v, template_r, field = 1, background = NA, touches = TRUE)
-  reef_mask <- as_keep_mask(reef_mask, template_r)
-} else if (exists("reef_sf")) {
-  # fallback: user already had reef_sf in env
-  cat("Masking: WCMC reefs not loaded; falling back to existing reef_sf\n")
-  reef_sf2 <- reef_sf %>% sf::st_make_valid() %>% sf::st_transform(sf::st_crs(terra::crs(template_r)))
-  reef_v <- terra::vect(reef_sf2)
-  reef_mask <- terra::rasterize(reef_v, template_r, field = 1, background = NA, touches = TRUE)
-  reef_mask <- as_keep_mask(reef_mask, template_r)
-} else if (exists("reef_vect")) {
-  cat("Masking: WCMC reefs not loaded; falling back to existing reef_vect\n")
-  reef_mask <- terra::rasterize(reef_vect, template_r, field = 1, background = NA, touches = TRUE)
-  reef_mask <- as_keep_mask(reef_mask, template_r)
+if (!is.null(union_poly_meow)) {
+  cat("Masking: building MEOW union mask\n")
+  union_poly_meow_sf <- sf::st_as_sf(union_poly_meow)
+  union_poly_meow_sf <- sf::st_transform(union_poly_meow_sf, sf::st_crs(terra::crs(template_r)))
+
+  union_v <- terra::vect(union_poly_meow_sf)
+  meow_mask <- terra::rasterize(union_v, template_r, field = 1, background = NA, touches = TRUE)
+  meow_mask <- as_keep_mask(meow_mask, template_r)
 } else {
-  cat("Masking: reef polygons not available -> skipping reef mask\n")
+  cat("Masking: MEOW union poly is NULL -> skipping MEOW mask (depth-only).\n")
 }
 
 # -----------------------------
-# (B) Global depth mask (bathymetry_mean.tif)
+# 3) Final analysis mask = depth AND meow
 # -----------------------------
-bathy_tif <- file.path("data", "env", "terrain", "bathymetry_mean.tif")
-depth_mask <- NULL
-depth_max_m <- 100  # tweak (30–100 are common)
+analysis_mask <- and_masks(depth_mask, meow_mask)
 
-bathy_raster <- NULL
-if (file.exists(bathy_tif)) {
-  cat("Masking: loading bathymetry raster: ", bathy_tif, "\n", sep = "")
-  bathy_raster <- terra::rast(bathy_tif)
-} else if (exists("bathy_raster")) {
-  cat("Masking: bathymetry_mean.tif missing; using existing bathy_raster\n")
-} else if (exists("bathymetry_raster")) {
-  cat("Masking: bathymetry_mean.tif missing; using existing bathymetry_raster\n")
-  bathy_raster <- bathymetry_raster
-}
-
-if (!is.null(bathy_raster)) {
-  bathy_aligned <- safe_align_to(bathy_raster, template_r, method = "bilinear")
-
-  # Handle both conventions:
-  #   - negative depths in ocean (common): keep [-depth_max, 0]
-  #   - positive depths (less common): keep [0, depth_max]
-  mn <- terra::global(bathy_aligned, "min", na.rm = TRUE)[[1]]
-  mx <- terra::global(bathy_aligned, "max", na.rm = TRUE)[[1]]
-  
-  # Most bathy rasters: ocean is negative, land is positive.
-  # If everything is >= 0, it’s likely "positive depth" convention.
-  if (!is.na(mn) && mn >= 0) {
-    cat("Masking: bathymetry appears non-negative -> keeping depth in [0, ", depth_max_m, "]\n", sep = "")
-    depth_mask <- terra::ifel(bathy_aligned >= 0 & bathy_aligned <= depth_max_m, 1, NA)
-  } else {
-    cat("Masking: bathymetry appears negative/mixed -> keeping ocean depth in [-", depth_max_m, ", 0]\n", sep = "")
-    depth_mask <- terra::ifel(bathy_aligned <= 0 & bathy_aligned >= -depth_max_m, 1, NA)
-  }
-  
-  depth_mask <- as_keep_mask(depth_mask, template_r)
+if (is.null(analysis_mask)) {
+  cat("Masking: no mask constructed -> leaving stacks unmasked\n")
 } else {
-  cat("Masking: no bathymetry raster available -> skipping depth mask\n")
-}
+  cat("Masking: applying mask to fish/host stacks (current + future)\n")
 
-# -----------------------------
-# Global analysis mask = reef ∩ depth
-# -----------------------------
-analysis_mask <- and_masks(reef_mask, depth_mask)
-
-apply_global_mask_to_predictions <- FALSE  # set FALSE if you only want M-masks for plotting
-
-if (!is.null(analysis_mask) && isTRUE(apply_global_mask_to_predictions)) {
-  cat("Masking: applying global analysis mask to fish/host stacks (current + future)\n")
-
+  # Current
   fish_pred_stack_cropped <- terra::mask(fish_pred_stack_cropped, analysis_mask)
+  host_pred_stack_cropped <- terra::mask(host_pred_stack_cropped, analysis_mask)
 
-  if (exists("host_pred_stack_cropped") && inherits(host_pred_stack_cropped, "SpatRaster")) {
-    host_pred_stack_cropped <- terra::mask(host_pred_stack_cropped, analysis_mask)
-  }
+  # Future lists
+  fish_pred_stacks_future_individual <- lapply(
+    fish_pred_stacks_future_individual,
+    function(stk) terra::mask(safe_align_to(stk, template_r), analysis_mask)
+  )
+  host_pred_stacks_future_individual <- lapply(
+    host_pred_stacks_future_individual,
+    function(stk) terra::mask(safe_align_to(stk, template_r), analysis_mask)
+  )
 
-  if (exists("fish_pred_stacks_future_individual")) {
-    fish_pred_stacks_future_individual <- lapply(
-      fish_pred_stacks_future_individual,
-      function(stk) terra::mask(safe_align_to(stk, template_r), analysis_mask)
-    )
-  }
-
-  if (exists("host_pred_stacks_future_individual")) {
-    host_pred_stacks_future_individual <- lapply(
-      host_pred_stacks_future_individual,
-      function(stk) terra::mask(safe_align_to(stk, template_r), analysis_mask)
-    )
-  }
-
-  # handy downstream
-  cell_area_km2 <- terra::cellSize(fish_pred_stack_cropped[[1]], unit = "km")
-} else if (is.null(analysis_mask)) {
-  cat("Masking: no global analysis mask constructed -> leaving stacks unmasked\n")
-} else {
-  cat("Masking: global analysis mask built, but not applied to predictions (apply_global_mask_to_predictions = FALSE)\n")
+  # cell area for km² metrics downstream
+  cell_area_km2 <- terra::cellSize(template_r, unit = "km")
+  cat("Masking: cell_area_km2 computed.\n")
 }
 
-# -----------------------------
-# Species-specific “native range” mask (MEOW + MarineRealms + occurrences)
-# -----------------------------
-use_species_M_mask <- exists("fish_occ_all_sf") && inherits(fish_occ_all_sf, "sf")
-
-# Load MEOW + MarineRealms explicitly (no auto-detect)
-meow_shp   <- file.path("data", "shapefiles", "meow_ecos.shp")
-marine_shp <- file.path("data", "shapefiles", "MarineRealms_BO.shp")
-
-meow_sf   <- load_poly_sf(meow_shp, template_r, name = "MEOW ecoregions")
-marine_sf <- load_poly_sf(marine_shp, template_r, name = "MarineRealms")
-
-# ---- outlier drop so 1 weird point doesn't explode the range
-drop_far_outliers <- function(pts_sf, eps_km = 600, minPts = 4) {
-  if (nrow(pts_sf) < minPts) return(pts_sf)
-
-  if (requireNamespace("dbscan", quietly = TRUE)) {
-    pts_m <- sf::st_transform(pts_sf, 3857)
-    xy <- sf::st_coordinates(pts_m)
-    cl <- dbscan::dbscan(xy, eps = eps_km * 1000, minPts = minPts)
-    pts_sf$cluster <- cl$cluster
-
-    if (all(pts_sf$cluster == 0)) return(pts_sf) # all noise
-    main_cluster <- names(sort(table(pts_sf$cluster[pts_sf$cluster > 0]), decreasing = TRUE))[1]
-    return(pts_sf[pts_sf$cluster == as.integer(main_cluster), ])
-  }
-
-  # fallback: remove top 1% farthest-from-median
-  pts_m <- sf::st_transform(pts_sf, 3857)
-  xy <- sf::st_coordinates(pts_m)
-  med <- apply(xy, 2, median, na.rm = TRUE)
-  d <- sqrt((xy[,1] - med[1])^2 + (xy[,2] - med[2])^2)
-  keep <- d <= stats::quantile(d, 0.99, na.rm = TRUE)
-  pts_sf[keep, ]
-}
-
-pick_polys_supported_by_points <- function(poly_sf, pts_sf, keep_frac = 0.95, min_pts_poly = 2) {
-  if (is.null(poly_sf) || nrow(poly_sf) == 0) return(NULL)
-
-  hits <- sf::st_intersects(pts_sf, poly_sf)
-  poly_idx <- vapply(hits, function(x) if (length(x) > 0) x[1] else NA_integer_, integer(1))
-  poly_idx <- poly_idx[!is.na(poly_idx)]
-  if (length(poly_idx) == 0) return(NULL)
-
-  counts <- sort(table(poly_idx), decreasing = TRUE)
-  cum <- cumsum(counts) / sum(counts)
-
-  keep_by_frac <- as.integer(names(counts)[cum <= keep_frac])
-  if (length(keep_by_frac) == 0) keep_by_frac <- as.integer(names(counts)[1])
-
-  keep_by_min <- as.integer(names(counts)[counts >= min_pts_poly])
-
-  keep <- unique(c(keep_by_frac, keep_by_min))
-  poly_sf[keep, ]
-}
-
-# Cache so you don’t rebuild masks 100x during plotting
-.M_cache <- new.env(parent = emptyenv())
-
-make_M_mask_for_species <- function(occ_sf, sp, template,
-                                    eps_km = 600, minPts = 4,
-                                    keep_frac = 0.95, min_pts_poly = 2,
-                                    buffer_km = 150) {
-  key <- paste0("M__", sp)
-  if (exists(key, envir = .M_cache, inherits = FALSE)) return(get(key, envir = .M_cache))
-
-  if (!inherits(occ_sf, "sf")) stop("occ_sf must be an sf object")
-  if (!("species" %in% names(occ_sf))) stop("occ_sf must contain a 'species' column (underscore names)")
-
-  sp_pts <- occ_sf %>% dplyr::filter(.data$species == sp)
-  if (nrow(sp_pts) < 3) {
-    assign(key, NULL, envir = .M_cache)
-    return(NULL)
-  }
-
-  sp_pts <- sf::st_transform(sp_pts, sf::st_crs(terra::crs(template)))
-  sp_pts <- drop_far_outliers(sp_pts, eps_km = eps_km, minPts = minPts)
-
-  meow_sel <- pick_polys_supported_by_points(meow_sf, sp_pts, keep_frac = keep_frac, min_pts_poly = min_pts_poly)
-  mar_sel  <- pick_polys_supported_by_points(marine_sf, sp_pts, keep_frac = keep_frac, min_pts_poly = min_pts_poly)
-
-  range_poly <- NULL
-  if (!is.null(meow_sel) && !is.null(mar_sel)) {
-    range_poly <- suppressWarnings(sf::st_intersection(sf::st_union(meow_sel), sf::st_union(mar_sel)))
-  } else if (!is.null(meow_sel)) {
-    range_poly <- sf::st_union(meow_sel)
-  } else if (!is.null(mar_sel)) {
-    range_poly <- sf::st_union(mar_sel)
-  } else {
-    range_poly <- sf::st_convex_hull(sf::st_union(sp_pts))
-  }
-
-  # soften edges a bit
-  if (!is.null(range_poly) && buffer_km > 0) {
-    rp_m <- sf::st_transform(range_poly, 3857)
-    rp_m <- sf::st_buffer(rp_m, dist = buffer_km * 1000)
-    range_poly <- sf::st_transform(rp_m, sf::st_crs(terra::crs(template)))
-  }
-
-  range_poly <- sf::st_make_valid(range_poly)
-  range_v <- terra::vect(range_poly)
-
-  m_mask <- terra::rasterize(range_v, template, field = 1, background = NA, touches = TRUE)
-  m_mask <- as_keep_mask(m_mask, template)
-
-  # AND with your global reef+depth mask if it exists
-  if (exists("analysis_mask") && !is.null(analysis_mask)) {
-    m_mask <- and_masks(m_mask, analysis_mask)
-  }
-
-  assign(key, m_mask, envir = .M_cache)
-  m_mask
-}
-
-if (use_species_M_mask) {
-  cat("Masking: fish_occ_all_sf found -> enabling MEOW+MarineRealms+occurrence native-range M masks\n")
-} else {
-  cat("Masking: fish_occ_all_sf not found -> skipping species-specific M masking\n")
-}
-
-cat("--- Masking (fast fix): finished ---\n")
+cat("--- Masking (MEOW + depth cutoff): finished ---\n")
 
 ```
 
@@ -3874,19 +4143,17 @@ cat("--- Masking (fast fix): finished ---\n")
 #| label: final-conservation-plots
 #| message: false
 #| warning: false
-#| fig-cap: "Final Conservation Plots"
+#| fig-cap: "Final Conservation Plots (masked to MEOW + -750m depth)"
 
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(
   terra, sf, dplyr, tidyr, stringr, ggplot2, tidyterra,
-  patchwork, scales, knitr, here, tibble
+  patchwork, scales, knitr
 )
 
 cat("\n--- Final Conservation Plots: starting ---\n")
 
-`%||%` <- function(x, y) {
-  if (!is.null(x) && length(x) > 0 && !all(is.na(x))) x else y
-}
+`%||%` <- function(x, y) if (!is.null(x)) x else y
 
 # -----------------------------
 # 0) Sanity checks / inputs
@@ -3899,549 +4166,317 @@ required_objs <- c(
   "world_map_sf",
   "figure_output_dir",
   "analysis_output_dir",
-  "scenario_label_converter"
+  "scenario_label_converter",
+  "conservation_display_bbox",
+  "cell_area_km2"
 )
 missing <- required_objs[!vapply(required_objs, exists, logical(1))]
 if (length(missing) > 0) {
-  stop(
-    "Missing required objects: ", paste(missing, collapse = ", "),
-    "\nRun previous chunks first (loading current/future stacks, map, etc.)."
-  )
+  stop("Missing required objects: ", paste(missing, collapse = ", "),
+       "\nMake sure you've run: build-fish-occ-all -> masking-plots -> this chunk.")
 }
 
-# For occurrence overlay (recommended)
-if (!exists("fish_occ_all_sf")) {
-  stop(
-    "fish_occ_all_sf not found.\n",
-    "Run your build-fish-occ-all chunk first so we can overlay occurrence points on suitability maps."
-  )
-}
-if (!("species" %in% names(fish_occ_all_sf))) {
-  stop("fish_occ_all_sf must contain a 'species' column matching stack layer names (e.g., Amphiprion_ocellaris).")
-}
-
-# Choose scenarios for "conservation-facing" outputs
-scenario_hi <- "ssp585_2100"  # high emissions, end-century (stress test)
-scenario_lo <- "ssp119_2100"  # low emissions, end-century (best-case)
-scenarios_to_run <- c(scenario_lo, scenario_hi)
-
-for (sc in scenarios_to_run) {
-  if (!(sc %in% names(fish_pred_stacks_future_individual))) {
-    stop("Scenario not found in fish_pred_stacks_future_individual: ", sc)
-  }
-  if (!(sc %in% names(host_pred_stacks_future_individual))) {
-    stop("Scenario not found in host_pred_stacks_future_individual: ", sc)
-  }
-}
-
-# Helper to fetch scenario label robustly (list or named vector)
-get_scenario_label <- function(scenario_id) {
-  if (is.list(scenario_label_converter)) {
-    scenario_label_converter[[scenario_id]] %||% scenario_id
-  } else {
-    as.character(scenario_label_converter[scenario_id]) %||% scenario_id
-  }
-}
+scenario_hi <- "ssp585_2100"
+if (!(scenario_hi %in% names(fish_pred_stacks_future_individual))) stop("scenario_hi not found in fish future stacks: ", scenario_hi)
+if (!(scenario_hi %in% names(host_pred_stacks_future_individual))) stop("scenario_hi not found in host future stacks: ", scenario_hi)
 
 # Output dirs
 conservation_dir <- file.path(figure_output_dir, "conservation")
+species_delta_dir <- file.path(conservation_dir, "species_delta_only")
 dir.create(conservation_dir, recursive = TRUE, showWarnings = FALSE)
+dir.create(species_delta_dir, recursive = TRUE, showWarnings = FALSE)
 
-# Save triptychs + delta-only maps
-species_triptych_dir <- file.path(conservation_dir, "species_triptychs")
-species_delta_only_dir <- file.path(conservation_dir, "species_delta_only_maps")
-dir.create(species_triptych_dir, recursive = TRUE, showWarnings = FALSE)
-dir.create(species_delta_only_dir, recursive = TRUE, showWarnings = FALSE)
-
-# Also store CSV summaries
 conservation_out_csv <- file.path(analysis_output_dir, "conservation")
 dir.create(conservation_out_csv, recursive = TRUE, showWarnings = FALSE)
 
-
-
-
-
-
-
-# ---- Fix invalid polygon issues in sf/s2 ----
-old_s2 <- sf::sf_use_s2()
-sf::sf_use_s2(FALSE)
-on.exit(sf::sf_use_s2(old_s2), add = TRUE)
-
-# Repair basemap geometry (common for world polygons)
-world_map_sf <- sf::st_make_valid(world_map_sf)
-world_map_sf <- suppressWarnings(sf::st_buffer(world_map_sf, 0))
-
-
-
-
-
 # -----------------------------
-# 1) Helper utilities
+# 1) Helpers
 # -----------------------------
+safe_align_to <- function(r, ref, method = "bilinear") {
+  if (!inherits(r, "SpatRaster")) stop("safe_align_to expects SpatRaster")
+  if (!inherits(ref, "SpatRaster")) stop("safe_align_to ref must be SpatRaster")
+  if (terra::crs(r) != terra::crs(ref)) r <- terra::project(r, ref)
+  same_geom <- terra::compareGeom(r, ref, stopOnError = FALSE, crs = TRUE, ext = TRUE, res = TRUE, rowcol = TRUE)
+  if (!isTRUE(same_geom)) r <- terra::resample(r, ref, method = method)
+  r <- terra::mask(r, ref)
+  r
+}
+
+crop_for_display <- function(r, bbox) {
+  terra::crop(r, terra::ext(bbox))
+}
+
 normalize01 <- function(r) {
-  mx <- terra::global(r, "max", na.rm = TRUE)[[1]]
-  mn <- terra::global(r, "min", na.rm = TRUE)[[1]]
+  mx <- as.numeric(terra::global(r, "max", na.rm = TRUE)[1,1])
+  mn <- as.numeric(terra::global(r, "min", na.rm = TRUE)[1,1])
   if (is.na(mx) || is.na(mn) || mx == mn) return(r * 0)
   (r - mn) / (mx - mn)
 }
 
-# safe_align_to: use existing (from masking-plots) if present; otherwise fallback
-if (!exists("safe_align_to")) {
-  safe_align_to <- function(r, ref, method = "bilinear") {
-    if (!inherits(r, "SpatRaster")) stop("safe_align_to expects SpatRaster")
-    if (!inherits(ref, "SpatRaster")) stop("safe_align_to ref must be SpatRaster")
-    if (!identical(terra::crs(r), terra::crs(ref))) {
-      r <- terra::project(r, ref, method = method)
-    }
-    same_geom <- terra::compareGeom(
-      r, ref, stopOnError = FALSE, crs = TRUE, res = TRUE, ext = TRUE, rowcol = TRUE
-    )
-    if (!isTRUE(same_geom)) r <- terra::resample(r, ref, method = method)
-    r
-  }
-}
-
-stretch01_quantile <- function(r01, q = 0.99, power = 0.6) {
-  qv <- as.numeric(
-    terra::global(r01, fun = function(x) stats::quantile(x, probs = q, na.rm = TRUE))[[1]]
-  )
-  if (is.na(qv) || qv <= 0) return(r01)
-  out <- r01 / qv
+stretch01_quantile <- function(r, q = 0.99, power = 0.5) {
+  qv <- as.numeric(terra::global(r, fun = function(x) stats::quantile(x, probs = q, na.rm = TRUE))[1,1])
+  if (is.na(qv) || qv <= 0) return(r * 0)
+  out <- r / qv
   out <- terra::clamp(out, lower = 0, upper = 1, values = TRUE)
-  out ^ power
+  if (!is.null(power) && is.finite(power) && power != 1) out <- out ^ power
+  out
 }
 
 q_global <- function(r, p = 0.8) {
-  as.numeric(
-    terra::global(r, fun = function(x) stats::quantile(x, probs = p, na.rm = TRUE))[[1]]
-  )
+  as.numeric(terra::global(r, fun = function(x) stats::quantile(x, probs = p, na.rm = TRUE))[1,1])
 }
 
-# ---- Occurrence helpers ----
-get_occ_points_for_species <- function(sp, raster_template, max_points = 2500) {
-  occ <- fish_occ_all_sf %>% dplyr::filter(.data$species == sp)
-  if (nrow(occ) == 0) return(NULL)
-
-  # Transform to raster CRS (best for coord_sf + performance)
-  raster_crs <- tryCatch(sf::st_crs(terra::crs(raster_template)), error = function(e) NA)
-  if (!is.na(raster_crs)) {
-    occ <- tryCatch(sf::st_transform(occ, raster_crs), error = function(e) occ)
-  }
-
-  # Downsample if huge (reproducible)
-  if (nrow(occ) > max_points) {
-    set.seed(1)
-    occ <- dplyr::slice_sample(occ, n = max_points)
-  }
-  occ
-}
-
-# ---- Plotting with optional occurrence overlay ----
-plot_index_map <- function(index_raster_01, title, world_basemap,
-                           legend_title = "Index (0–1)",
-                           na_value = "transparent",
-                           occ_sf = NULL,
-                           occ_size = 0.55,
-                           occ_alpha = 0.65) {
-  names(index_raster_01) <- "Index"
-
-  p <- ggplot() +
+plot_index_map <- function(index_raster_01, title, world_basemap, legend_title = "Index (0–1)") {
+  r <- crop_for_display(index_raster_01, conservation_display_bbox)
+  names(r) <- "Index"
+  ggplot() +
     geom_sf(data = world_basemap, fill = "grey80", color = "white", linewidth = 0.2) +
-    geom_spatraster(data = index_raster_01, aes(fill = Index)) +
+    geom_spatraster(data = r, aes(fill = Index)) +
     scale_fill_gradientn(
-      colors = c("#FFFFFF", "#FEF9C3", "#FDBA74", "#D946EF", "#4F46E5"),
+      colors = c("#FEF9C3", "#FDBA74", "#D946EF", "#4F46E5"),
       limits = c(0, 1),
-      na.value = na_value,
-      name = legend_title
-    ) +
-    coord_sf(
-      crs = sf::st_crs(terra::crs(index_raster_01)),
-      xlim = terra::ext(index_raster_01)[c(1, 2)],
-      ylim = terra::ext(index_raster_01)[c(3, 4)],
-      expand = FALSE
-    ) +
-    labs(title = title) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(hjust = 0.5, size = 13, face = "bold"),
-      axis.title = element_blank(),
-      axis.text = element_blank(),
-      axis.ticks = element_blank(),
-      panel.grid = element_blank(),
-      legend.position = "right"
-    )
-
-  if (!is.null(occ_sf) && inherits(occ_sf, "sf") && nrow(occ_sf) > 0) {
-    p <- p + geom_sf(
-      data = occ_sf,
-      inherit.aes = FALSE,
-      shape = 21, fill = "white", color = "black",
-      stroke = 0.25, size = occ_size, alpha = occ_alpha
-    )
-  }
-  p
-}
-
-plot_delta_map_thresholded <- function(delta_raster, title, world_basemap,
-                                       lim = 0.5,
-                                       legend_title = "Δ suitability",
-                                       na_fill = "white",
-                                       occ_sf = NULL,
-                                       occ_size = 0.50,
-                                       occ_alpha = 0.70) {
-  names(delta_raster) <- "Delta"
-
-  p <- ggplot() +
-    geom_sf(data = world_basemap, fill = "grey80", color = "white", linewidth = 0.2) +
-    geom_spatraster(data = delta_raster, aes(fill = Delta)) +
-    scale_fill_gradient2(
-      limits = c(-lim, lim),
       oob = scales::squish,
-      na.value = na_fill,
+      na.value = "transparent",
       name = legend_title
     ) +
     coord_sf(
-      crs = sf::st_crs(terra::crs(delta_raster)),
-      xlim = terra::ext(delta_raster)[c(1, 2)],
-      ylim = terra::ext(delta_raster)[c(3, 4)],
+      crs = sf::st_crs(terra::crs(r)),
+      xlim = terra::ext(r)[c(1,2)],
+      ylim = terra::ext(r)[c(3,4)],
       expand = FALSE
     ) +
     labs(title = title) +
     theme_minimal() +
     theme(
-      plot.title = element_text(hjust = 0.5, size = 13, face = "bold"),
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
       axis.title = element_blank(),
       axis.text = element_blank(),
       axis.ticks = element_blank(),
       panel.grid = element_blank(),
       legend.position = "right"
     )
+}
 
-  # Optional: overlay occurrences on Δ too (helps visually)
-  if (!is.null(occ_sf) && inherits(occ_sf, "sf") && nrow(occ_sf) > 0) {
-    p <- p + geom_sf(
-      data = occ_sf,
-      inherit.aes = FALSE,
-      shape = 21, fill = "white", color = "black",
-      stroke = 0.25, size = occ_size, alpha = occ_alpha
+plot_delta_map_threshold <- function(delta_raster, title, world_basemap,
+                                    thr_white = 0.25, lim_quant = 0.99,
+                                    legend_title = "Δ suitability") {
+  r <- crop_for_display(delta_raster, conservation_display_bbox)
+  r_thr <- terra::ifel(abs(r) < thr_white, 0, r)
+  names(r_thr) <- "Delta"
+
+  abs_lim <- as.numeric(terra::global(abs(r_thr),
+                                     fun = function(x) stats::quantile(x, probs = lim_quant, na.rm = TRUE))[1,1])
+  abs_lim <- max(thr_white, abs_lim, na.rm = TRUE)
+  if (!is.finite(abs_lim) || abs_lim <= 0) abs_lim <- thr_white
+
+  ggplot() +
+    geom_sf(data = world_basemap, fill = "grey80", color = "white", linewidth = 0.2) +
+    geom_spatraster(data = r_thr, aes(fill = Delta)) +
+    scale_fill_distiller(
+      palette = "RdBu",
+      direction = 1,
+      limits = c(-abs_lim, abs_lim),
+      oob = scales::squish,
+      na.value = "transparent",
+      name = legend_title
+    ) +
+    coord_sf(
+      crs = sf::st_crs(terra::crs(r_thr)),
+      xlim = terra::ext(r_thr)[c(1,2)],
+      ylim = terra::ext(r_thr)[c(3,4)],
+      expand = FALSE
+    ) +
+    labs(title = title) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+      axis.title = element_blank(),
+      axis.text = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid = element_blank(),
+      legend.position = "right"
     )
-  }
-  p
 }
 
 # -----------------------------
-# 1b) Species-specific M masking hookup (uses fish_occ_all_sf)
+# 2) Policy-facing conservation surfaces (masked already)
 # -----------------------------
-use_species_M_mask_local <- isTRUE(
-  exists("use_species_M_mask") && isTRUE(use_species_M_mask) &&
-    exists("make_M_mask_for_species") &&
-    exists("fish_occ_all_sf")
+fish_rich_current <- if (exists("fish_richness_sum_cropped")) fish_richness_sum_cropped else terra::app(fish_pred_stack_cropped, sum, na.rm = TRUE)
+host_rich_current <- if (exists("host_richness_sum_cropped")) host_richness_sum_cropped else terra::app(host_pred_stack_cropped, sum, na.rm = TRUE)
+
+fish_rich_future_hi <- terra::app(fish_pred_stacks_future_individual[[scenario_hi]], sum, na.rm = TRUE)
+host_rich_future_hi <- terra::app(host_pred_stacks_future_individual[[scenario_hi]], sum, na.rm = TRUE)
+
+fish_rich_future_hi <- safe_align_to(fish_rich_future_hi, fish_rich_current)
+host_rich_future_hi <- safe_align_to(host_rich_future_hi, host_rich_current)
+
+fish_loss_hi <- terra::ifel(fish_rich_current > fish_rich_future_hi, fish_rich_current - fish_rich_future_hi, 0)
+host_loss_hi <- terra::ifel(host_rich_current > host_rich_future_hi, host_rich_current - host_rich_future_hi, 0)
+
+fish_rich_cur_n <- normalize01(fish_rich_current)
+fish_loss_n     <- normalize01(fish_loss_hi)
+host_loss_n     <- normalize01(host_loss_hi)
+host_rich_fut_n <- normalize01(host_rich_future_hi)
+fish_rich_fut_n <- normalize01(fish_rich_future_hi)
+
+cpi_hi_raw <- normalize01(fish_rich_cur_n * fish_loss_n * (0.5 + 0.5 * host_loss_n))
+refugia_hi <- normalize01(fish_rich_fut_n * host_rich_fut_n)
+
+cpi_hi_disp <- stretch01_quantile(cpi_hi_raw, q = 0.99, power = 0.5)
+
+cpi_title <- paste0(
+  "Conservation Priority Index (Hotspots of Projected Loss)\nScenario: ",
+  scenario_label_converter[[scenario_hi]] %||% scenario_hi
+)
+refugia_title <- paste0(
+  "Mutualism Refugia (Future Co-persistence of Fish + Hosts)\nScenario: ",
+  scenario_label_converter[[scenario_hi]] %||% scenario_hi
 )
 
-mask_to_species_M <- function(r, sp, template) {
-  if (!use_species_M_mask_local) return(r)
-  m_mask <- make_M_mask_for_species(fish_occ_all_sf, sp, template, buffer_km = 500)
-  if (is.null(m_mask)) return(r)
-  terra::mask(r, m_mask)
-}
+p_cpi <- plot_index_map(cpi_hi_disp, cpi_title, world_map_sf, legend_title = "Priority (stretched 0–1)")
+p_ref <- plot_index_map(refugia_hi, refugia_title, world_map_sf, legend_title = "Refugia (0–1)")
 
-# Templates / cell area (masked already if you ran masking-plots)
-template_r <- fish_pred_stack_cropped[[1]]
-cell_area_km2 <- terra::cellSize(template_r, unit = "km")
+ggsave(file.path(conservation_dir, paste0("CPI_", scenario_hi, ".png")), p_cpi, width = 11, height = 7, dpi = 300, bg = "white")
+ggsave(file.path(conservation_dir, paste0("Refugia_", scenario_hi, ".png")), p_ref, width = 11, height = 7, dpi = 300, bg = "white")
+
+print(p_cpi)
+print(p_ref)
 
 # -----------------------------
-# 2) Current richness (RECOMPUTE from current stacks to respect masking)
+# 3) Country-level summary (still fine; uses masked rasters)
 # -----------------------------
-cat("\nRecomputing current richness from (possibly masked) stacks...\n")
-fish_rich_current <- terra::app(fish_pred_stack_cropped, fun = sum, na.rm = TRUE)
-host_rich_current <- terra::app(host_pred_stack_cropped, fun = sum, na.rm = TRUE)
+cpi_coarse <- terra::aggregate(cpi_hi_raw, fact = 5, fun = mean, na.rm = TRUE)
+ref_coarse <- terra::aggregate(refugia_hi, fact = 5, fun = mean, na.rm = TRUE)
+
+countries_sf <- world_map_sf %>%
+  sf::st_make_valid() %>%
+  sf::st_transform(sf::st_crs(terra::crs(cpi_coarse)))
+
+countries_v <- terra::vect(countries_sf)
+
+cpi_by_country <- terra::extract(cpi_coarse, countries_v, fun = mean, na.rm = TRUE)
+ref_by_country <- terra::extract(ref_coarse, countries_v, fun = mean, na.rm = TRUE)
+
+country_summary <- countries_sf %>%
+  dplyr::mutate(.id = dplyr::row_number()) %>%
+  sf::st_drop_geometry() %>%
+  dplyr::select(.id, name_long = name_long, name = name) %>%
+  dplyr::left_join(dplyr::tibble(.id = cpi_by_country$ID, mean_CPI = cpi_by_country[,2]), by = ".id") %>%
+  dplyr::left_join(dplyr::tibble(.id = ref_by_country$ID, mean_Refugia = ref_by_country[,2]), by = ".id") %>%
+  dplyr::mutate(mean_CPI = as.numeric(mean_CPI), mean_Refugia = as.numeric(mean_Refugia)) %>%
+  dplyr::filter(!is.na(mean_CPI) | !is.na(mean_Refugia)) %>%
+  dplyr::arrange(dplyr::desc(mean_CPI))
+
+write.csv(country_summary, file.path(conservation_out_csv, paste0("country_summary_CPI_Refugia_", scenario_hi, ".csv")), row.names = FALSE)
+
+cat("\nTop countries by mean CPI (coarse):\n")
+print(knitr::kable(head(country_summary, 15), digits = 3))
 
 # -----------------------------
-# 3) Run per-scenario conservation outputs
+# 4) Species-level habitat loss + DELTA-ONLY maps (masked already)
 # -----------------------------
-# CPI display blend settings
-cpi_stretch_q <- 0.99
-cpi_stretch_power <- 0.7
-cpi_blend <- 0.45  # 0 = original only, 1 = fully stretched
+fish_curr_stack <- fish_pred_stack_cropped
+fish_fut_stack  <- fish_pred_stacks_future_individual[[scenario_hi]]
 
-# Delta-only map threshold (white if small change)
-delta_small_thresh <- 0.25
+common_species <- intersect(names(fish_curr_stack), names(fish_fut_stack))
+if (length(common_species) == 0) stop("No overlapping species between current and future fish stacks for ", scenario_hi)
 
-# Print only a few species maps into HTML to avoid huge docs
-n_print <- 6
+fish_curr_stack <- fish_curr_stack[[common_species]]
+fish_fut_stack  <- fish_fut_stack[[common_species]]
 
-for (scenario_id in scenarios_to_run) {
-  scenario_label <- get_scenario_label(scenario_id)
-  cat("\n--- Scenario: ", scenario_id, " (", scenario_label, ") ---\n", sep = "")
+aligned_future_layers <- list()
+for (sp in common_species) aligned_future_layers[[sp]] <- safe_align_to(fish_fut_stack[[sp]], fish_curr_stack[[sp]])
+fish_fut_stack_aligned <- terra::rast(aligned_future_layers)
+names(fish_fut_stack_aligned) <- common_species
 
-  # Scenario-specific dirs
-  scenario_fig_dir  <- file.path(conservation_dir, scenario_id)
-  scenario_trip_dir <- file.path(species_triptych_dir, scenario_id)
-  scenario_delta_dir <- file.path(species_delta_only_dir, scenario_id)
-  dir.create(scenario_fig_dir, recursive = TRUE, showWarnings = FALSE)
-  dir.create(scenario_trip_dir, recursive = TRUE, showWarnings = FALSE)
-  dir.create(scenario_delta_dir, recursive = TRUE, showWarnings = FALSE)
+species_metrics <- lapply(common_species, function(sp) {
+  cur <- fish_curr_stack[[sp]]
+  fut <- fish_fut_stack_aligned[[sp]]
 
-  # -----------------------------
-  # 3A) Build conservation surfaces (CPI / Refugia)
-  # -----------------------------
-  fish_rich_future <- terra::app(fish_pred_stacks_future_individual[[scenario_id]], fun = sum, na.rm = TRUE)
-  host_rich_future <- terra::app(host_pred_stacks_future_individual[[scenario_id]], fun = sum, na.rm = TRUE)
+  thr <- q_global(cur, p = 0.8)
+  if (is.na(thr)) thr <- 0.8
 
-  fish_rich_future <- safe_align_to(fish_rich_future, fish_rich_current)
-  host_rich_future <- safe_align_to(host_rich_future, host_rich_current)
+  mask_cur <- terra::ifel(cur >= thr, 1, 0)
+  mask_fut <- terra::ifel(fut >= thr, 1, 0)
 
-  fish_diff <- fish_rich_current - fish_rich_future
-  host_diff <- host_rich_current - host_rich_future
-  fish_loss <- terra::ifel(fish_diff > 0, fish_diff, 0)
-  host_loss <- terra::ifel(host_diff > 0, host_diff, 0)
+  area_cur <- as.numeric(terra::global(mask_cur * cell_area_km2, "sum", na.rm = TRUE)[1,1])
+  area_fut <- as.numeric(terra::global(mask_fut * cell_area_km2, "sum", na.rm = TRUE)[1,1])
 
-  fish_rich_cur_n <- normalize01(fish_rich_current)
-  fish_loss_n     <- normalize01(fish_loss)
-  host_loss_n     <- normalize01(host_loss)
-  host_rich_fut_n <- normalize01(host_rich_future)
-  fish_rich_fut_n <- normalize01(fish_rich_future)
+  refugia_mask <- terra::ifel((cur >= thr) & (fut >= thr), 1, 0)
+  loss_mask    <- terra::ifel((cur >= thr) & (fut <  thr), 1, 0)
 
-  cpi_raw <- normalize01(fish_rich_cur_n * fish_loss_n * (0.5 + 0.5 * host_loss_n))
-  refugia <- normalize01(fish_rich_fut_n * host_rich_fut_n)
+  area_refugia <- as.numeric(terra::global(refugia_mask * cell_area_km2, "sum", na.rm = TRUE)[1,1])
+  area_loss    <- as.numeric(terra::global(loss_mask    * cell_area_km2, "sum", na.rm = TRUE)[1,1])
 
-  cpi_stretched <- stretch01_quantile(cpi_raw, q = cpi_stretch_q, power = cpi_stretch_power)
-  cpi_disp <- normalize01((1 - cpi_blend) * cpi_raw + cpi_blend * cpi_stretched)
-
-  p_cpi <- plot_index_map(
-    cpi_disp,
-    paste0("Conservation Priority Index (Hotspots of Projected Loss)\nScenario: ", scenario_label),
-    world_map_sf,
-    legend_title = "Priority (0–1)"
+  tibble::tibble(
+    species = sp,
+    area_core_current_km2 = area_cur,
+    area_core_future_km2  = area_fut,
+    area_refugia_km2      = area_refugia,
+    area_loss_km2         = area_loss,
+    pct_core_change       = ifelse(area_cur > 0, (area_fut - area_cur) / area_cur, NA_real_),
+    pct_core_lost         = ifelse(area_cur > 0, area_loss / area_cur, NA_real_)
   )
-  p_ref <- plot_index_map(
-    refugia,
-    paste0("Mutualism Refugia (Future Co-persistence of Fish + Hosts)\nScenario: ", scenario_label),
-    world_map_sf,
-    legend_title = "Refugia (0–1)"
-  )
+})
 
-  ggsave(file.path(scenario_fig_dir, paste0("CPI_", scenario_id, ".png")),
-         p_cpi, width = 11, height = 7, dpi = 300, bg = "white")
-  ggsave(file.path(scenario_fig_dir, paste0("Refugia_", scenario_id, ".png")),
-         p_ref, width = 11, height = 7, dpi = 300, bg = "white")
+species_metrics_df <- dplyr::bind_rows(species_metrics) %>%
+  dplyr::mutate(
+    species_display = gsub("_", " ", species),
+    scenario = scenario_hi,
+    pct_core_change = 100 * pct_core_change,
+    pct_core_lost   = 100 * pct_core_lost
+  ) %>%
+  dplyr::arrange(dplyr::desc(pct_core_lost))
 
-  print(p_cpi)
-  print(p_ref)
+write.csv(
+  species_metrics_df,
+  file.path(conservation_out_csv, paste0("species_core_habitat_metrics_", scenario_hi, ".csv")),
+  row.names = FALSE
+)
 
-  # -----------------------------
-  # 3B) Country-level summary
-  # -----------------------------
-  cpi_coarse <- terra::aggregate(cpi_raw, fact = 5, fun = mean, na.rm = TRUE)
-  ref_coarse <- terra::aggregate(refugia, fact = 5, fun = mean, na.rm = TRUE)
+cat("\nWorst-hit species by % core habitat lost (", scenario_hi, "):\n", sep = "")
+print(knitr::kable(head(species_metrics_df, 12), digits = 2))
 
-  countries_sf <- world_map_sf %>%
-    sf::st_make_valid() %>%
-    sf::st_transform(sf::st_crs(terra::crs(cpi_coarse)))
-  countries_v <- terra::vect(countries_sf)
-
-  cpi_by_country <- terra::extract(cpi_coarse, countries_v, fun = mean, na.rm = TRUE)
-  ref_by_country <- terra::extract(ref_coarse, countries_v, fun = mean, na.rm = TRUE)
-
-  countries_tbl <- countries_sf %>% sf::st_drop_geometry()
-  if (!("name_long" %in% names(countries_tbl))) countries_tbl$name_long <- NA_character_
-  if (!("name" %in% names(countries_tbl))) countries_tbl$name <- NA_character_
-
-  country_summary <- countries_tbl %>%
-    dplyr::mutate(.id = dplyr::row_number()) %>%
-    dplyr::select(.id, name_long, name) %>%
-    dplyr::left_join(
-      dplyr::tibble(.id = cpi_by_country$ID, mean_CPI = cpi_by_country[, 2]),
-      by = ".id"
-    ) %>%
-    dplyr::left_join(
-      dplyr::tibble(.id = ref_by_country$ID, mean_Refugia = ref_by_country[, 2]),
-      by = ".id"
-    ) %>%
-    dplyr::mutate(
-      mean_CPI = as.numeric(mean_CPI),
-      mean_Refugia = as.numeric(mean_Refugia)
-    ) %>%
-    dplyr::filter(!is.na(mean_CPI) | !is.na(mean_Refugia)) %>%
-    dplyr::arrange(dplyr::desc(mean_CPI))
-
-  write.csv(
-    country_summary,
-    file.path(conservation_out_csv, paste0("country_summary_CPI_Refugia_", scenario_id, ".csv")),
-    row.names = FALSE
-  )
-
-  cat("\nTop countries by mean CPI (coarse) — ", scenario_id, ":\n", sep = "")
-  print(knitr::kable(head(country_summary, 15), digits = 3))
-
-  # -----------------------------
-  # 3C) Species-level metrics + TRIPTYCH maps (Current | Future | Δ) + OCC POINTS
-  # -----------------------------
-  fish_curr_stack <- fish_pred_stack_cropped
-  fish_fut_stack  <- fish_pred_stacks_future_individual[[scenario_id]]
-
-  common_species <- intersect(names(fish_curr_stack), names(fish_fut_stack))
-  if (length(common_species) == 0) stop("No overlapping species between current and future fish stacks for ", scenario_id)
-
-  fish_curr_stack <- fish_curr_stack[[common_species]]
-  fish_fut_stack  <- fish_fut_stack[[common_species]]
-
-  # Align future layers to current layers
-  aligned_future_layers <- list()
-  for (sp in common_species) {
-    aligned_future_layers[[sp]] <- safe_align_to(fish_fut_stack[[sp]], fish_curr_stack[[sp]])
-  }
-  fish_fut_stack_aligned <- terra::rast(aligned_future_layers)
-  names(fish_fut_stack_aligned) <- common_species
-
-  # Species metrics: core habitat = top 20% of CURRENT suitability
-  species_metrics <- lapply(common_species, function(sp) {
-    cur <- fish_curr_stack[[sp]]
-    fut <- fish_fut_stack_aligned[[sp]]
-
-    thr <- q_global(cur, p = 0.8)
-    if (is.na(thr)) {
-      mx <- terra::global(cur, "max", na.rm = TRUE)[[1]]
-      thr <- ifelse(is.na(mx), 0.8, 0.8 * mx)
-    }
-
-    mask_cur <- terra::ifel(cur >= thr, 1, 0)
-    mask_fut <- terra::ifel(fut >= thr, 1, 0)
-
-    area_cur <- terra::global(mask_cur * cell_area_km2, "sum", na.rm = TRUE)[[1]]
-    area_fut <- terra::global(mask_fut * cell_area_km2, "sum", na.rm = TRUE)[[1]]
-
-    refugia_mask <- terra::ifel((cur >= thr) & (fut >= thr), 1, 0)
-    loss_mask    <- terra::ifel((cur >= thr) & (fut <  thr), 1, 0)
-
-    area_refugia <- terra::global(refugia_mask * cell_area_km2, "sum", na.rm = TRUE)[[1]]
-    area_loss    <- terra::global(loss_mask    * cell_area_km2, "sum", na.rm = TRUE)[[1]]
-
-    tibble::tibble(
-      species = sp,
-      area_core_current_km2 = area_cur,
-      area_core_future_km2  = area_fut,
-      area_refugia_km2      = area_refugia,
-      area_loss_km2         = area_loss,
-      pct_core_change       = ifelse(area_cur > 0, (area_fut - area_cur) / area_cur, NA_real_),
-      pct_core_lost         = ifelse(area_cur > 0, area_loss / area_cur, NA_real_)
-    )
-  })
-
-  species_metrics_df <- dplyr::bind_rows(species_metrics) %>%
-    dplyr::mutate(
-      species_display = gsub("_", " ", species),
-      scenario = scenario_id,
-      pct_core_change = 100 * pct_core_change,
-      pct_core_lost   = 100 * pct_core_lost
-    ) %>%
-    dplyr::arrange(dplyr::desc(pct_core_lost))
-
-  write.csv(
-    species_metrics_df,
-    file.path(conservation_out_csv, paste0("species_core_habitat_metrics_", scenario_id, ".csv")),
-    row.names = FALSE
-  )
-
-  cat("\nWorst-hit species by % core habitat lost (", scenario_id, "):\n", sep = "")
-  print(knitr::kable(head(species_metrics_df, 12), digits = 2))
-
-  # Bar plot: % core habitat lost
-  p_loss_bar <- ggplot(
-    species_metrics_df,
-    aes(x = reorder(species_display, pct_core_lost), y = pct_core_lost)
+p_loss_bar <- ggplot(species_metrics_df, aes(x = reorder(species_display, pct_core_lost), y = pct_core_lost)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = paste0("Projected Loss of Core Habitat (Top 20% Current Suitability)\nScenario: ",
+                   scenario_label_converter[[scenario_hi]] %||% scenario_hi),
+    x = "Anemonefish species",
+    y = "% of core habitat lost"
   ) +
-    geom_col() +
-    coord_flip() +
-    labs(
-      title = paste0("Projected Loss of Core Habitat (Top 20% Current Suitability)\nScenario: ", scenario_label),
-      x = "Anemonefish species",
-      y = "% of core habitat lost"
-    ) +
-    theme_minimal(base_size = 12)
+  theme_minimal(base_size = 12)
 
-  ggsave(
-    file.path(scenario_fig_dir, paste0("species_core_habitat_loss_bar_", scenario_id, ".png")),
-    p_loss_bar, width = 10, height = 8, dpi = 300, bg = "white"
+ggsave(file.path(conservation_dir, paste0("species_core_habitat_loss_bar_", scenario_hi, ".png")),
+       p_loss_bar, width = 10, height = 8, dpi = 300, bg = "white")
+print(p_loss_bar)
+
+n_print <- min(6, nrow(species_metrics_df))
+worst_species <- species_metrics_df$species[1:n_print]
+
+for (sp in worst_species) {
+  cur <- fish_curr_stack[[sp]]
+  fut <- fish_fut_stack_aligned[[sp]]
+  delta <- fut - cur
+
+  p_del <- plot_delta_map_threshold(
+    delta,
+    paste0(gsub("_", " ", sp), " — Δ (Future - Current)\n", scenario_label_converter[[scenario_hi]] %||% scenario_hi),
+    world_map_sf,
+    thr_white = 0.25,
+    lim_quant = 0.99,
+    legend_title = "Δ suitability"
   )
-  print(p_loss_bar)
 
-  # Print only a few species triptychs into the report
-  n_print_here <- min(n_print, nrow(species_metrics_df))
-  worst_species <- species_metrics_df$species[1:n_print_here]
-
-  for (sp in common_species) {
-    cur <- fish_curr_stack[[sp]]
-    fut <- fish_fut_stack_aligned[[sp]]
-
-    # Occurrence points (transform to raster CRS, downsample if needed)
-    occ_sp <- get_occ_points_for_species(sp, template_r, max_points = 2500)
-
-    # OPTIONAL: species-specific accessible area M (interpretation constraint) — apply to ALL panels
-    cur_m <- mask_to_species_M(cur, sp, template_r)
-    fut_m <- mask_to_species_M(fut, sp, template_r)
-
-    delta <- fut_m - cur_m
-    delta_thr <- terra::ifel(abs(delta) < delta_small_thresh, NA, delta)
-
-    lim <- q_global(abs(delta), p = 0.99)
-    if (is.na(lim) || lim <= 0) lim <- delta_small_thresh
-    lim <- max(lim, delta_small_thresh)
-
-    # ---- Triptych panels WITH basemap + OCC POINTS ----
-    p_cur <- plot_index_map(
-      normalize01(cur_m),
-      title = "Current suitability",
-      world_basemap = world_map_sf,
-      legend_title = "Suitability (0–1)",
-      na_value = "transparent",
-      occ_sf = occ_sp
-    )
-
-    p_fut <- plot_index_map(
-      normalize01(fut_m),
-      title = paste0("Future suitability\n", scenario_label),
-      world_basemap = world_map_sf,
-      legend_title = "Suitability (0–1)",
-      na_value = "transparent",
-      occ_sf = occ_sp
-    )
-
-    p_del <- plot_delta_map_thresholded(
-      delta_thr,
-      title = paste0("Δ (Future - Current)\nwhite if |Δ| < ", delta_small_thresh),
-      world_basemap = world_map_sf,
-      lim = lim,
-      legend_title = "Δ suitability",
-      na_fill = "white",
-      occ_sf = occ_sp
-    )
-
-    triptych <- (p_cur | p_fut | p_del) +
-      patchwork::plot_annotation(
-        title = paste0(gsub("_", " ", sp), " — ", scenario_label),
-        theme = theme(plot.title = element_text(hjust = 0.5, size = 16, face = "bold"))
-      )
-
-    out_trip <- file.path(scenario_trip_dir, paste0(sp, "_TRIPTYCH_", scenario_id, ".png"))
-    ggsave(out_trip, triptych, width = 15, height = 5.2, dpi = 300, bg = "white")
-
-    # Also save delta-only (still includes basemap + occ points)
-    out_del_only <- file.path(scenario_delta_dir, paste0(sp, "_DELTA_ONLY_", scenario_id, ".png"))
-    ggsave(out_del_only, p_del, width = 8, height = 5, dpi = 300, bg = "white")
-
-    if (sp %in% worst_species) print(triptych)
-  }
-
-  cat("\nSaved TRIPTYCH maps (Current|Future|Δ) to: ", scenario_trip_dir, "\n", sep = "")
-  cat("Saved Δ-only maps to: ", scenario_delta_dir, "\n", sep = "")
-  cat("Saved CPI/Refugia maps + summaries to: ", scenario_fig_dir, "\n", sep = "")
+  out_file <- file.path(species_delta_dir, paste0(sp, "_DELTA_ONLY_", scenario_hi, ".png"))
+  ggsave(out_file, p_del, width = 7.5, height = 6, dpi = 300, bg = "white")
+  print(p_del)
 }
 
-cat("\n--- Final Conservation Plots: finished ---\n")
-
-
+cat("\nSaved DELTA-only maps to: ", species_delta_dir, "\n", sep = "")
+cat("Saved CPI/Refugia + summaries to: ", conservation_dir, "\n", sep = "")
+cat("--- Final Conservation Plots: finished ---\n")
 ```
 
 

@@ -23,7 +23,7 @@ download_occurrence_data <- function(species_list_file, output_dir) {
     print(paste("Processing GBIF", i, "/", length(species_list$AphiaID)))
     gbif_results <- obissdm::occurrence_gbif(
       taxonid = as.numeric(aphia_id),
-      absence = "include",
+      absence = "exclude",
       exclude = c("FOSSIL_SPECIMEN", "LIVING_SPECIMEN")
     )
     
