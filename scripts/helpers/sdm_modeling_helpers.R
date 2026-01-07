@@ -1879,16 +1879,3 @@ save_biomod2_projection <- function(prediction_raster, species_name_sanitized_fo
   }, error = function(e) { b2_hlog_save("ERROR", paste("Failed save BIOMOD2 prediction raster:", e$message)); FALSE })
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
