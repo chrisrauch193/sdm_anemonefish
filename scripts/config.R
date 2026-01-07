@@ -20,6 +20,10 @@ pacman::p_load(here, dplyr, terra, sf, stringr, ggplot2, readr, readxl,
                future, furrr, progressr, log4r
 )
 
+# Set working directory
+wd = "/home/bi-server-kyoto/a0236995/sdm_anemonefish"
+setwd(wd)
+
 # --- Project Structure ---
 base_dir <- here::here()
 
@@ -44,9 +48,9 @@ coral_shapefile <- file.path(shapefile_dir, "WCMC008_CoralReef2018_Py_v4_1.shp")
 
 # --- Cropping and Masking Settings ---
 apply_indo_pacific_crop <- TRUE # Set to TRUE to crop all rasters to the defined bbox
-indo_pacific_bbox <- c(xmin=30, xmax=180, ymin=-50, ymax=50) # Define Lon/Lat bounding box
+indo_pacific_bbox <- c(xmin=-180, xmax=180, ymin=-40, ymax=45) # Define Lon/Lat bounding box
 
-mask_background_points_to_coral <- TRUE # Set to TRUE to sample BG points ONLY from coral areas
+mask_background_points_to_coral <- FALSE # Set to TRUE to sample BG points ONLY from coral areas
 
 # --- Intermediate Output Paths (for temp files, RDS models/tuning) ---
 # Define these *before* the final config list is created
@@ -125,7 +129,7 @@ pca_models_rds_path <- file.path(log_dir_base, "pca_models.rds")
 sdm_method <- "Maxnet"; sdm_partitions <- "randomkfold"; sdm_n_folds <- 5
 sdm_tune_grid <- list(reg = seq(0.5, 4, 0.5), fc = c("l", "lq", "lh", "lp", "lqp"))
 sdm_evaluation_metric <- "auc"; pca_background_points_n <- 100000; background_points_n <- 10000; thinning_method <- "cell"
-apply_coral_mask <- TRUE; depth_min <- -500; depth_max <- 0; min_occurrences_sdm <- 15
+apply_coral_mask <- FALSE; depth_min <- -200; pca_temp_min_threshold <- 20; depth_max <- 0; min_occurrences_sdm <- 15
 
 # Parallel & Logging
 use_parallel <- TRUE; num_cores <- parallel::detectCores() - 1; if (num_cores < 1) num_cores <- 1; if (!use_parallel) num_cores <- 1
@@ -216,7 +220,7 @@ config <- list(
   pca_background_points_n = pca_background_points_n, background_points_n = background_points_n, thinning_method = thinning_method,
   apply_coral_mask = apply_coral_mask, apply_indo_pacific_crop = apply_indo_pacific_crop,
   indo_pacific_bbox = indo_pacific_bbox, mask_background_points_to_coral = mask_background_points_to_coral,
-  depth_min = depth_min, depth_max = depth_max,
+  depth_min = depth_min, pca_temp_min_threshold = pca_temp_min_threshold, depth_max = depth_max,
   min_occurrences_sdm = min_occurrences_sdm,
   # Parallel & Logging
   num_cores = num_cores, use_parallel = use_parallel,
