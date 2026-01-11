@@ -1,7 +1,0 @@
-source("~/a0236995/paper/scripts/0a_marine_regions.R", echo = TRUE)
-source("~/a0236995/paper/scripts/0b_env_datapreparation.R", echo = TRUE)
-source("~/a0236995/paper/scripts/0c_env_var_selection.R", echo = TRUE)
-source("~/a0236995/paper/scripts/0d_occ_datapreparation.R", echo = TRUE)
-source("~/a0236995/paper/scripts/99_compare_outputs.R", echo = TRUE)
-source("~/a0236995/paper/scripts/99_final_comparison_plot.R", echo = TRUE)
-source("~/a0236995/paper/scripts/100_generate_region_summary.R", echo = TRUE)

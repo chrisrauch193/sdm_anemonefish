@@ -1,11 +1,9 @@
 # scripts/99_env_justification.R
 # ------------------------------------------------------------------------------
-# ENVIRONMENTAL JUSTIFICATION & VIF ANALYSIS
-# ------------------------------------------------------------------------------
-# 1. Runs PCA on Current Climate Variables.
-# 2. Generates Scree Plot (Variance Explained) to justify choosing 5 Axes.
-# 3. Generates Variable Contribution Plots (Interpretation of PC1/PC2).
-# 4. Checks VIF of the Final Stack (PC1-5 + Rugosity).
+# FIGURE S2: ENVIRONMENTAL VARIABLE JUSTIFICATION
+# - Scree Plot (PCA Variance)
+# - Variable Contribution
+# - VIF Check
 # ------------------------------------------------------------------------------
 
 if(!require("pacman")) install.packages("pacman")
@@ -15,7 +13,7 @@ pacman::p_load(terra, dplyr, readr, ggplot2, factoextra, usdm, corrplot)
 BASE_DIR    <- getwd()
 DATA_DIR    <- file.path(BASE_DIR, "data")
 RAW_ENV_DIR <- file.path(DATA_DIR, "env", "current")
-OUTPUT_PLOT <- file.path(BASE_DIR, "outputs", "justification_plots")
+OUTPUT_PLOT <- file.path(BASE_DIR, "outputs", "figures", "env_justification")
 dir.create(OUTPUT_PLOT, recursive = TRUE, showWarnings = FALSE)
 
 CLIMATE_VARS <- c("sws_baseline_depthsurf_mean", "so_baseline_depthmax_mean", 
@@ -45,51 +43,46 @@ pca_res <- prcomp(samp, center=TRUE, scale.=TRUE)
 # --- 3. JUSTIFICATION PLOTS ---
 
 # A. Scree Plot (Variance Explained)
-# This proves why you chose 5 axes (usually >90% variance)
 p1 <- fviz_eig(pca_res, addlabels = TRUE, ylim = c(0, 50)) +
   labs(title = "Variance Explained by PC Axes", 
-       subtitle = "Justification for selecting top 5 PCs")
-ggsave(file.path(OUTPUT_PLOT, "01_scree_plot.png"), p1, width=8, height=6)
+       subtitle = "Justification for selecting top 5 PCs (>95% Variance)") +
+  theme_minimal()
+ggsave(file.path(OUTPUT_PLOT, "Scree_Plot.png"), p1, width=8, height=6, bg="white")
 
-# B. Variable Contributions (What is PC1?)
-# This helps you explain "PC1 represents Temperature/Nutrients"
+# B. Variable Contributions (Circle Plot)
 p2 <- fviz_pca_var(pca_res, col.var = "contrib", 
                    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
                    repel = TRUE) +
-  labs(title = "Variable Contributions to PC1 & PC2")
-ggsave(file.path(OUTPUT_PLOT, "02_variable_contributions.png"), p2, width=8, height=8)
+  labs(title = "Variable Contributions (PC1 & PC2)") +
+  theme_minimal()
+ggsave(file.path(OUTPUT_PLOT, "Variable_Contributions.png"), p2, width=8, height=8, bg="white")
 
-# --- 4. VIF ANALYSIS (The "Defensible" Check) ---
-cat("Calculating VIF for Final Predictors...\n")
+# --- 4. VIF ANALYSIS (Multi-collinearity Check) ---
+cat("Calculating VIF for Final Predictors (PC1-5 + Rugosity)...\n")
 
-# Predict PC axes for the sample
-pca_scores <- predict(pca_res, samp)
-df_pca <- as.data.frame(pca_scores[, 1:5]) # Take top 5
-
-# Add Dummy Rugosity (Random noise for check, or load real if needed)
-# Since we know Rugosity is spatially independent, we can simulate or load real.
-# Loading real is better:
+# Load Rugosity (Static Variable)
 rug_r <- terra::rast(file.path(DATA_DIR, "env", "terrain", "rugosity.tif"))
-# We need to extract rugosity at the SAME points as the sample
-# This requires coordinates, but our 'samp' lost them.
-# Let's re-sample specifically for VIF.
 
-vif_samp <- terra::spatSample(c(clim_stack, rug_r), size=10000, method="random", na.rm=TRUE, xy=FALSE)
+# Resample Rugosity to match Climate resolution if needed
+if(!compareGeom(rug_r, clim_stack, stopOnError=FALSE)) rug_r <- resample(rug_r, clim_stack)
+
+# Extract new sample with both Climate and Rugosity
+full_stack <- c(clim_stack, rug_r)
+vif_samp <- terra::spatSample(full_stack, size=10000, method="random", na.rm=TRUE, xy=FALSE)
 vif_samp <- vif_samp[complete.cases(vif_samp), ]
 
-# Transform Climate cols to PCs
+# 1. Project Climate columns to PC1-5
 clim_only <- vif_samp[, CLIMATE_VARS]
-pca_vif   <- predict(pca_res, clim_only)[, 1:5] # PC1-5
+pca_scores <- predict(pca_res, clim_only)[, 1:5]
 
-# Combine PC1-5 + Rugosity
-final_predictors <- data.frame(pca_vif, rugosity = vif_samp[, "rugosity"])
+# 2. Combine with Rugosity
+final_predictors <- data.frame(pca_scores, rugosity = vif_samp[, "rugosity"])
 
-# Calculate VIF
+# 3. Run VIF
 vif_res <- usdm::vif(final_predictors)
 print(vif_res)
 
-# Save VIF Table
-write.csv(vif_res, file.path(OUTPUT_PLOT, "03_final_vif_scores.csv"), row.names=FALSE)
+write.csv(vif_res, file.path(OUTPUT_PLOT, "Final_VIF_Scores.csv"), row.names=FALSE)
 
 cat("--- FINISHED ---\n")
-cat("Check 'outputs/justification_plots/' for your thesis figures.\n")
+cat("Plots saved to:", OUTPUT_PLOT, "\n")
