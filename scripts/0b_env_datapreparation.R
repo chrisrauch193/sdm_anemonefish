@@ -51,6 +51,7 @@ names(rug) <- "rugosity"
 bathy <- rotate_to_360(rast(file.path(TERRAIN_DIR, "bathymetry_mean.tif")))
 
 # 3. MASKING LOGIC
+# Load regions (which now exclude Hawaii)
 regions <- st_read(REGION_SHP, quiet=TRUE)
 region_mask <- rasterize(vect(regions), clim_stack, field="PROV_CODE")
 
@@ -58,7 +59,7 @@ if(!compareGeom(rug, clim_stack, stopOnError=FALSE)) rug <- resample(rug, clim_s
 if(!compareGeom(bathy, clim_stack, stopOnError=FALSE)) bathy <- resample(bathy, clim_stack)
 
 if (PIPELINE_MODE == "REPLICATION") {
-  cat("  REPLICATION: Hard Crop (30-240) + Union Mask\n")
+  cat("  REPLICATION: Strict Masking\n")
   
   # A. Physio Mask
   physio_mask <- (bathy > -200) * (clim_stack[["thetao_baseline_depthmax_mean"]] > 20)
@@ -73,18 +74,12 @@ if (PIPELINE_MODE == "REPLICATION") {
   final_mask[final_mask == 0] <- NA
   final_mask <- final_mask * region_mask
   
-  # D. HARD CROP
-  crop_ext <- ext(30, 240, -40, 40)
-  clim_stack <- crop(clim_stack, crop_ext)
-  final_mask <- crop(final_mask, crop_ext)
-  rug        <- crop(rug, crop_ext)
-  region_mask <- crop(region_mask, crop_ext)
-  
 } else {
-  cat("  EXPANSION: Hybrid Mask + Full Extent\n")
+  cat("  EXPANSION: Thesis Standard Masking\n")
+  # Mask by Study Area Regions AND Bathymetry cutoff
   final_mask <- region_mask * (bathy > -1000)
   
-  # Trim only empty space, no hard geographic crop
+  # Trim to data extent (optimizes file size without artificial geographic crop)
   clim_stack <- mask(clim_stack, final_mask) %>% trim()
   final_mask <- crop(final_mask, clim_stack)
   rug        <- crop(rug, clim_stack) %>% mask(final_mask)

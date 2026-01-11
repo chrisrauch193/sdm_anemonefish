@@ -1,6 +1,6 @@
 # scripts/0d_occ_datapreparation.R
 # ------------------------------------------------------------------------------
-# STEP 4: OCCURRENCE CLEANING (Fixed Namespace Conflict)
+# STEP 4: OCCURRENCE CLEANING & SPATIAL FILTERING
 # ------------------------------------------------------------------------------
 
 # !!! MASTER SWITCH !!!
@@ -18,7 +18,7 @@ CLOWN_OUT <- file.path(DATA_DIR, "amph_occ_env_final_dataset.csv")
 
 cat("--- RUNNING IN", PIPELINE_MODE, "MODE ---\n")
 
-# 1. SELECT SHAPEFILE
+# 1. SELECT SHAPEFILE (Determines study area, e.g., No Hawaii)
 if (PIPELINE_MODE == "REPLICATION") {
   REGION_SHP <- file.path(DATA_DIR, "marine_regions_strict.shp")
 } else {
@@ -44,10 +44,10 @@ process_files <- function(input_dir, output_file) {
     # !!! FIX: Use dplyr::select to avoid terra conflict !!!
     d <- d %>% dplyr::select(x, y, species) %>% filter(complete.cases(.))
     
-    # Shift 0-360
+    # Shift 0-360 to match Rasters
     d$x <- ifelse(d$x < 0, d$x + 360, d$x)
     
-    # Spatial Filter
+    # Spatial Filter (Drops points outside study area, e.g. Hawaii)
     pts <- st_as_sf(d, coords=c("x","y"), crs=4326)
     inside <- st_intersects(pts, regions_sf, sparse=FALSE)
     

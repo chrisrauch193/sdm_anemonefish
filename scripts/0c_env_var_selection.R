@@ -1,11 +1,11 @@
 # scripts/0c_env_var_selection.R
 # ------------------------------------------------------------------------------
-# STEP 3: VARIABLE SELECTION & RASTER SAVING (Dual Output)
+# STEP 3: VARIABLE SELECTION & RASTER SAVING
 # ------------------------------------------------------------------------------
 
 # !!! MASTER SWITCH !!!
-# "REPLICATION" = Raw Variables (Paper Guy Style)
-# "EXPANSION"   = PCA Axes (PC1-PC5)
+# "REPLICATION" = Raw Variables (Subset Selection)
+# "EXPANSION"   = PCA Axes (PC1-PC5) - Thesis Standard
 PIPELINE_MODE <- "EXPANSION" 
 
 if(!require("pacman")) install.packages("pacman")
@@ -16,7 +16,7 @@ DATA_DIR <- file.path(BASE_DIR, "data")
 
 # --- OUTPUT PATHS ---
 OUT_ENV_CSV <- file.path(DATA_DIR, "selected_environmental_variables.csv") # For Plots
-OUT_ENV_TIF <- file.path(DATA_DIR, "final_env_stack.tif")                # For SDM Pipeline
+OUT_ENV_TIF <- file.path(DATA_DIR, "final_env_stack.tif")                 # For SDM Pipeline
 OUT_REGIONS <- file.path(DATA_DIR, "marine_regions.csv")
 
 cat("--- RUNNING IN", PIPELINE_MODE, "MODE ---\n")
@@ -37,12 +37,12 @@ rug        <- terra::unwrap(dat$rug)
 
 # 3. PROCESSING
 if (PIPELINE_MODE == "REPLICATION") {
-  cat("  Logic: Variable Selection (Paper Guy)\n")
+  cat("  Logic: Raw Variable Selection\n")
   
   # A. Convert to DF
   env.vars_df <- as.data.frame(clim_stack, xy=TRUE, na.rm=TRUE)
   
-  # B. PCA for Selection Only
+  # B. PCA for Contribution Calculation
   pca_data <- env.vars_df %>% dplyr::select(-x, -y)
   pca_res <- PCA(scale(pca_data), graph = FALSE)
   
@@ -56,9 +56,7 @@ if (PIPELINE_MODE == "REPLICATION") {
   cat("  Selected Vars:", paste(sel_vars, collapse=", "), "\n")
   
   # D. Create Final Stack (Subset)
-  # We select the specific layers from the original stack + rugosity
   sel_stack <- clim_stack[[sel_vars]]
-  # Resample rugosity to match exactly if needed, though they should match from 0b
   if(!compareGeom(sel_stack, rug, stopOnError=FALSE)) rug <- resample(rug, sel_stack)
   
   final_stack <- c(sel_stack, rug)
@@ -86,8 +84,7 @@ if (PIPELINE_MODE == "REPLICATION") {
   names(final_stack) <- c(paste0("PC", 1:5), "rugosity")
 }
 
-# 4. SAVE OUTPUTS (Dual Save)
-
+# 4. SAVE OUTPUTS
 # A. Save TIFF (Robust Input for SDM)
 terra::writeRaster(final_stack, OUT_ENV_TIF, overwrite=TRUE)
 cat("Saved Final Raster Stack to:", OUT_ENV_TIF, "\n")
@@ -95,7 +92,7 @@ cat("Saved Final Raster Stack to:", OUT_ENV_TIF, "\n")
 # B. Save CSV (For Plots/Legacy)
 df_out <- as.data.frame(final_stack, xy=TRUE, na.rm=TRUE)
 write.csv(df_out, OUT_ENV_CSV, row.names=FALSE)
-cat("Saved Env CSV to:         ", OUT_ENV_CSV, "\n")
+cat("Saved Env CSV to:          ", OUT_ENV_CSV, "\n")
 
 # 5. GENERATE REGION MAP (RESCUE LOGIC)
 cat("Mapping Points to Regions...\n")
