@@ -3,6 +3,10 @@
 # GLOBAL CONFIGURATION
 # ------------------------------------------------------------------------------
 
+# Set working directory
+wd = "~/a0236995/sdm_anemonefish/"
+setwd(wd)
+
 # --- RUN SETTINGS ---
 RUN_ID           <- "final_run"   # "test_run" or "final_run"
 N_CORES          <- 24            # 30 for final
@@ -14,12 +18,12 @@ USE_SPATIAL_TUNING    <- TRUE      # Recommended: TRUE (ENMeval block partitions
 BG_SAMPLING_METHOD    <- "paper_exact" # Options: "paper_exact", "nearest_neighbor", "random"
 
 # --- MODEL PARAMETERS ---
-if (RUN_ID == "final_run") {
+if (RUN_ID == "test_run") {
   N_HOST_BOOT <- 10
   N_FISH_BOOT <- 40
   TUNE_ARGS   <- list(fc = c("L", "LQ", "H", "LQH"), rm = seq(0.5, 4, 0.5))
 } else {
-  N_HOST_BOOT <- 3
+  N_HOST_BOOT <- 2
   N_FISH_BOOT <- 2
   TUNE_ARGS   <- list(fc = c("L", "LQ", "H"), rm = c(1, 2, 5))
 }
@@ -29,8 +33,8 @@ TARGET_HOSTS <- c("Entacmaea_quadricolor", "Heteractis_magnifica")
 TARGET_FISH  <- c("Amphiprion_clarkii", "Amphiprion_frenatus")
 
 # comment out to run all valid spp
-TARGET_HOSTS <- NULL
-TARGET_FISH  <- NULL
+# TARGET_HOSTS <- NULL
+# TARGET_FISH  <- NULL
 
 # Static predictors that should be included wherever appropriate
 STATIC_VARS  <- c("rugosity")
