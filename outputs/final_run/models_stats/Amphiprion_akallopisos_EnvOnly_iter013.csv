@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_akallopisos,EnvOnly,13,lqh,1.5,block_quadrant,4,1,171,10000,98,9675,73,325,0.799473129610116,0.5369441517386724,0.43534037000000003,0.7123287671232876,0.8246153846153846,0.7684720758693362,52,57,268,21,0.13961330718232043,0.4460162856835254,0.9013940282281235,PC1;PC2;PC3;PC4;rugosity,13

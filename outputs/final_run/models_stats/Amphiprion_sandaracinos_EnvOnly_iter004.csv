@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_sandaracinos,EnvOnly,4,lqh,1,block_quadrant,4,4,194,10000,157,9329,37,671,0.9158778748942683,0.7300519595601562,0.39085427,0.972972972972973,0.7570789865871833,0.8650259797800781,36,163,508,1,0.11002652077420852,0.3416917991836413,0.921872185110693,PC1;PC2;PC3;PC4;rugosity,4

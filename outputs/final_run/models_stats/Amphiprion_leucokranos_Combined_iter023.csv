@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_leucokranos,Combined,23,h,3,block_quadrant,4,2,19,10000,10,9574,9,426,0.9687010954616588,0.931924882629108,0.19624459000000002,1,0.931924882629108,0.965962441314554,9,29,397,0,0.025453345365635722,0.10591939841295388,0.17858620573423542,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,23

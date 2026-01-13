@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_tricinctus,Combined,31,h,3,block_quadrant,4,1,33,10000,28,4285,5,5000,0.99424,0.9864000000000002,0.74634064,1,0.9864,0.9932000000000001,5,68,4932,0,0.033805932943355814,0.11165430778914719,0.5273259081822316,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,31

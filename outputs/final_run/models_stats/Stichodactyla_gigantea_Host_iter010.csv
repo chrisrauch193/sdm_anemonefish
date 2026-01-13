@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Stichodactyla_gigantea,Host,10,lqh,1.5,block_quadrant,4,2,106,10000,73,7401,33,2599,0.739095456294379,0.4176431494630801,0.20037013,0.8181818181818182,0.599461331281262,0.7088215747315401,27,1041,1558,6,0.06938341888582253,0.2679397906840245,0.173729729043268,PC1;PC2;PC3;PC4;rugosity,10

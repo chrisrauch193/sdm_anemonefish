@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Heteractis_malu,Host,5,h,1.5,block_quadrant,4,2,24,10000,16,9190,8,810,0.8174382716049383,0.5067901234567902,0.44236596,0.75,0.7567901234567901,0.7533950617283951,6,197,613,2,0.17231248510436037,0.5288132272480647,0.31798644576475454,PC1;PC2;PC3;PC4;rugosity,5

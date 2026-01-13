@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Heteractis_aurora,Host,3,h,0.5,block_quadrant,4,3,180,10000,125,7191,55,2809,0.7380886112819185,0.40850512961584506,0.15308445,0.8727272727272727,0.5357778568885725,0.7042525648079225,48,1304,1505,7,0.060772831349003076,0.2411500897019903,0.05333807470626649,PC1;PC2;PC3;PC4;rugosity,3

@@ -316,7 +316,8 @@ excluded_species <- c(
   "Premnas_biaculeatus",    # Spatial blocking failed
   "Amphiprion_bicinctus",   # Partial failure (failed Combined model) & Geometric artifact
   "Amphiprion_sandaracinos", # Partial failure (failed Combined/HostOnly)
-  "Amphiprion_perideraion"   # Partial failure (failed Combined/HostOnly)
+  "Amphiprion_perideraion", # Partial failure (failed Combined/HostOnly)
+  "Amphiprion_sebae"   # AUC/TSS too low
 )
 
 # Filter the master species list
@@ -865,105 +866,105 @@ interaction_long <- function(interaction) {
 
   NULL
 }
-# 
-# assoc <- interaction_long(interaction)
-# if (is.null(assoc) || nrow(assoc) == 0) {
-#   message("No interaction pairs available (interaction matrix missing or empty). Skipping pair overlap.")
-#   assoc <- tibble::tibble(fish = character(), host = character(), w = numeric())
-# }
-# 
-# overlap_rows <- list()
-# 
-# if (!is.null(assoc) && nrow(assoc) > 0) {
-#   # define scenarios to compute (include "current")
-#   sc_all <- c("current", future_scenarios)
-# 
-#   for (sc in sc_all) {
-#     for (i in seq_len(nrow(assoc))) {
-#       fish <- assoc$fish[i]
-#       host <- assoc$host[i]
-#       w    <- assoc$w[i]
-# 
-#       # fish rasters (EnvOnly and Combined)
-#       f_env_path <- if (sc == "current") find_fish_raster(fish, "EnvOnly", "current") else find_fish_raster(fish, "EnvOnly", "future", scenario = sc)
-#       f_com_path <- if (sc == "current") find_fish_raster(fish, "Combined", "current") else find_fish_raster(fish, "Combined", "future", scenario = sc)
-#       h_path     <- if (sc == "current") find_host_raster(host, "current") else find_host_raster(host, "future", scenario = sc)
-# 
-#       if (is.null(f_env_path) || is.null(f_com_path) || is.null(h_path)) next
-# 
-#       f_env <- safe_read_rast(f_env_path)
-#       f_com <- safe_read_rast(f_com_path)
-#       h_r   <- safe_read_rast(h_path)
-#       if (is.null(f_env) || is.null(f_com) || is.null(h_r)) next
-# 
-#       # sample and compute overlap
-#       sam1 <- sample_pair_values(f_env, h_r, n = params$raster_sample_n)
-#       sam2 <- sample_pair_values(f_com, h_r, n = params$raster_sample_n)
-#       if (is.null(sam1) || is.null(sam2)) next
-# 
-#       overlap_rows[[length(overlap_rows)+1]] <- tibble::tibble(
-#         scenario = sc,
-#         fish = fish,
-#         host = host,
-#         weight = w,
-#         group = fish_groups$group[fish_groups$species == fish] |> as.character(),
-#         D_env_host = schoener_D(sam1$v1, sam1$v2),
-#         I_env_host = hellinger_I(sam1$v1, sam1$v2),
-#         D_comb_host = schoener_D(sam2$v1, sam2$v2),
-#         I_comb_host = hellinger_I(sam2$v1, sam2$v2)
-#       )
-#     }
-#   }
-# }
-# 
-# overlap_tbl <- if (length(overlap_rows) > 0) bind_rows(overlap_rows) else NULL
-# if (!is.null(overlap_tbl)) write_csv(overlap_tbl, file.path(tab_dir, "host_fish_overlap.csv"))
-# 
-# overlap_tbl |> head(20)
+
+assoc <- interaction_long(interaction)
+if (is.null(assoc) || nrow(assoc) == 0) {
+  message("No interaction pairs available (interaction matrix missing or empty). Skipping pair overlap.")
+  assoc <- tibble::tibble(fish = character(), host = character(), w = numeric())
+}
+
+overlap_rows <- list()
+
+if (!is.null(assoc) && nrow(assoc) > 0) {
+  # define scenarios to compute (include "current")
+  sc_all <- c("current", future_scenarios)
+
+  for (sc in sc_all) {
+    for (i in seq_len(nrow(assoc))) {
+      fish <- assoc$fish[i]
+      host <- assoc$host[i]
+      w    <- assoc$w[i]
+
+      # fish rasters (EnvOnly and Combined)
+      f_env_path <- if (sc == "current") find_fish_raster(fish, "EnvOnly", "current") else find_fish_raster(fish, "EnvOnly", "future", scenario = sc)
+      f_com_path <- if (sc == "current") find_fish_raster(fish, "Combined", "current") else find_fish_raster(fish, "Combined", "future", scenario = sc)
+      h_path     <- if (sc == "current") find_host_raster(host, "current") else find_host_raster(host, "future", scenario = sc)
+
+      if (is.null(f_env_path) || is.null(f_com_path) || is.null(h_path)) next
+
+      f_env <- safe_read_rast(f_env_path)
+      f_com <- safe_read_rast(f_com_path)
+      h_r   <- safe_read_rast(h_path)
+      if (is.null(f_env) || is.null(f_com) || is.null(h_r)) next
+
+      # sample and compute overlap
+      sam1 <- sample_pair_values(f_env, h_r, n = params$raster_sample_n)
+      sam2 <- sample_pair_values(f_com, h_r, n = params$raster_sample_n)
+      if (is.null(sam1) || is.null(sam2)) next
+
+      overlap_rows[[length(overlap_rows)+1]] <- tibble::tibble(
+        scenario = sc,
+        fish = fish,
+        host = host,
+        weight = w,
+        group = fish_groups$group[fish_groups$species == fish] |> as.character(),
+        D_env_host = schoener_D(sam1$v1, sam1$v2),
+        I_env_host = hellinger_I(sam1$v1, sam1$v2),
+        D_comb_host = schoener_D(sam2$v1, sam2$v2),
+        I_comb_host = hellinger_I(sam2$v1, sam2$v2)
+      )
+    }
+  }
+}
+
+overlap_tbl <- if (length(overlap_rows) > 0) bind_rows(overlap_rows) else NULL
+if (!is.null(overlap_tbl)) write_csv(overlap_tbl, file.path(tab_dir, "host_fish_overlap.csv"))
+
+overlap_tbl |> head(20)
 ```
 
 ```{r}
-# if (!is.null(overlap_tbl)) {
-#   # Change relative to current
-#   cur <- overlap_tbl |> filter(scenario == "current") |> dplyr::select(fish, host, D_env_host, D_comb_host)
-#   delta <- overlap_tbl |>
-#     filter(scenario != "current") |>
-#     left_join(cur, by = c("fish","host"), suffix = c("_fut","_cur")) |>
-#     mutate(
-#       delta_D_env = D_env_host_fut - D_env_host_cur,
-#       delta_D_comb = D_comb_host_fut - D_comb_host_cur
-#     )
-# 
-#   write_csv(delta, file.path(tab_dir, "host_fish_overlap_deltas.csv"))
-# 
-#   p1 <- ggplot(delta, aes(x = group, y = delta_D_env)) +
-#     geom_boxplot(outlier.alpha = 0.2) +
-#     facet_wrap(~scenario) +
-#     labs(x = NULL, y = "Δ Schoener's D (EnvOnly fish vs host)",
-#          title = "Change in fish climatic niche overlap with hosts")
-#   print(p1)
-#   save_plot(p1, file.path(fig_dir, "03_overlap", "delta_D_env_host.png"), w = 11, h = 6)
-# 
-#   p2 <- ggplot(delta, aes(x = group, y = delta_D_comb)) +
-#     geom_boxplot(outlier.alpha = 0.2) +
-#     facet_wrap(~scenario) +
-#     labs(x = NULL, y = "Δ Schoener's D (Combined fish vs host)",
-#          title = "Change in fish realised niche overlap with hosts")
-#   print(p2)
-#   save_plot(p2, file.path(fig_dir, "03_overlap", "delta_D_comb_host.png"), w = 11, h = 6)
-# 
-#   # Variance / heterogeneity (proxy for destabilisation): variance of delta across associations
-#   var_tbl <- delta |>
-#     group_by(scenario, group) |>
-#     summarise(
-#       var_delta_env = var(delta_D_env, na.rm = TRUE),
-#       var_delta_comb = var(delta_D_comb, na.rm = TRUE),
-#       n = n(),
-#       .groups = "drop"
-#     )
-#   write_csv(var_tbl, file.path(tab_dir, "overlap_change_variance.csv"))
-#   var_tbl
-# }
+if (!is.null(overlap_tbl)) {
+  # Change relative to current
+  cur <- overlap_tbl |> filter(scenario == "current") |> dplyr::select(fish, host, D_env_host, D_comb_host)
+  delta <- overlap_tbl |>
+    filter(scenario != "current") |>
+    left_join(cur, by = c("fish","host"), suffix = c("_fut","_cur")) |>
+    mutate(
+      delta_D_env = D_env_host_fut - D_env_host_cur,
+      delta_D_comb = D_comb_host_fut - D_comb_host_cur
+    )
+
+  write_csv(delta, file.path(tab_dir, "host_fish_overlap_deltas.csv"))
+
+  p1 <- ggplot(delta, aes(x = group, y = delta_D_env)) +
+    geom_boxplot(outlier.alpha = 0.2) +
+    facet_wrap(~scenario) +
+    labs(x = NULL, y = "Δ Schoener's D (EnvOnly fish vs host)",
+         title = "Change in fish climatic niche overlap with hosts")
+  print(p1)
+  save_plot(p1, file.path(fig_dir, "03_overlap", "delta_D_env_host.png"), w = 11, h = 6)
+
+  p2 <- ggplot(delta, aes(x = group, y = delta_D_comb)) +
+    geom_boxplot(outlier.alpha = 0.2) +
+    facet_wrap(~scenario) +
+    labs(x = NULL, y = "Δ Schoener's D (Combined fish vs host)",
+         title = "Change in fish realised niche overlap with hosts")
+  print(p2)
+  save_plot(p2, file.path(fig_dir, "03_overlap", "delta_D_comb_host.png"), w = 11, h = 6)
+
+  # Variance / heterogeneity (proxy for destabilisation): variance of delta across associations
+  var_tbl <- delta |>
+    group_by(scenario, group) |>
+    summarise(
+      var_delta_env = var(delta_D_env, na.rm = TRUE),
+      var_delta_comb = var(delta_D_comb, na.rm = TRUE),
+      n = n(),
+      .groups = "drop"
+    )
+  write_csv(var_tbl, file.path(tab_dir, "overlap_change_variance.csv"))
+  var_tbl
+}
 ```
 
 # Range shifts and biotic constraints
@@ -975,73 +976,73 @@ We summarise shifts using centroid displacement (km) between current and each fu
 Positive values indicate that hosts constrain the magnitude of projected range shift.
 
 ```{r}
-# shift_tbl <- NULL
-# 
-# if (!is.null(fish_summary) && length(future_scenarios) > 0) {
-#   thr_tbl <- fish_summary |> dplyr::select(species, model_type, thr_mean)
-#   shift_rows <- list()
-# 
-#   for (sp in fish_species) {
-#     grp <- fish_group_of(sp)
-# 
-#     for (mt in c("EnvOnly","Combined")) {
-#       thr <- thr_tbl |> filter(species == sp, model_type == mt) |> pull(thr_mean)
-#       thr <- if (length(thr) == 0 || !is.finite(thr)) 0.5 else thr
-# 
-#       p_cur <- find_fish_raster(sp, mt, "current")
-#       if (is.null(p_cur)) next
-#       r_cur <- safe_read_rast(p_cur)
-#       if (is.null(r_cur)) next
-#       cur_ca <- centroid_area_from_raster(r_cur, thr)
-# 
-#       for (sc in future_scenarios) {
-#         p_fut <- find_fish_raster(sp, mt, "future", scenario = sc)
-#         if (is.null(p_fut)) next
-#         r_fut <- safe_read_rast(p_fut)
-#         if (is.null(r_fut)) next
-#         fut_ca <- centroid_area_from_raster(r_fut, thr)
-# 
-#         dist_km <- if (is.finite(cur_ca$lon) && is.finite(fut_ca$lon)) {
-#           haversine_km(cur_ca$lon, cur_ca$lat, fut_ca$lon, fut_ca$lat)
-#         } else NA_real_
-# 
-#         shift_rows[[length(shift_rows)+1]] <- tibble::tibble(
-#           species = sp, group = grp, model_type = mt, scenario = sc,
-#           thr = thr,
-#           area_current_km2 = cur_ca$area_km2,
-#           area_future_km2  = fut_ca$area_km2,
-#           lon_current = cur_ca$lon, lat_current = cur_ca$lat,
-#           lon_future  = fut_ca$lon, lat_future  = fut_ca$lat,
-#           shift_km = dist_km
-#         )
-#       }
-#     }
-#   }
-# 
-#   shift_tbl <- if (length(shift_rows) > 0) bind_rows(shift_rows) else NULL
-#   if (!is.null(shift_tbl)) write_csv(shift_tbl, file.path(tab_dir, "centroid_shifts.csv"))
-# }
-# 
-# shift_tbl |> head(20)
+shift_tbl <- NULL
+
+if (!is.null(fish_summary) && length(future_scenarios) > 0) {
+  thr_tbl <- fish_summary |> dplyr::select(species, model_type, thr_mean)
+  shift_rows <- list()
+
+  for (sp in fish_species) {
+    grp <- fish_group_of(sp)
+
+    for (mt in c("EnvOnly","Combined")) {
+      thr <- thr_tbl |> filter(species == sp, model_type == mt) |> pull(thr_mean)
+      thr <- if (length(thr) == 0 || !is.finite(thr)) 0.5 else thr
+
+      p_cur <- find_fish_raster(sp, mt, "current")
+      if (is.null(p_cur)) next
+      r_cur <- safe_read_rast(p_cur)
+      if (is.null(r_cur)) next
+      cur_ca <- centroid_area_from_raster(r_cur, thr)
+
+      for (sc in future_scenarios) {
+        p_fut <- find_fish_raster(sp, mt, "future", scenario = sc)
+        if (is.null(p_fut)) next
+        r_fut <- safe_read_rast(p_fut)
+        if (is.null(r_fut)) next
+        fut_ca <- centroid_area_from_raster(r_fut, thr)
+
+        dist_km <- if (is.finite(cur_ca$lon) && is.finite(fut_ca$lon)) {
+          haversine_km(cur_ca$lon, cur_ca$lat, fut_ca$lon, fut_ca$lat)
+        } else NA_real_
+
+        shift_rows[[length(shift_rows)+1]] <- tibble::tibble(
+          species = sp, group = grp, model_type = mt, scenario = sc,
+          thr = thr,
+          area_current_km2 = cur_ca$area_km2,
+          area_future_km2  = fut_ca$area_km2,
+          lon_current = cur_ca$lon, lat_current = cur_ca$lat,
+          lon_future  = fut_ca$lon, lat_future  = fut_ca$lat,
+          shift_km = dist_km
+        )
+      }
+    }
+  }
+
+  shift_tbl <- if (length(shift_rows) > 0) bind_rows(shift_rows) else NULL
+  if (!is.null(shift_tbl)) write_csv(shift_tbl, file.path(tab_dir, "centroid_shifts.csv"))
+}
+
+shift_tbl |> head(20)
 ```
 
 ```{r}
-# if (!is.null(shift_tbl)) {
-#   constraint <- shift_tbl |>
-#     dplyr::select(species, group, scenario, model_type, shift_km) |>
-#     pivot_wider(names_from = model_type, values_from = shift_km) |>
-#     mutate(constraint_km = EnvOnly - Combined)
-# 
-#   write_csv(constraint, file.path(tab_dir, "biotic_constraint_km.csv"))
-# 
-#   p <- ggplot(constraint, aes(x = group, y = constraint_km)) +
-#     geom_boxplot(outlier.alpha = 0.2) +
-#     facet_wrap(~scenario) +
-#     labs(x = NULL, y = "EnvOnly shift − Combined shift (km)",
-#          title = "Biotic constraint on range shift (centroid displacement)")
-#   print(p)
-#   save_plot(p, file.path(fig_dir, "05_range_shift", "biotic_constraint_by_group.png"), w = 10, h = 6)
-# }
+if (!is.null(shift_tbl)) {
+  constraint <- shift_tbl |>
+    dplyr::select(species, group, scenario, model_type, shift_km) |>
+    pivot_wider(names_from = model_type, values_from = shift_km) |>
+    mutate(constraint_km = EnvOnly - Combined)
+
+  write_csv(constraint, file.path(tab_dir, "biotic_constraint_km.csv"))
+
+  p <- ggplot(constraint, aes(x = group, y = constraint_km)) +
+    geom_boxplot(outlier.alpha = 0.2) +
+    facet_wrap(~scenario) +
+    labs(x = NULL, y = "EnvOnly shift − Combined shift (km)",
+         title = "Biotic constraint on range shift (centroid displacement)")
+  print(p)
+  save_plot(p, file.path(fig_dir, "05_range_shift", "biotic_constraint_by_group.png"), w = 10, h = 6)
+}
 ```
 
 # POST-ANALYSIS: HYPOTHESIS TESTING & MECHANISMS

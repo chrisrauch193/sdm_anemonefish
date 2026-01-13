@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Entacmaea_quadricolor,Host,3,lqh,0.5,block_quadrant,4,3,598,10000,421,6802,177,3198,0.6565667807916671,0.2483013747999281,0.20574442,0.672316384180791,0.575984990619137,0.624150687399964,119,1356,1842,58,0.09066062344110373,0.3243568456708633,0.918796992481203,PC1;PC2;PC3;PC4;rugosity,3

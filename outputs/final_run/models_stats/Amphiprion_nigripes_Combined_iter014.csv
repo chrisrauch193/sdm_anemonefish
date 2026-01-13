@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_nigripes,Combined,14,lqh,0.5,block_quadrant,4,2,153,10000,122,4320,31,5000,0.9124193548387097,0.7003935483870967,0.34441771,0.7741935483870968,0.9262,0.8501967741935483,24,369,4631,7,0.03025102766005565,0.11545385526168879,0.6913256769536353,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,14

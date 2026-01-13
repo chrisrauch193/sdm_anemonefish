@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_melanopus,Combined,35,h,0.5,block_quadrant,4,2,401,10000,253,9236,148,764,0.7907351068345833,0.45298570822131046,0.13015670000000001,0.8783783783783784,0.574607329842932,0.7264928541106552,130,325,439,18,0.11932295872203966,0.36417921207778825,0.8360902255639098,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,35

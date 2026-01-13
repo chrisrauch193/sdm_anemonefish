@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Cryptodendrum_adhaesivum,Host,4,h,2,block_quadrant,4,4,126,10000,94,8797,32,1203,0.7759247714048213,0.480803200332502,0.18422691000000002,0.96875,0.5120532003325021,0.740401600166251,31,587,616,1,0.11227190329690177,0.3696472402082759,0.3469796540585593,PC1;PC2;PC3;PC4;rugosity,4

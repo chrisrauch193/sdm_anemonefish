@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Heteractis_magnifica,Host,8,lqh,0.5,block_quadrant,4,4,160,10000,140,7421,20,2579,0.7639201240791004,0.47462194649088785,0.05088855,0.95,0.5246219464908879,0.7373109732454439,19,1226,1353,1,0.020939147901138253,0.10646944492896715,-0.6178105347321079,PC1;PC2;PC3;PC4;rugosity,8

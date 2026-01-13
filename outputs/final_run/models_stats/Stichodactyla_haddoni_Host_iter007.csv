@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Stichodactyla_haddoni,Host,7,lqh,0.5,block_quadrant,4,3,145,10000,104,6850,41,3150,0.7888579171506,0.4120325203252033,0.30244677000000003,0.5853658536585366,0.8266666666666667,0.7060162601626017,24,546,2604,17,0.060532158973078544,0.24866510594546096,0.31005995471518155,PC1;PC2;PC3;PC4;rugosity,7

@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_akindynos,HostOnly,17,lqh,0.5,block_quadrant,4,2,230,10000,120,9554,110,446,0.9506522625356706,0.8043212392988179,0.06645461,0.9545454545454546,0.8497757847533632,0.902160619649409,105,67,379,5,0.08172967369488596,0.2572321293610746,0.8506164278852065,rugosity;biotic_suitability,17

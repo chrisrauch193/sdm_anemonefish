@@ -1,2 +1,0 @@
-[2026-01-11 21:29:48] === PIPELINE START | 2026-01-11 21:29:48 | ID: test_run | BG: paper_exact ===
-[2026-01-11 21:29:48] Current env predictors: PC1, PC2, PC3, PC4, rugosity

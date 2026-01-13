@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_chrysopterus,EnvOnly,17,lqh,0.5,block_quadrant,4,2,210,10000,145,9157,65,843,0.865900173373483,0.6276667579158683,0.12753041,0.9384615384615385,0.6892052194543298,0.8138333789579342,61,262,581,4,0.07323567127899716,0.2437659114110118,0.5741160391238003,PC1;PC2;PC3;PC4;rugosity,17

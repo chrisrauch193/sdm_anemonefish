@@ -1,2 +1,0 @@
-species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
-Amphiprion_clarkii,HostOnly,29,lqh,1,block_quadrant,4,1,1146,10000,927,7377,219,2623,0.7632360032518797,0.41579146190095706,0.43019765,0.6757990867579908,0.7399923751429661,0.7078957309504785,148,682,1941,71,0.14094690866946524,0.4358712574097142,0.9458646616541354,rugosity;biotic_suitability,29
