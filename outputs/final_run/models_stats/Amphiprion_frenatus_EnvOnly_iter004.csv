@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_frenatus,EnvOnly,4,lqh,0.5,block_quadrant,4,4,248,10000,180,9503,68,497,0.8688306308438869,0.6656704935495326,0.32064795,0.8970588235294118,0.7686116700201208,0.8328352467747663,61,115,382,7,0.1038940595747249,0.32812310189115274,0.49092317866800533,PC1;PC2;PC3;PC4;rugosity,4

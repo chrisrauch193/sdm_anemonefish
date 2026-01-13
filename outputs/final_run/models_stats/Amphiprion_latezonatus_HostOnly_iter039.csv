@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_latezonatus,HostOnly,39,h,1.5,block_quadrant,4,2,33,10000,24,9794,9,206,0.906688241639698,0.8155339805825244,0.14197676,1,0.8155339805825242,0.9077669902912622,9,38,168,0,0.044658367435125315,0.16482028852414518,-0.09068522313973625,rugosity;biotic_suitability,39

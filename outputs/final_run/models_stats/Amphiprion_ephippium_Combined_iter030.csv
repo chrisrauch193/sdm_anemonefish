@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_ephippium,Combined,30,h,2,block_quadrant,4,3,29,10000,15,8387,14,1613,0.8910415375077495,0.7278363298202106,0.4413605,1,0.7278363298202107,0.8639181649101053,14,439,1174,0,0.138893550356736,0.4221712700497234,0.7315284078833476,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,30

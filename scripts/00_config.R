@@ -8,7 +8,7 @@ wd = "~/a0236995/sdm_anemonefish/"
 setwd(wd)
 
 # --- RUN SETTINGS ---
-RUN_ID           <- "test_run"   # "test_run" or "final_run"
+RUN_ID           <- "final_run"   # "test_run" or "final_run"
 N_CORES          <- 24            # 30 for final
 WIPE_PREDICTIONS <- FALSE         # Force re-run?
 

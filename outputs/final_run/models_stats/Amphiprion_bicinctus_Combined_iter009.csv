@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_bicinctus,Combined,9,l,4,block_quadrant,4,2,278,10000,148,969,130,5000,0.9792307692307692,0.8722769230769232,0.06690771,0.9230769230769231,0.9492,0.9361384615384616,120,254,4746,10,0.010037581876594674,0.04725992739034551,0.7976455433906275,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,9
