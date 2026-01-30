@@ -1,0 +1,207 @@
+[2026-01-11 22:41:51] === PIPELINE START | 2026-01-11 22:41:51 | ID: final_run | BG: paper_exact ===
+[2026-01-11 22:41:51] Current env predictors: PC1, PC2, PC3, PC4, rugosity
+[2026-01-11 22:41:51] Targets | Hosts: 10 | Fish: 28
+[2026-01-11 22:41:51] --- PHASE 1: HOSTS ---
+[2026-01-11 22:42:05] START Host: Macrodactyla_doreensis | target iters: 10
+[2026-01-11 22:42:05] START Host: Cryptodendrum_adhaesivum | target iters: 10
+[2026-01-11 22:42:05] START Host: Heteractis_malu | target iters: 10
+[2026-01-11 22:42:05] START Host: Entacmaea_quadricolor | target iters: 10
+[2026-01-11 22:42:05] START Host: Heteractis_aurora | target iters: 10
+[2026-01-11 22:42:05] START Host: Heteractis_crispa | target iters: 10
+[2026-01-11 22:42:05] START Host: Stichodactyla_gigantea | target iters: 10
+[2026-01-11 22:42:05] START Host: Stichodactyla_haddoni | target iters: 10
+[2026-01-11 22:42:05] START Host: Stichodactyla_mertensii | target iters: 10
+[2026-01-11 22:42:05] START Host: Heteractis_magnifica | target iters: 10
+[2026-01-11 22:42:26]   > Tuning Host: Heteractis_crispa
+[2026-01-11 22:42:27]   > Tuning Host: Macrodactyla_doreensis
+[2026-01-11 22:42:27]   > Tuning Host: Entacmaea_quadricolor
+[2026-01-11 22:42:27]   > Tuning Host: Stichodactyla_gigantea
+[2026-01-11 22:42:27]   > Tuning Host: Heteractis_malu
+[2026-01-11 22:42:27]   > Tuning Host: Stichodactyla_mertensii
+[2026-01-11 22:42:28]   > Tuning Host: Heteractis_aurora
+[2026-01-11 22:42:29]   > Tuning Host: Stichodactyla_haddoni
+[2026-01-11 22:42:29]   > Tuning Host: Cryptodendrum_adhaesivum
+[2026-01-11 22:42:30]   > Tuning Host: Heteractis_magnifica
+[2026-01-11 22:45:03] ERROR Host: Stichodactyla_mertensii -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-11 22:49:50] ERROR Host: Macrodactyla_doreensis -> No eligible spatial folds (too few presences/bg in every fold).
+[2026-01-11 22:53:10] FINISH Host: Heteractis_malu | OK n= 10
+[2026-01-11 22:55:12] FINISH Host: Heteractis_crispa | OK n= 10
+[2026-01-11 22:56:03] FINISH Host: Cryptodendrum_adhaesivum | OK n= 10
+[2026-01-11 22:56:16] FINISH Host: Stichodactyla_gigantea | OK n= 10
+[2026-01-11 22:56:53] FINISH Host: Stichodactyla_haddoni | OK n= 10
+[2026-01-11 22:57:11] FINISH Host: Heteractis_aurora | OK n= 10
+[2026-01-11 22:57:20] FINISH Host: Heteractis_magnifica | OK n= 10
+[2026-01-11 23:03:34] FINISH Host: Entacmaea_quadricolor | OK n= 10
+[2026-01-11 23:03:35] --- PHASE 2: FISH (3 passes) ---
+[2026-01-11 23:03:51] --- PHASE 2A: FISH ENV ONLY ---
+[2026-01-11 23:03:51] START Fish EnvOnly: Premnas_biaculeatus | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_akallopisos | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_allardi | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_sebae | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_fuscocaudatus | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_latifasciatus | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_chrysogaster | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_chagosensis | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_bicinctus | target iters: 40
+[2026-01-11 23:03:51] START Fish EnvOnly: Amphiprion_polymnus | target iters: 40
+[2026-01-11 23:12:34] ERROR Fish EnvOnly: Amphiprion_chagosensis -> No eligible spatial folds (too few presences/bg in every fold).
+[2026-01-11 23:12:34] START Fish EnvOnly: Amphiprion_ephippium | target iters: 40
+[2026-01-11 23:15:00] ERROR Fish EnvOnly: Premnas_biaculeatus -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-11 23:15:00] START Fish EnvOnly: Amphiprion_clarkii | target iters: 40
+[2026-01-11 23:22:58] FINISH Fish EnvOnly: Amphiprion_fuscocaudatus | PROGRESS n= 33 / 40
+[2026-01-11 23:22:58] START Fish EnvOnly: Amphiprion_akindynos | target iters: 40
+[2026-01-11 23:26:54] ERROR Fish EnvOnly: Amphiprion_clarkii -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-11 23:26:54] START Fish EnvOnly: Amphiprion_chrysopterus | target iters: 40
+[2026-01-11 23:27:28] FINISH Fish EnvOnly: Amphiprion_chrysogaster | OK n= 40
+[2026-01-11 23:27:28] START Fish EnvOnly: Amphiprion_frenatus | target iters: 40
+[2026-01-11 23:28:17] FINISH Fish EnvOnly: Amphiprion_sebae | OK n= 40
+[2026-01-11 23:28:17] START Fish EnvOnly: Amphiprion_latezonatus | target iters: 40
+[2026-01-11 23:28:41] ERROR Fish EnvOnly: Amphiprion_latezonatus -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: cannot evaluate a model without absence and presence data that are not NA
+[2026-01-11 23:28:41] START Fish EnvOnly: Amphiprion_leucokranos | target iters: 40
+[2026-01-11 23:29:56] FINISH Fish EnvOnly: Amphiprion_latifasciatus | OK n= 40
+[2026-01-11 23:29:56] START Fish EnvOnly: Amphiprion_mccullochi | target iters: 40
+[2026-01-11 23:30:21] ERROR Fish EnvOnly: Amphiprion_mccullochi -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: cannot evaluate a model without absence and presence data that are not NA
+[2026-01-11 23:30:21] START Fish EnvOnly: Amphiprion_melanopus | target iters: 40
+[2026-01-11 23:31:51] FINISH Fish EnvOnly: Amphiprion_allardi | OK n= 40
+[2026-01-11 23:31:51] START Fish EnvOnly: Amphiprion_nigripes | target iters: 40
+[2026-01-11 23:31:50] FINISH Fish EnvOnly: Amphiprion_polymnus | OK n= 40
+[2026-01-11 23:31:50] START Fish EnvOnly: Amphiprion_ocellaris | target iters: 40
+[2026-01-11 23:33:04] FINISH Fish EnvOnly: Amphiprion_akallopisos | OK n= 40
+[2026-01-11 23:33:04] START Fish EnvOnly: Amphiprion_omanensis | target iters: 40
+[2026-01-11 23:33:47] FINISH Fish EnvOnly: Amphiprion_ephippium | OK n= 40
+[2026-01-11 23:33:47] START Fish EnvOnly: Amphiprion_percula | target iters: 40
+[2026-01-11 23:39:15] FINISH Fish EnvOnly: Amphiprion_bicinctus | OK n= 40
+[2026-01-11 23:39:15] START Fish EnvOnly: Amphiprion_perideraion | target iters: 40
+[2026-01-11 23:40:58] ERROR Fish EnvOnly: Amphiprion_omanensis -> Too few presences after NA omission
+[2026-01-11 23:40:58] START Fish EnvOnly: Amphiprion_rubrocinctus | target iters: 40
+[2026-01-11 23:49:33] FINISH Fish EnvOnly: Amphiprion_leucokranos | OK n= 40
+[2026-01-11 23:49:33] START Fish EnvOnly: Amphiprion_sandaracinos | target iters: 40
+[2026-01-11 23:55:45] FINISH Fish EnvOnly: Amphiprion_akindynos | OK n= 40
+[2026-01-11 23:55:45] START Fish EnvOnly: Amphiprion_tricinctus | target iters: 40
+[2026-01-11 23:59:48] FINISH Fish EnvOnly: Amphiprion_chrysopterus | OK n= 40
+[2026-01-11 23:59:48] START Fish EnvOnly: Amphiprion_barberi | target iters: 40
+[2026-01-11 23:59:48] ERROR Fish EnvOnly: Amphiprion_barberi -> Background sampling failed/too small
+[2026-01-12 00:02:00] FINISH Fish EnvOnly: Amphiprion_nigripes | OK n= 40
+[2026-01-12 00:02:27] FINISH Fish EnvOnly: Amphiprion_frenatus | OK n= 40
+[2026-01-12 00:04:33] FINISH Fish EnvOnly: Amphiprion_rubrocinctus | OK n= 40
+[2026-01-12 00:04:58] FINISH Fish EnvOnly: Amphiprion_percula | OK n= 40
+[2026-01-12 00:08:45] FINISH Fish EnvOnly: Amphiprion_melanopus | OK n= 40
+[2026-01-12 00:12:18] FINISH Fish EnvOnly: Amphiprion_tricinctus | OK n= 40
+[2026-01-12 00:14:15] FINISH Fish EnvOnly: Amphiprion_sandaracinos | OK n= 40
+[2026-01-12 00:14:18] FINISH Fish EnvOnly: Amphiprion_ocellaris | OK n= 40
+[2026-01-12 00:18:20] FINISH Fish EnvOnly: Amphiprion_perideraion | OK n= 40
+[2026-01-12 00:18:20] --- PHASE 2B: FISH HOST ONLY ---
+[2026-01-12 00:18:20] START Fish HostOnly: Premnas_biaculeatus | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_akallopisos | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_allardi | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_sebae | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_fuscocaudatus | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_latifasciatus | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_chagosensis | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_bicinctus | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_chrysogaster | target iters: 40
+[2026-01-12 00:18:20] START Fish HostOnly: Amphiprion_polymnus | target iters: 40
+[2026-01-12 00:19:13] ERROR Fish HostOnly: Premnas_biaculeatus -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 00:19:13] START Fish HostOnly: Amphiprion_ephippium | target iters: 40
+[2026-01-12 00:20:06] ERROR Fish HostOnly: Amphiprion_bicinctus -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 00:20:06] START Fish HostOnly: Amphiprion_clarkii | target iters: 40
+[2026-01-12 00:22:34] ERROR Fish HostOnly: Amphiprion_chagosensis -> No eligible spatial folds (too few presences/bg in every fold).
+[2026-01-12 00:22:34] START Fish HostOnly: Amphiprion_akindynos | target iters: 40
+[2026-01-12 00:30:44] FINISH Fish HostOnly: Amphiprion_fuscocaudatus | OK n= 40
+[2026-01-12 00:30:44] START Fish HostOnly: Amphiprion_chrysopterus | target iters: 40
+[2026-01-12 00:32:24] FINISH Fish HostOnly: Amphiprion_sebae | OK n= 40
+[2026-01-12 00:32:24] START Fish HostOnly: Amphiprion_frenatus | target iters: 40
+[2026-01-12 00:32:33] FINISH Fish HostOnly: Amphiprion_chrysogaster | OK n= 40
+[2026-01-12 00:32:33] START Fish HostOnly: Amphiprion_latezonatus | target iters: 40
+[2026-01-12 00:33:48] FINISH Fish HostOnly: Amphiprion_latifasciatus | OK n= 40
+[2026-01-12 00:33:48] START Fish HostOnly: Amphiprion_leucokranos | target iters: 40
+[2026-01-12 00:34:15] FINISH Fish HostOnly: Amphiprion_ephippium | OK n= 40
+[2026-01-12 00:34:15] START Fish HostOnly: Amphiprion_mccullochi | target iters: 40
+[2026-01-12 00:34:57] FINISH Fish HostOnly: Amphiprion_allardi | OK n= 40
+[2026-01-12 00:34:57] START Fish HostOnly: Amphiprion_melanopus | target iters: 40
+[2026-01-12 00:36:31] FINISH Fish HostOnly: Amphiprion_polymnus | OK n= 40
+[2026-01-12 00:36:31] START Fish HostOnly: Amphiprion_nigripes | target iters: 40
+[2026-01-12 00:37:27] FINISH Fish HostOnly: Amphiprion_akallopisos | OK n= 40
+[2026-01-12 00:37:27] START Fish HostOnly: Amphiprion_ocellaris | target iters: 40
+[2026-01-12 00:39:21] ERROR Fish HostOnly: Amphiprion_mccullochi -> No eligible spatial folds (too few presences/bg in every fold).
+[2026-01-12 00:39:21] START Fish HostOnly: Amphiprion_omanensis | target iters: 40
+[2026-01-12 00:42:47] FINISH Fish HostOnly: Amphiprion_akindynos | OK n= 40
+[2026-01-12 00:42:47] START Fish HostOnly: Amphiprion_percula | target iters: 40
+[2026-01-12 00:44:13] ERROR Fish HostOnly: Amphiprion_omanensis -> Too few presences after NA omission
+[2026-01-12 00:44:13] START Fish HostOnly: Amphiprion_perideraion | target iters: 40
+[2026-01-12 00:46:22] FINISH Fish HostOnly: Amphiprion_leucokranos | PROGRESS n= 39 / 40
+[2026-01-12 00:46:22] START Fish HostOnly: Amphiprion_rubrocinctus | target iters: 40
+[2026-01-12 00:46:59] FINISH Fish HostOnly: Amphiprion_latezonatus | OK n= 40
+[2026-01-12 00:46:59] START Fish HostOnly: Amphiprion_sandaracinos | target iters: 40
+[2026-01-12 00:49:57] FINISH Fish HostOnly: Amphiprion_chrysopterus | OK n= 40
+[2026-01-12 00:49:57] START Fish HostOnly: Amphiprion_tricinctus | target iters: 40
+[2026-01-12 00:51:02] ERROR Fish HostOnly: Amphiprion_sandaracinos -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 00:51:02] START Fish HostOnly: Amphiprion_barberi | target iters: 40
+[2026-01-12 00:51:03] ERROR Fish HostOnly: Amphiprion_barberi -> Background sampling failed/too small
+[2026-01-12 00:54:54] FINISH Fish HostOnly: Amphiprion_frenatus | OK n= 40
+[2026-01-12 00:55:09] FINISH Fish HostOnly: Amphiprion_nigripes | OK n= 40
+[2026-01-12 01:00:21] ERROR Fish HostOnly: Amphiprion_perideraion -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 01:00:26] FINISH Fish HostOnly: Amphiprion_melanopus | OK n= 40
+[2026-01-12 01:00:33] FINISH Fish HostOnly: Amphiprion_percula | OK n= 40
+[2026-01-12 01:01:19] FINISH Fish HostOnly: Amphiprion_rubrocinctus | OK n= 40
+[2026-01-12 01:02:23] FINISH Fish HostOnly: Amphiprion_tricinctus | OK n= 40
+[2026-01-12 01:05:06] FINISH Fish HostOnly: Amphiprion_ocellaris | OK n= 40
+[2026-01-12 01:06:36] FINISH Fish HostOnly: Amphiprion_clarkii | OK n= 40
+[2026-01-12 01:06:36] --- PHASE 2C: FISH COMBINED ---
+[2026-01-12 01:06:37] START Fish Combined: Premnas_biaculeatus | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_akallopisos | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_allardi | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_fuscocaudatus | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_sebae | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_chagosensis | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_latifasciatus | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_bicinctus | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_chrysogaster | target iters: 40
+[2026-01-12 01:06:37] START Fish Combined: Amphiprion_polymnus | target iters: 40
+[2026-01-12 01:09:40] ERROR Fish Combined: Premnas_biaculeatus -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 01:09:40] START Fish Combined: Amphiprion_ephippium | target iters: 40
+[2026-01-12 01:16:12] ERROR Fish Combined: Amphiprion_chagosensis -> No eligible spatial folds (too few presences/bg in every fold).
+[2026-01-12 01:16:12] START Fish Combined: Amphiprion_clarkii | target iters: 40
+[2026-01-12 01:28:55] ERROR Fish Combined: Amphiprion_clarkii -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 01:28:55] START Fish Combined: Amphiprion_akindynos | target iters: 40
+[2026-01-12 01:30:54] FINISH Fish Combined: Amphiprion_fuscocaudatus | OK n= 40
+[2026-01-12 01:30:54] START Fish Combined: Amphiprion_chrysopterus | target iters: 40
+[2026-01-12 01:32:54] FINISH Fish Combined: Amphiprion_sebae | OK n= 40
+[2026-01-12 01:32:54] START Fish Combined: Amphiprion_frenatus | target iters: 40
+[2026-01-12 01:33:10] FINISH Fish Combined: Amphiprion_latifasciatus | PROGRESS n= 39 / 40
+[2026-01-12 01:33:10] START Fish Combined: Amphiprion_latezonatus | target iters: 40
+[2026-01-12 01:33:50] FINISH Fish Combined: Amphiprion_allardi | OK n= 40
+[2026-01-12 01:33:50] START Fish Combined: Amphiprion_leucokranos | target iters: 40
+[2026-01-12 01:33:59] FINISH Fish Combined: Amphiprion_chrysogaster | OK n= 40
+[2026-01-12 01:33:59] START Fish Combined: Amphiprion_mccullochi | target iters: 40
+[2026-01-12 01:34:10] ERROR Fish Combined: Amphiprion_mccullochi -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: cannot evaluate a model without absence and presence data that are not NA
+[2026-01-12 01:34:10] START Fish Combined: Amphiprion_melanopus | target iters: 40
+[2026-01-12 01:34:12] ERROR Fish Combined: Amphiprion_chrysopterus -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 01:34:12] START Fish Combined: Amphiprion_nigripes | target iters: 40
+[2026-01-12 01:36:42] FINISH Fish Combined: Amphiprion_ephippium | OK n= 40
+[2026-01-12 01:36:42] START Fish Combined: Amphiprion_ocellaris | target iters: 40
+[2026-01-12 01:38:09] FINISH Fish Combined: Amphiprion_polymnus | OK n= 40
+[2026-01-12 01:38:09] START Fish Combined: Amphiprion_omanensis | target iters: 40
+[2026-01-12 01:40:14] FINISH Fish Combined: Amphiprion_akallopisos | OK n= 40
+[2026-01-12 01:40:14] START Fish Combined: Amphiprion_percula | target iters: 40
+[2026-01-12 01:40:16] FINISH Fish Combined: Amphiprion_bicinctus | OK n= 40
+[2026-01-12 01:40:16] START Fish Combined: Amphiprion_perideraion | target iters: 40
+[2026-01-12 01:46:18] ERROR Fish Combined: Amphiprion_omanensis -> Too few presences after NA omission
+[2026-01-12 01:46:18] START Fish Combined: Amphiprion_rubrocinctus | target iters: 40
+[2026-01-12 01:55:51] FINISH Fish Combined: Amphiprion_leucokranos | PROGRESS n= 39 / 40
+[2026-01-12 01:55:51] START Fish Combined: Amphiprion_sandaracinos | target iters: 40
+[2026-01-12 01:56:20] FINISH Fish Combined: Amphiprion_latezonatus | PROGRESS n= 37 / 40
+[2026-01-12 01:56:20] START Fish Combined: Amphiprion_tricinctus | target iters: 40
+[2026-01-12 01:59:05] ERROR Fish Combined: Amphiprion_perideraion -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 01:59:05] START Fish Combined: Amphiprion_barberi | target iters: 40
+[2026-01-12 01:59:05] ERROR Fish Combined: Amphiprion_barberi -> Background sampling failed/too small
+[2026-01-12 02:01:15] ERROR Fish Combined: Amphiprion_sandaracinos -> ENMevaluate block partitions failed and STRICT_BLOCKCV=TRUE: non-conformable arguments
+[2026-01-12 02:05:35] FINISH Fish Combined: Amphiprion_akindynos | OK n= 40
+[2026-01-12 02:07:10] FINISH Fish Combined: Amphiprion_nigripes | OK n= 40
+[2026-01-12 02:10:43] FINISH Fish Combined: Amphiprion_frenatus | OK n= 40
+[2026-01-12 02:11:39] FINISH Fish Combined: Amphiprion_rubrocinctus | OK n= 40
+[2026-01-12 02:11:47] FINISH Fish Combined: Amphiprion_percula | OK n= 40
+[2026-01-12 02:15:14] FINISH Fish Combined: Amphiprion_melanopus | OK n= 40
+[2026-01-12 02:15:29] FINISH Fish Combined: Amphiprion_tricinctus | PROGRESS n= 38 / 40
+[2026-01-12 02:18:05] FINISH Fish Combined: Amphiprion_ocellaris | OK n= 40
+[2026-01-12 02:18:06] === PIPELINE FINISHED | 2026-01-12 02:18:06 ===

@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_rubrocinctus,Combined,4,lqh,0.5,block_quadrant,4,4,73,10000,42,7999,31,2001,0.9619464461317728,0.8775612193903048,0.15594680000000002,1,0.8775612193903048,0.9387806096951524,31,245,1756,0,0.024648235296976115,0.08518429923866169,0.5794683821539282,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,4

@@ -1,0 +1,10 @@
+[22:52:19] Host | Iter 1 OK | fold: 1 | AUC: 0.738 | TSS: 0.459
+[22:52:37] Host | Iter 2 OK | fold: 2 | AUC: 0.785 | TSS: 0.515
+[22:52:58] Host | Iter 3 OK | fold: 3 | AUC: 0.901 | TSS: 0.723
+[22:53:16] Host | Iter 4 OK | fold: 4 | AUC: 0.744 | TSS: 0.453
+[22:53:37] Host | Iter 5 OK | fold: 1 | AUC: 0.75 | TSS: 0.505
+[22:53:53] Host | Iter 6 OK | fold: 2 | AUC: 0.772 | TSS: 0.565
+[22:54:12] Host | Iter 7 OK | fold: 3 | AUC: 0.913 | TSS: 0.702
+[22:54:29] Host | Iter 8 OK | fold: 4 | AUC: 0.747 | TSS: 0.472
+[22:54:48] Host | Iter 9 OK | fold: 1 | AUC: 0.737 | TSS: 0.439
+[22:55:07] Host | Iter 10 OK | fold: 2 | AUC: 0.816 | TSS: 0.583

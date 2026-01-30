@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_percula,HostOnly,35,lqh,0.5,block_quadrant,4,2,205,10000,154,9291,51,709,0.7928593157996626,0.5593628142371192,0.13003587,0.8823529411764706,0.6770098730606487,0.7796814071185596,45,229,480,6,0.08525451885723902,0.26253463261569765,0.15239347241684098,rugosity;biotic_suitability,35

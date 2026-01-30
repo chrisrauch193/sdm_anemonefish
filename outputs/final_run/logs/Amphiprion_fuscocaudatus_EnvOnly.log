@@ -1,0 +1,40 @@
+[23:12:06] EnvOnly | Iter 1 OK | fold: 1 | AUC: 0.759 | TSS: 0.504
+[23:12:29] EnvOnly | Iter 2 OK | fold: 4 | AUC: 0.945 | TSS: 0.857
+[23:12:47] EnvOnly | Iter 3 OK | fold: 1 | AUC: 0.777 | TSS: 0.583
+[23:13:05] EnvOnly | Iter 4 OK | fold: 4 | AUC: 0.895 | TSS: 0.782
+[23:13:06] EnvOnly | Iter 5 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:13:27] EnvOnly | Iter 6 OK | fold: 4 | AUC: 0.872 | TSS: 0.749
+[23:13:45] EnvOnly | Iter 7 OK | fold: 1 | AUC: 0.715 | TSS: 0.44
+[23:14:04] EnvOnly | Iter 8 OK | fold: 4 | AUC: 0.886 | TSS: 0.795
+[23:14:25] EnvOnly | Iter 9 OK | fold: 1 | AUC: 0.721 | TSS: 0.444
+[23:14:43] EnvOnly | Iter 10 OK | fold: 4 | AUC: 0.904 | TSS: 0.799
+[23:15:03] EnvOnly | Iter 11 OK | fold: 1 | AUC: 0.76 | TSS: 0.504
+[23:15:18] EnvOnly | Iter 12 OK | fold: 4 | AUC: 0.871 | TSS: 0.735
+[23:15:41] EnvOnly | Iter 13 OK | fold: 1 | AUC: 0.776 | TSS: 0.46
+[23:16:04] EnvOnly | Iter 14 OK | fold: 4 | AUC: 0.888 | TSS: 0.787
+[23:16:04] EnvOnly | Iter 15 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:16:23] EnvOnly | Iter 16 OK | fold: 4 | AUC: 0.917 | TSS: 0.825
+[23:16:39] EnvOnly | Iter 17 OK | fold: 1 | AUC: 0.721 | TSS: 0.456
+[23:16:58] EnvOnly | Iter 18 OK | fold: 4 | AUC: 0.885 | TSS: 0.778
+[23:16:58] EnvOnly | Iter 19 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:17:17] EnvOnly | Iter 20 OK | fold: 4 | AUC: 0.856 | TSS: 0.727
+[23:17:33] EnvOnly | Iter 21 OK | fold: 1 | AUC: 0.776 | TSS: 0.532
+[23:17:57] EnvOnly | Iter 22 OK | fold: 4 | AUC: 0.927 | TSS: 0.825
+[23:17:57] EnvOnly | Iter 23 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:18:16] EnvOnly | Iter 24 OK | fold: 4 | AUC: 0.896 | TSS: 0.782
+[23:18:16] EnvOnly | Iter 25 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:18:34] EnvOnly | Iter 26 OK | fold: 4 | AUC: 0.834 | TSS: 0.707
+[23:18:36] EnvOnly | Iter 27 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:18:59] EnvOnly | Iter 28 OK | fold: 4 | AUC: 0.951 | TSS: 0.87
+[23:19:21] EnvOnly | Iter 29 OK | fold: 1 | AUC: 0.782 | TSS: 0.5
+[23:19:44] EnvOnly | Iter 30 OK | fold: 4 | AUC: 0.931 | TSS: 0.861
+[23:20:05] EnvOnly | Iter 31 OK | fold: 1 | AUC: 0.779 | TSS: 0.548
+[23:20:24] EnvOnly | Iter 32 OK | fold: 4 | AUC: 0.876 | TSS: 0.769
+[23:20:44] EnvOnly | Iter 33 OK | fold: 1 | AUC: 0.743 | TSS: 0.496
+[23:21:05] EnvOnly | Iter 34 OK | fold: 4 | AUC: 0.886 | TSS: 0.765
+[23:21:27] EnvOnly | Iter 35 OK | fold: 1 | AUC: 0.799 | TSS: 0.56
+[23:21:47] EnvOnly | Iter 36 OK | fold: 4 | AUC: 0.887 | TSS: 0.776
+[23:21:47] EnvOnly | Iter 37 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[23:22:09] EnvOnly | Iter 38 OK | fold: 4 | AUC: 0.934 | TSS: 0.834
+[23:22:28] EnvOnly | Iter 39 OK | fold: 1 | AUC: 0.743 | TSS: 0.504
+[23:22:51] EnvOnly | Iter 40 OK | fold: 4 | AUC: 0.873 | TSS: 0.753

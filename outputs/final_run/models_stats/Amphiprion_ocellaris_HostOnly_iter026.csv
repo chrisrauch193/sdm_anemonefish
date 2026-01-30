@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_ocellaris,HostOnly,26,lqh,2,block_quadrant,4,2,591,10000,447,6949,144,3051,0.6750530336137515,0.3124385447394298,0.50321645,0.6388888888888888,0.6735496558505408,0.6562192723697149,92,996,2055,52,0.18317681496290106,0.5246496936648019,0.7228281819936299,rugosity;biotic_suitability,26

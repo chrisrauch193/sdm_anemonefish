@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_chrysogaster,Combined,28,lq,0.5,block_quadrant,4,4,25,10000,17,2024,8,5000,0.85975,0.7034,0.15734177000000002,0.75,0.9534,0.8517,6,233,4767,2,0.009217741085874729,0.03658373124053636,0.20034209657848967,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,28

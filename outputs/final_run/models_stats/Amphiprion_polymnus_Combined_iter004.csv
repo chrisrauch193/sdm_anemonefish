@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_polymnus,Combined,4,h,1.5,block_quadrant,4,4,107,10000,87,9297,20,703,0.8837126600284495,0.6768847795163584,0.41787977,0.95,0.7268847795163584,0.8384423897581792,19,192,511,1,0.12696501196041174,0.3754876975597237,0.9131189806981309,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,4

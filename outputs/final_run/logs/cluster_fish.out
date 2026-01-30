@@ -1,0 +1,301 @@
+starting worker pid=2344978 on localhost:11307 at 23:03:35.697
+starting worker pid=2344973 on localhost:11307 at 23:03:35.697
+starting worker pid=2344975 on localhost:11307 at 23:03:35.697
+starting worker pid=2344974 on localhost:11307 at 23:03:35.697
+starting worker pid=2344976 on localhost:11307 at 23:03:35.701
+starting worker pid=2344977 on localhost:11307 at 23:03:35.701
+starting worker pid=2344979 on localhost:11307 at 23:03:35.707
+starting worker pid=2344981 on localhost:11307 at 23:03:35.707
+starting worker pid=2344982 on localhost:11307 at 23:03:35.710
+starting worker pid=2344980 on localhost:11307 at 23:03:35.712
+terra 1.8.80
+terra 1.8.80
+terra 1.8.80
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+terra 1.8.80
+Loading required package: raster
+Loading required package: sp
+
+Attaching package: ‘dplyr’
+
+terra 1.8.80
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+terra 1.8.80
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+terra 1.8.80
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: raster
+Loading required package: raster
+Loading required package: sp
+Loading required package: sp
+terra 1.8.80
+Loading required package: raster
+
+Attaching package: ‘dplyr’
+
+Loading required package: sp
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+terra 1.8.80
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+terra 1.8.80
+
+Attaching package: ‘dplyr’
+
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: raster
+
+Attaching package: ‘raster’
+
+
+Attaching package: ‘raster’
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: raster
+Loading required package: sp
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: raster
+
+Attaching package: ‘dplyr’
+
+Loading required package: sp
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+Loading required package: raster
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+Loading required package: raster
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+Loading required package: raster
+Loading required package: sp
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+
+Attaching package: ‘raster’
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+Warning: model fc.LQ_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.H_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.H_rm.1 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.1 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.H_rm.1.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.1.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.H_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQ_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.H_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.0.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.1 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.H_rm.1.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+Warning: model fc.LQH_rm.1.5 has more non-zero coefficients (ncoef) than occurrence records for training, so AIC cannot be calculated.
+There were 50 or more warnings (use warnings() to see the first 50)
+There were 50 or more warnings (use warnings() to see the first 50)
+There were 24 warnings (use warnings() to see them)
+There were 40 warnings (use warnings() to see them)
+There were 45 warnings (use warnings() to see them)
+There were 50 or more warnings (use warnings() to see the first 50)

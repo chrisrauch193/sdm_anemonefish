@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_latifasciatus,Combined,32,lq,0.5,block_quadrant,4,3,36,10000,25,9696,11,304,0.4674043062200957,0.32565789473684204,0.01698268,1,0.3256578947368421,0.662828947368421,11,205,99,0,0.4771565906325067,2.1795504902194507,-0.11679942321414902,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,32

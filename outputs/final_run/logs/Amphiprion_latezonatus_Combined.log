@@ -1,0 +1,40 @@
+[01:43:29] Combined | Iter 1 OK | fold: 2 | AUC: 0.842 | TSS: 0.676
+[01:43:43] Combined | Iter 2 OK | fold: 3 | AUC: 0.811 | TSS: 0.641
+[01:44:05] Combined | Iter 3 OK | fold: 2 | AUC: 0.811 | TSS: 0.671
+[01:44:29] Combined | Iter 4 OK | fold: 3 | AUC: 0.94 | TSS: 0.778
+[01:44:47] Combined | Iter 5 OK | fold: 2 | AUC: 0.634 | TSS: 0.526
+[01:45:04] Combined | Iter 6 OK | fold: 3 | AUC: 0.87 | TSS: 0.664
+[01:45:24] Combined | Iter 7 OK | fold: 2 | AUC: 0.665 | TSS: 0.54
+[01:45:40] Combined | Iter 8 OK | fold: 3 | AUC: 0.942 | TSS: 0.805
+[01:46:00] Combined | Iter 9 OK | fold: 2 | AUC: 0.409 | TSS: 0.27
+[01:46:22] Combined | Iter 10 OK | fold: 3 | AUC: 0.926 | TSS: 0.724
+[01:46:43] Combined | Iter 11 OK | fold: 2 | AUC: 0.886 | TSS: 0.767
+[01:47:04] Combined | Iter 12 OK | fold: 3 | AUC: 0.891 | TSS: 0.682
+[01:47:28] Combined | Iter 13 OK | fold: 2 | AUC: 0.65 | TSS: 0.468
+[01:47:51] Combined | Iter 14 OK | fold: 3 | AUC: 0.862 | TSS: 0.637
+[01:47:51] Combined | Iter 15 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[01:48:16] Combined | Iter 16 OK | fold: 3 | AUC: 0.95 | TSS: 0.784
+[01:48:36] Combined | Iter 17 OK | fold: 2 | AUC: 0.878 | TSS: 0.632
+[01:48:54] Combined | Iter 18 OK | fold: 3 | AUC: 0.889 | TSS: 0.707
+[01:49:11] Combined | Iter 19 OK | fold: 2 | AUC: 0.61 | TSS: 0.39
+[01:49:32] Combined | Iter 20 OK | fold: 3 | AUC: 0.937 | TSS: 0.805
+[01:49:33] Combined | Iter 21 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[01:49:57] Combined | Iter 22 OK | fold: 3 | AUC: 0.936 | TSS: 0.801
+[01:50:17] Combined | Iter 23 OK | fold: 2 | AUC: 0.894 | TSS: 0.67
+[01:50:35] Combined | Iter 24 OK | fold: 3 | AUC: 0.831 | TSS: 0.61
+[01:50:59] Combined | Iter 25 OK | fold: 2 | AUC: 0.728 | TSS: 0.521
+[01:51:20] Combined | Iter 26 OK | fold: 3 | AUC: 0.882 | TSS: 0.798
+[01:51:39] Combined | Iter 27 OK | fold: 2 | AUC: 0.407 | TSS: 0.304
+[01:51:57] Combined | Iter 28 OK | fold: 3 | AUC: 0.799 | TSS: 0.519
+[01:52:20] Combined | Iter 29 OK | fold: 2 | AUC: 0.873 | TSS: 0.641
+[01:52:37] Combined | Iter 30 OK | fold: 3 | AUC: 0.929 | TSS: 0.753
+[01:53:00] Combined | Iter 31 OK | fold: 2 | AUC: 0.722 | TSS: 0.54
+[01:53:24] Combined | Iter 32 OK | fold: 3 | AUC: 0.801 | TSS: 0.518
+[01:53:49] Combined | Iter 33 OK | fold: 2 | AUC: 0.676 | TSS: 0.506
+[01:54:14] Combined | Iter 34 OK | fold: 3 | AUC: 0.872 | TSS: 0.675
+[01:54:36] Combined | Iter 35 OK | fold: 2 | AUC: 0.828 | TSS: 0.652
+[01:54:59] Combined | Iter 36 OK | fold: 3 | AUC: 0.873 | TSS: 0.695
+[01:55:22] Combined | Iter 37 OK | fold: 2 | AUC: 0.627 | TSS: 0.42
+[01:55:49] Combined | Iter 38 OK | fold: 3 | AUC: 0.887 | TSS: 0.661
+[01:55:49] Combined | Iter 39 ERROR: cannot evaluate a model without absence and presence data that are not NA
+[01:56:17] Combined | Iter 40 OK | fold: 3 | AUC: 0.916 | TSS: 0.696

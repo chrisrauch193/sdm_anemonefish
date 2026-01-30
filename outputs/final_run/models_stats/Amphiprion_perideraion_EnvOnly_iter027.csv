@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_perideraion,EnvOnly,27,lqh,0.5,block_quadrant,4,3,675,10000,443,5021,232,4979,0.6771163022626064,0.3144803000186993,0.22378268,0.6336206896551724,0.6808596103635268,0.6572401500093497,147,1589,3390,85,0.0968990048007811,0.31606836730619114,0.3443609022556391,PC1;PC2;PC3;PC4;rugosity,27

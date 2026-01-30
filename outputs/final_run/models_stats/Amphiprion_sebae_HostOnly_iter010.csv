@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_sebae,HostOnly,10,l,1.5,block_quadrant,4,3,34,10000,21,8327,13,1673,0.6827900133339464,0.3098073474642513,0.45161356,0.9230769230769231,0.38673042438732813,0.6549036737321257,12,1026,647,1,0.23205406842731113,0.6572492408284023,0.12458412600436906,rugosity;biotic_suitability,10

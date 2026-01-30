@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_allardi,HostOnly,39,lqh,2,block_quadrant,4,2,86,10000,64,6528,22,3472,0.8822135525764558,0.7239997905320488,0.3024777,0.8181818181818182,0.9058179723502304,0.8619998952660244,18,327,3145,4,0.0306486583349999,0.12115402849547723,0.665309831162143,rugosity;biotic_suitability,39

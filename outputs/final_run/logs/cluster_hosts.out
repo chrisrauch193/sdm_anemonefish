@@ -1,0 +1,280 @@
+starting worker pid=2271103 on localhost:11307 at 22:41:51.949
+starting worker pid=2271102 on localhost:11307 at 22:41:51.949
+starting worker pid=2271096 on localhost:11307 at 22:41:51.949
+starting worker pid=2271101 on localhost:11307 at 22:41:51.949
+starting worker pid=2271095 on localhost:11307 at 22:41:51.949
+starting worker pid=2271104 on localhost:11307 at 22:41:51.956
+starting worker pid=2271098 on localhost:11307 at 22:41:51.961
+starting worker pid=2271097 on localhost:11307 at 22:41:51.961
+starting worker pid=2271100 on localhost:11307 at 22:41:51.962
+starting worker pid=2271099 on localhost:11307 at 22:41:51.964
+terra 1.8.80
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: raster
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+terra 1.8.80
+terra 1.8.80
+terra 1.8.80
+terra 1.8.80
+terra 1.8.80
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘dplyr’
+
+terra 1.8.80
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+terra 1.8.80
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+terra 1.8.80
+
+Attaching package: ‘dplyr’
+
+
+Attaching package: ‘dplyr’
+
+Loading required package: raster
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+terra 1.8.80
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: sp
+
+Attaching package: ‘dplyr’
+
+Loading required package: raster
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: sp
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+Loading required package: raster
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘dplyr’
+
+Loading required package: raster
+
+Attaching package: ‘dplyr’
+
+Loading required package: sp
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Loading required package: sp
+Loading required package: raster
+Loading required package: sp
+Loading required package: raster
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:terra’:
+
+    intersect, union
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+Attaching package: ‘raster’
+
+Loading required package: raster
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: raster
+Loading required package: sp
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: raster
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+Loading required package: sp
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+
+Attaching package: ‘raster’
+
+The following object is masked from ‘package:dplyr’:
+
+    select
+
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.
+This is ENMeval version 2.0.5.2. 
+For worked examples, please consult the vignette: <https://jamiemkass.github.io/ENMeval/articles/ENMeval-2.0-vignette.html>.

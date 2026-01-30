@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Amphiprion_fuscocaudatus,Combined,31,lq,1,block_quadrant,4,1,17,10000,10,9748,7,252,0.7556689342403629,0.5,0.0671056,0.7142857142857143,0.7857142857142857,0.75,5,54,198,2,0.025814819634332187,0.1379404101372681,-0.11526153842651121,PC1;PC2;PC3;PC4;rugosity;biotic_suitability,31

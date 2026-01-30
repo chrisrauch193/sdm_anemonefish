@@ -1,0 +1,2 @@
+species,model,iter,fc,rm,cv_method,cv_k,test_fold,n_pres_total,n_bg_total,n_pres_train,n_bg_train,n_pres_test,n_bg_test,auc,tss,threshold_maxTSS,sensitivity,specificity,balanced_accuracy,tp,fp,tn,fn,brier,logloss,boyce,predictors,seed
+Heteractis_crispa,Host,8,lqh,1.5,block_quadrant,4,4,83,10000,67,8427,16,1573,0.7465034965034965,0.4721869040050857,0.23646106,0.75,0.7221869040050858,0.7360934520025428,12,437,1136,4,0.07688338226252826,0.27050889445910214,0.0076852850042706455,PC1;PC2;PC3;PC4;rugosity,8
