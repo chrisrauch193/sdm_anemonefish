@@ -4,7 +4,7 @@
 # ------------------------------------------------------------------------------
 
 if(!require("pacman")) install.packages("pacman")
-pacman::p_load(sf, ggplot2, dplyr, readr, ggrepel, viridis, patchwork, stringr, grid)
+pacman::p_load(sf, ggplot2, dplyr, readr, ggrepel, viridis, patchwork, stringr, grid, maps)
 
 # --- CONFIG ---
 BASE_DIR    <- getwd()
@@ -52,35 +52,43 @@ df_final <- df %>% left_join(centroids %>% dplyr::select(PROVINCE, Map_Index), b
 
 # Custom Thesis Palette
 realm_cols <- c(
-  "Western Indo-Pacific"       = "#E6AB02", # Gold
-  "Central Indo-Pacific"       = "#66A61E", # Green
-  "Eastern Indo-Pacific"       = "#D95F02", # Orange
+  "Western Indo-Pacific"        = "#E6AB02", # Gold
+  "Central Indo-Pacific"        = "#66A61E", # Green
+  "Eastern Indo-Pacific"        = "#D95F02", # Orange
   "Temperate Northern Pacific" = "#7570B3", # Purple
-  "Temperate Australasia"      = "#E7298A", # Pink
-  "Temperate Southern Africa"  = "#A6761D"  # Brown
+  "Temperate Australasia"       = "#E7298A", # Pink
+  "Temperate Southern Africa"   = "#A6761D"  # Brown
 )
 
 # --- 2. COMPONENT 1: THE MAP (Top) ---
+# NOTE: Plot Order Matters! Regions first (bottom), then Land (top).
+
 p_map <- ggplot() +
-  # Darker Land (gray80) for better contrast
-  borders("world2", colour = NA, fill = "gray80") +
+  # LAYER 1: Marine Regions (Bottom)
   geom_polygon(data = df_final, aes(x = long, y = lat, group = group, fill = REALM),
-               color = "white", size = 0.1, alpha = 0.9) +
+               color = "white", linewidth = 0.05, alpha = 0.85) +
+  
+  # LAYER 2: Land Mass (Top) - "world2" wraps 0-360 correctly
+  borders("world2", colour = "gray60", fill = "gray90", size = 0.1) +
+  
+  # LAYER 3: Labels
   geom_label_repel(data = centroids, aes(x = X_cent, y = Y_cent, label = Map_Index),
                    size = 3, fontface = "bold", 
                    label.padding = unit(0.1, "lines"), label.r = unit(0.1, "lines"),
                    fill = "white", alpha = 0.9, segment.size = 0.2,
                    min.segment.length = 0, box.padding = 0.2) +
+  
   scale_fill_manual(values = realm_cols) +
-  coord_fixed(xlim = c(20, 260), ylim = c(-45, 45), expand = FALSE) +
-  labs(title = "Biogeographic Study Extent",
-       subtitle = paste0("Marine Ecoregions of the World (MEOW) | ", nrow(centroids), " Provinces")) +
+  
+  # Use quickmap for better aspect ratio preservation on lat/long data
+  coord_quickmap(xlim = c(25, 260), ylim = c(-45, 45), expand = FALSE) +
+  
   theme_void() + 
   theme(
     legend.position = "none",
     plot.title = element_text(face = "bold", size = 16, hjust = 0.5, margin = margin(t=5, b=2)),
     plot.subtitle = element_text(hjust = 0.5, color = "gray40", size=10, margin = margin(b=2)),
-    panel.background = element_rect(fill = "#E0F3F8", color = "black", size = 0.5),
+    panel.background = element_rect(fill = "#E0F3F8", color = "black", linewidth = 0.5), # Ocean color
     plot.margin = margin(5, 5, 2, 5) 
   )
 
@@ -98,7 +106,6 @@ p_realm_legend <- ggplot(realm_legend_df, aes(x=1, y=REALM, color=REALM)) +
   theme(
     legend.position = "none",
     plot.title = element_text(face="bold", size=11, hjust=0, margin=margin(b=5)),
-    # Right margin reduced to bring keys closer
     plot.margin = margin(10, 0, 10, 10) 
   )
 
@@ -117,13 +124,11 @@ p_prov_list <- ggplot(centroids, aes(x = 0, y = -Map_Index)) +
     legend.position = "none",
     strip.text = element_blank(),
     plot.title = element_text(face="bold", size=11, hjust=0, margin=margin(b=5)),
-    # Left margin reduced to bring keys closer
     plot.margin = margin(10, 10, 10, 0) 
   ) +
   scale_x_continuous(expand = c(0, 0), limits = c(0, 1))
 
 # --- 5. ASSEMBLE ---
-# Adjusted widths to bring them tighter
 bottom_row <- p_realm_legend + p_prov_list + plot_layout(widths = c(1, 2.8))
 
 final_plot <- p_map / bottom_row + plot_layout(heights = c(3, 1.2))

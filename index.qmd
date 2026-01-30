@@ -519,7 +519,9 @@ if (!is.null(host_stats)) {
 
 ```{r}
 
-# Performance boxplots (fail-safe)
+## Distributions of performance metrics
+
+# Performance boxplots (fail-safe) with consistent coloring
 safe_plot_perf_box <- function(df, metric, ylab, title, out_path) {
   if (is.null(df) || nrow(df) == 0) return(invisible(NULL))
   req <- c("model_type", "group", metric)
@@ -527,7 +529,8 @@ safe_plot_perf_box <- function(df, metric, ylab, title, out_path) {
 
   df2 <- df |>
     mutate(
-      model_type = as.factor(model_type),
+      # Ensure factor levels match the color mapping keys
+      model_type = factor(model_type, levels = c("EnvOnly", "HostOnly", "Combined")),
       group = as.factor(group),
       .metric = suppressWarnings(as.numeric(.data[[metric]]))
     ) |>
@@ -538,10 +541,21 @@ safe_plot_perf_box <- function(df, metric, ylab, title, out_path) {
     return(invisible(NULL))
   }
 
-  p <- ggplot(df2, aes(x = model_type, y = .metric)) +
-    geom_boxplot(outlier.alpha = 0.2, na.rm = TRUE) +
+  # Define colors to match extension code
+  model_colors <- c("EnvOnly" = "#E69F00", 
+                    "HostOnly" = "#56B4E9", 
+                    "Combined" = "#009E73")
+
+  p <- ggplot(df2, aes(x = model_type, y = .metric, fill = model_type)) +
+    geom_boxplot(outlier.alpha = 0.2, na.rm = TRUE, alpha = 0.8) +
+    scale_fill_manual(values = model_colors) +
     facet_wrap(~group, nrow = 1) +
-    labs(x = NULL, y = ylab, title = title)
+    labs(x = NULL, y = ylab, fill = "Model Type") +
+    theme_minimal() +
+    theme(
+      legend.position = "none", # Hide legend if x-axis labels are sufficient, or "bottom"
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
 
   print(p)
   save_plot(p, out_path)
@@ -624,7 +638,7 @@ plot_ghost_map <- function(r, title_text) {
       name = "Ghost Habitat"
     ) +
     ggplot2::coord_sf(xlim = c(30, 180), ylim = c(-40, 40), expand = FALSE) +
-    ggplot2::labs(title = title_text, subtitle = "Climate suitable, Host absent") +
+    ggplot2::labs(title = title_text) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
       axis.text = ggplot2::element_blank(),
@@ -710,6 +724,11 @@ if (!is.null(fish_summary)) {
   if(nrow(ghost_df) > 0) {
     write_csv(ghost_df, file.path(tab_dir, "ghost_habitat_summary_all_scenarios.csv"))
     
+    # --- FIX LABELS START ---
+    ghost_df <- ghost_df |> 
+      mutate(scenario = str_replace_all(scenario, "ssp(\\d)(\\d)(\\d)_(\\d+)", "SSP\\1-\\2.\\3 \\4"))
+    # --- FIX LABELS END ---
+    
     # 8. Plot Trends (Namespaced)
     p_ghost_trend <- ggplot2::ggplot(ghost_df, ggplot2::aes(x=scenario, y=ghost_km2, fill=group)) +
       ggplot2::geom_boxplot(outlier.alpha = 0.5) + 
@@ -717,7 +736,7 @@ if (!is.null(fish_summary)) {
       ggplot2::scale_fill_manual(values=c("generalist"="#E69F00", "specialist"="#56B4E9")) +
       ggplot2::theme_minimal() + 
       ggplot2::theme(axis.text.x = ggplot2::element_text(angle=45, hjust=1)) +
-      ggplot2::labs(title="Ghost Habitat Area across Scenarios", y="Area (km2)")
+      ggplot2::labs(y=expression(Area~(km^2)))
     
     ggsave(file.path(fig_dir, "04_ghost_habitat", "ghost_area_trend.png"), p_ghost_trend, w=10, h=6, bg="white")
     print(p_ghost_trend)
@@ -729,7 +748,7 @@ if (!is.null(fish_summary)) {
 if (!is.null(ghost_tbl)) {
   p <- ggplot(ghost_tbl, aes(x = group, y = ghost_km2)) +
     geom_boxplot(outlier.alpha = 0.2) +
-    labs(x = NULL, y = "Ghost habitat area (km²)", title = "Ghost habitat (current)")
+    labs(x = NULL, y = "Ghost habitat area (km²)")
   print(p)
   save_plot(p, file.path(fig_dir, "04_ghost_habitat", "ghost_area_by_group.png"))
 
@@ -937,23 +956,40 @@ if (!is.null(overlap_tbl)) {
 
   write_csv(delta, file.path(tab_dir, "host_fish_overlap_deltas.csv"))
 
-  p1 <- ggplot(delta, aes(x = group, y = delta_D_env)) +
+  # --- FIX LABELS START ---
+  # Converts ssp585_2050 -> SSP5-8.5 2050
+  delta <- delta |> 
+    mutate(scenario = str_replace_all(scenario, "ssp(\\d)(\\d)(\\d)_(\\d+)", "SSP\\1-\\2.\\3 \\4"))
+  # --- FIX LABELS END ---
+
+  # Define consistent colors
+  my_colors <- c("generalist"="#E69F00", "specialist"="#56B4E9")
+
+  # Plot 1: EnvOnly Delta
+  p1 <- ggplot(delta, aes(x = group, y = delta_D_env, fill = group)) + 
     geom_boxplot(outlier.alpha = 0.2) +
     facet_wrap(~scenario) +
-    labs(x = NULL, y = "Δ Schoener's D (EnvOnly fish vs host)",
-         title = "Change in fish climatic niche overlap with hosts")
+    scale_fill_manual(values = my_colors) + 
+    labs(x = NULL, y = "Δ Schoener's D (EnvOnly fish vs host)") +
+    theme_minimal() + 
+    theme(legend.position = "none") 
+    
   print(p1)
   save_plot(p1, file.path(fig_dir, "03_overlap", "delta_D_env_host.png"), w = 11, h = 6)
 
-  p2 <- ggplot(delta, aes(x = group, y = delta_D_comb)) +
+  # Plot 2: Combined Delta (The important one)
+  p2 <- ggplot(delta, aes(x = group, y = delta_D_comb, fill = group)) + 
     geom_boxplot(outlier.alpha = 0.2) +
     facet_wrap(~scenario) +
-    labs(x = NULL, y = "Δ Schoener's D (Combined fish vs host)",
-         title = "Change in fish realised niche overlap with hosts")
+    scale_fill_manual(values = my_colors) + 
+    labs(x = NULL, y = "Δ Schoener's D (Combined fish vs host)") +
+    theme_minimal() + 
+    theme(legend.position = "none")
+
   print(p2)
   save_plot(p2, file.path(fig_dir, "03_overlap", "delta_D_comb_host.png"), w = 11, h = 6)
 
-  # Variance / heterogeneity (proxy for destabilisation): variance of delta across associations
+  # Variance / heterogeneity table
   var_tbl <- delta |>
     group_by(scenario, group) |>
     summarise(
@@ -971,7 +1007,7 @@ if (!is.null(overlap_tbl)) {
 
 We summarise shifts using centroid displacement (km) between current and each future scenario, separately for EnvOnly and Combined. The **biotic constraint** is:
 
-\[ \Delta = \text{Shift}*{EnvOnly} -* \text{Shift}{Combined} \]
+Delta = Shift-EnvOnly - ShiftCombined
 
 Positive values indicate that hosts constrain the magnitude of projected range shift.
 
@@ -1038,8 +1074,7 @@ if (!is.null(shift_tbl)) {
   p <- ggplot(constraint, aes(x = group, y = constraint_km)) +
     geom_boxplot(outlier.alpha = 0.2) +
     facet_wrap(~scenario) +
-    labs(x = NULL, y = "EnvOnly shift − Combined shift (km)",
-         title = "Biotic constraint on range shift (centroid displacement)")
+    labs(x = NULL, y = "EnvOnly shift − Combined shift (km)")
   print(p)
   save_plot(p, file.path(fig_dir, "05_range_shift", "biotic_constraint_by_group.png"), w = 10, h = 6)
 }
@@ -1053,7 +1088,7 @@ This block loads the stats, merges with groups, runs the LMM, and plots the resu
 
 ```{r}
 # ==============================================================================
-# 1. MODEL PERFORMANCE: LMMs & PER-SPECIES PLOTS (ROBUST)
+# 1. MODEL PERFORMANCE & VARIABLE IMPORTANCE (FINAL COMPLETE PIPELINE)
 # ==============================================================================
 
 # --- A. Load & Clean Data ---
@@ -1082,10 +1117,16 @@ if(exists("fish_groups")) {
 # Print who survived
 survivors <- unique(valid_species_stats$species)
 cat(paste("Species included in final analysis:", length(survivors), "\n"))
-print(survivors)
+
+# --- SAVE RAW EVALUATION ARTEFACTS (Fold-wise Summaries) ---
+# This serves as the raw data for your Appendix
+raw_out_path <- file.path(tab_dir, "raw_fold_summaries.csv")
+write_csv(valid_species_stats, raw_out_path)
+cat(sprintf("Saved raw fold-wise summaries to: %s\n", raw_out_path))
+
 
 # --- B. LMM Statistical Tests ---
-
+# This generates the p-values for your Results text
 run_lmm <- function(data, metric, title) {
   if(nrow(data) < 10) { 
     cat(paste0("\n>>> SKIP LMM: ", title, " (Too little data) <<<\n"))
@@ -1097,40 +1138,32 @@ run_lmm <- function(data, metric, title) {
   print(summary(mod))
 }
 
-# 1. Overall
 run_lmm(valid_species_stats, "auc", "AUC - Overall")
 run_lmm(valid_species_stats, "tss", "TSS - Overall")
 
-# 2. Generalists Only
 cat("\n--- SUBSET: GENERALISTS ---\n")
-gen_data <- valid_species_stats %>% filter(group == "generalist")
-run_lmm(gen_data, "auc", "AUC - Generalists")
-run_lmm(gen_data, "tss", "TSS - Generalists")
+run_lmm(valid_species_stats %>% filter(group == "generalist"), "auc", "AUC - Generalists")
+run_lmm(valid_species_stats %>% filter(group == "generalist"), "tss", "TSS - Generalists")
 
-# 3. Specialists Only
 cat("\n--- SUBSET: SPECIALISTS ---\n")
-spec_data <- valid_species_stats %>% filter(group == "specialist")
-run_lmm(spec_data, "auc", "AUC - Specialists")
-run_lmm(spec_data, "tss", "TSS - Specialists")
+run_lmm(valid_species_stats %>% filter(group == "specialist"), "auc", "AUC - Specialists")
+run_lmm(valid_species_stats %>% filter(group == "specialist"), "tss", "TSS - Specialists")
 
 
 # --- C. Per-Species Comparison Plot ---
 plot_species_perf <- function(data, metric, title_text) {
   ggplot(data, aes(x=species, y=.data[[metric]], fill=model)) +
     geom_boxplot(outlier.size=0.5, alpha=0.9, position=position_dodge(0.8)) +
-    # Use exact colors from your screenshot style
     scale_fill_manual(values=c("EnvOnly"="#E69F00", "HostOnly"="#56B4E9", "Combined"="#009E73")) + 
-    labs(title=title_text, y=toupper(metric), x=NULL, fill="Model Type") +
+    labs(y=toupper(metric), x=NULL, fill="Model Type") +
     theme_minimal() +
     theme(
       axis.text.x = element_text(angle=45, hjust=1, face="italic", size=10),
       legend.position = "top",
-      panel.grid.major.x = element_blank(),
-      plot.title = element_text(face="bold", hjust=0.5)
+      panel.grid.major.x = element_blank()
     )
 }
 
-# Save Plots
 p_auc_sp <- plot_species_perf(valid_species_stats, "auc", "AUC by Species and Model Type")
 ggsave(file.path(fig_dir, "anemonefish_model_auc_comparison_per_species.png"), p_auc_sp, width=12, height=6, bg="white")
 print(p_auc_sp)
@@ -1139,7 +1172,8 @@ p_tss_sp <- plot_species_perf(valid_species_stats, "tss", "TSS by Species and Mo
 ggsave(file.path(fig_dir, "anemonefish_model_tss_comparison_per_species.png"), p_tss_sp, width=12, height=6, bg="white")
 print(p_tss_sp)
 
-# --- D. Summary Table ---
+
+# --- D. Summary Tables ---
 thesis_table <- valid_species_stats %>%
   filter(model == "Combined") %>%
   group_by(species) %>%
@@ -1150,8 +1184,191 @@ thesis_table <- valid_species_stats %>%
     SD_TSS   = round(sd(tss), 3)
   ) %>%
   arrange(species)
-
 write_csv(thesis_table, file.path(tab_dir, "thesis_combined_model_performance.csv"))
+
+fish_summary <- valid_species_stats %>%
+    group_by(species, model, group) %>%
+    summarise(
+      n_iter = n(),
+      auc_mean = mean(auc, na.rm = TRUE),
+      auc_sd   = sd(auc, na.rm = TRUE),
+      tss_mean = mean(tss, na.rm = TRUE),
+      boyce_mean = mean(boyce, na.rm = TRUE),
+      .groups = "drop"
+    )
+write_csv(fish_summary, file.path(tab_dir, "fish_performance_summary.csv"))
+
+
+# ==============================================================================
+# E. VARIABLE IMPORTANCE (FISH & HOSTS)
+# ==============================================================================
+
+extract_maxnet_coefs <- function(rds_path) {
+  tryCatch({
+    mod <- readRDS(rds_path)
+    if (!inherits(mod, "maxnet")) return(NULL)
+    
+    betas <- mod$betas
+    if (length(betas) == 0) return(NULL)
+    
+    beta_names <- names(betas)
+    safe_names <- attr(mod, "safe_names") 
+    real_names <- attr(mod, "orig_names")
+    name_map <- setNames(real_names, safe_names)
+    
+    clean_vars <- character(length(betas))
+    for(i in seq_along(betas)) {
+      b_name <- beta_names[i]
+      v_code <- str_extract(b_name, "v[0-9]+")
+      if(!is.na(v_code) && v_code %in% names(name_map)) {
+        clean_vars[i] <- name_map[[v_code]]
+      } else {
+        clean_vars[i] <- "Unknown"
+      }
+    }
+    
+    tibble::tibble(
+      variable = clean_vars,
+      coefficient = as.numeric(betas),
+      file = basename(rds_path)
+    )
+  }, error = function(e) return(NULL))
+}
+
+# --- FORCE UPDATE: Always run this block ---
+coefs_cache_path <- file.path(tab_dir, "raw_model_coefficients.csv")
+rds_files <- list.files(file.path(run_dir, "models"), pattern = "\\.rds$", full.names = TRUE)
+
+if (length(rds_files) > 0) {
+  cat("Extracting coefficients from", length(rds_files), "models... (This takes time)\n")
+  coef_list <- purrr::map(rds_files, extract_maxnet_coefs)
+  coef_df <- dplyr::bind_rows(coef_list)
+  
+  # Parse metadata (Robust for Fish AND Hosts)
+  coef_df <- coef_df %>%
+    mutate(
+      species = str_extract(file, "^[A-Za-z]+_[a-z]+"),
+      model = case_when(
+        str_detect(file, "EnvOnly") ~ "EnvOnly",
+        str_detect(file, "HostOnly") ~ "HostOnly",
+        str_detect(file, "Combined") ~ "Combined",
+        str_detect(file, "_Host_") ~ "Host", # Capture Host models correctly
+        TRUE ~ "Other"
+      )
+    )
+  
+  write_csv(coef_df, coefs_cache_path)
+  cat("Saved fresh coefficients to:", coefs_cache_path, "\n")
+}
+
+# --- PLOTTING ---
+model_coefs <- safe_read_csv(coefs_cache_path)
+
+if (!is.null(model_coefs)) {
+  # 1. FISH VARIABLE IMPORTANCE
+  fish_coefs <- model_coefs %>%
+    filter(model %in% c("EnvOnly", "Combined")) %>%
+    left_join(fish_groups, by = "species") %>%
+    filter(!is.na(group)) %>%
+    group_by(species, model, variable, group) %>%
+    summarise(mean_coef = mean(abs(coefficient)), .groups = "drop")
+
+  p_fish <- ggplot(fish_coefs, aes(x = variable, y = mean_coef, fill = model)) +
+    geom_boxplot(outlier.alpha = 0.2) +
+    facet_wrap(~group, scales = "free_x") + 
+    coord_flip() +
+    scale_fill_manual(values = c("EnvOnly"="#E69F00", "Combined"="#009E73")) +
+    labs(y = "Mean Absolute Coefficient", x = NULL) +
+    theme_minimal()
+  
+  save_plot(p_fish, file.path(fig_dir, "01_performance", "variable_importance_coefs.png"))
+  print(p_fish)
+  
+  # 2. HOST VARIABLE IMPORTANCE (NEW)
+  host_coefs <- model_coefs %>%
+    filter(model == "Host") %>%
+    group_by(species, variable) %>%
+    summarise(mean_coef = mean(abs(coefficient)), .groups = "drop")
+  
+  if(nrow(host_coefs) > 0) {
+    p_host <- ggplot(host_coefs, aes(x = reorder(variable, mean_coef), y = mean_coef)) +
+      geom_boxplot(fill = "gray70", outlier.alpha = 0.2) +
+      coord_flip() +
+      labs(y = "Mean Absolute Coefficient", x = NULL) +
+      theme_minimal()
+    
+    save_plot(p_host, file.path(fig_dir, "01_performance", "host_variable_importance.png"))
+    print(p_host)
+  }
+}
+
+
+# ==============================================================================
+# F. SPATIAL RELIABILITY (ERROR PROPAGATION)
+# ==============================================================================
+
+scrape_fold_logs <- function(log_dir) {
+  log_files <- list.files(log_dir, pattern = "\\.log$", full.names = TRUE, recursive = TRUE)
+  if (length(log_files) == 0) return(NULL)
+  
+  extract_lines <- function(f) {
+    lines <- tryCatch(readLines(f, warn = FALSE), error=function(e) NULL)
+    if(is.null(lines)) return(NULL)
+    
+    # Regex to capture: Iter number, Fold number, AUC, TSS
+    pattern <- "Iter\\s+(\\d+).*fold:\\s+(\\d+).*AUC:\\s+([0-9.]+).*TSS:\\s+([0-9.]+)"
+    matches <- str_match(lines, pattern)
+    valid <- !is.na(matches[,1])
+    if (sum(valid) == 0) return(NULL)
+    
+    fname <- basename(f)
+    species <- str_extract(fname, "^[A-Za-z]+_[a-z]+")
+    
+    # Robust Model Detection
+    model <- "Other"
+    if(str_detect(fname, "EnvOnly")) model <- "EnvOnly"
+    if(str_detect(fname, "HostOnly")) model <- "HostOnly"
+    if(str_detect(fname, "Combined")) model <- "Combined"
+    if(str_detect(fname, "Host\\.log")) model <- "HostEnsemble"
+    
+    tibble::tibble(
+      species = species, model_type = model,
+      iter = as.numeric(matches[valid, 2]),
+      fold = as.numeric(matches[valid, 3]),
+      auc  = as.numeric(matches[valid, 4])
+    )
+  }
+  purrr::map_dfr(log_files, extract_lines)
+}
+
+# Run Scraper
+log_data <- scrape_fold_logs(file.path(run_dir, "logs")) 
+
+if (!is.null(log_data) && nrow(log_data) > 0) {
+  write_csv(log_data, file.path(tab_dir, "raw_spatial_fold_performance.csv"))
+  
+  # --- PLOT 3: The Error Propagation Plot (NEW) ---
+  # Filter for Fish (Combined) and Hosts
+  fold_plot_data <- log_data %>%
+    filter(model_type %in% c("Combined", "HostEnsemble")) %>%
+    mutate(Category = ifelse(model_type == "Combined", "Anemonefish (Realized)", "Host Anemones"))
+  
+  p_spatial <- ggplot(fold_plot_data, aes(x = factor(fold), y = auc, fill = Category)) +
+    geom_boxplot(alpha = 0.7, outlier.alpha = 0.2) +
+    scale_fill_manual(values = c("Anemonefish (Realized)"="#009E73", "Host Anemones"="gray50")) +
+    labs(x = "Spatial Fold ID (Block)", y = "AUC", fill = NULL) +
+    theme_minimal() +
+    theme(legend.position = "bottom")
+  
+  save_plot(p_spatial, file.path(fig_dir, "01_performance", "spatial_error_propagation.png"))
+  print(p_spatial)
+  
+  # Print Summary Table
+  cat("\n--- SPATIAL FOLD SUMMARY ---\n")
+  print(fold_plot_data %>% 
+          group_by(Category, fold) %>% 
+          summarise(Mean_AUC = mean(auc), .groups="drop"))
+}
 ```
 
 ## 2. Biotic Constraint (Range Shift)
@@ -1234,14 +1451,18 @@ if(nrow(all_shift_results) > 0) {
   write_csv(final_table, file.path(tab_dir, "table_biotic_constraint_shifts_clean.csv"))
   print(head(final_table))
   
+  # --- FIX LABELS START ---
+  all_shift_results <- all_shift_results |> 
+    mutate(scenario = str_replace_all(scenario, "ssp(\\d)(\\d)(\\d)_(\\d+)", "SSP\\1-\\2.\\3 \\4"))
+  # --- FIX LABELS END ---
+  
   # Plot Biotic Brake (Faceted by Scenario)
   p_brake <- ggplot(all_shift_results, aes(x=shift_potential_km, y=shift_realized_km, color=group)) +
     geom_abline(slope=1, intercept=0, linetype="dashed", color="gray50") +
     geom_point(size=2.5, alpha=0.7) +
     scale_color_manual(values=c("generalist"="#E69F00", "specialist"="#56B4E9")) +
     facet_wrap(~scenario) +
-    labs(title="Biotic Constraint on Range Expansion",
-         x="Potential Shift (Climate Only) [km]",
+    labs(x="Potential Shift (Climate Only) [km]",
          y="Realized Shift (With Host) [km]") +
     theme_minimal() +
     theme(legend.position="bottom", strip.text=element_text(face="bold"))
@@ -1251,6 +1472,70 @@ if(nrow(all_shift_results) > 0) {
 }
 ```
 
+## NICHE BREADTH vs RANGE SHIFT LMM (New Analysis)
+
+```{r}
+# ==============================================================================
+# 2B. NICHE BREADTH vs RANGE SHIFT LMM (New Analysis)
+# ==============================================================================
+cat("\n--- HYPOTHESIS 2B: NICHE BREADTH LMM ---\n")
+
+# 1. Prepare Data
+# We need 'shift_tbl' (from block 2) merged with 'b2_df' (niche breadth)
+# Re-calculate B2 if not already in memory, or ensure b2_df exists from previous blocks.
+
+if(exists("shift_tbl") && exists("fish_species")) {
+  
+  # Calculate B2 if missing (Fast re-run)
+  if(!exists("b2_df")) {
+    b2_list <- list()
+    for (sp in fish_species) {
+      f_curr <- find_fish_raster(sp, "Combined", "current")
+      if(!is.null(f_curr)) {
+        r <- safe_read_rast(f_curr)
+        val <- values(r, mat=FALSE, na.rm=TRUE)
+        val <- val[val > 0]
+        b2 <- if(length(val)>0) 1/(length(val)*sum((val/sum(val))^2)) else NA
+        b2_list[[length(b2_list)+1]] <- tibble(species=sp, niche_breadth_B2=b2)
+      }
+    }
+    b2_df <- bind_rows(b2_list)
+  }
+
+  # Merge Data for LMM
+  lmm_data <- shift_tbl %>%
+    filter(model_type == "Combined") %>% # Only care about Realized Shift
+    inner_join(b2_df, by="species") %>%
+    filter(!is.na(shift_km) & !is.na(niche_breadth_B2))
+
+  # 2. Run Linear Mixed Model
+  # Fixed Effect: Niche Breadth
+  # Random Effect: Species (intercept) nested in Scenario? 
+  # Actually, just (1|species) + (1|scenario) handles the crossed structure best
+  
+  library(lme4)
+  library(lmerTest)
+  
+  cat("\n> Running LMM: Range Shift ~ Niche Breadth + (1|Scenario)\n")
+  # Note: Species is the level of observation for Niche Breadth, so we can't control for species
+  # as a random effect against its own trait easily unless we had multiple traits per species.
+  # BUT, since we have multiple observations per species (multiple scenarios), we CAN control for species!
+  
+  mod_breadth <- lmer(shift_km ~ niche_breadth_B2 + (1|species) + (1|scenario), data=lmm_data)
+  
+  print(summary(mod_breadth))
+  
+  # 3. Save Stats for Thesis Text
+  # Extract P-value and Beta
+  coefs <- summary(mod_breadth)$coefficients
+  beta  <- coefs["niche_breadth_B2", "Estimate"]
+  pval  <- coefs["niche_breadth_B2", "Pr(>|t|)"]
+  
+  cat(sprintf("\nRESULTS FOR TEXT:\nBeta: %.4f\nP-value: %.5f\n", beta, pval))
+}
+```
+
+
 ## 3. Specialist vs. Generalist Test
 
 ```{r}
@@ -1259,15 +1544,19 @@ cat("\n--- HYPOTHESIS 3: SPECIALIST VS GENERALIST ---\n")
 
 if(exists("all_shift_results") && nrow(all_shift_results) > 0) {
   
+  # --- FIX LABELS START ---
+  # Safe to run even if already fixed (regex won't match if already "SSP...")
+  all_shift_results <- all_shift_results |> 
+    mutate(scenario = str_replace_all(scenario, "ssp(\\d)(\\d)(\\d)_(\\d+)", "SSP\\1-\\2.\\3 \\4"))
+  # --- FIX LABELS END ---
+  
   # Plot Boxplot (Faceted)
   p_spec <- ggplot(all_shift_results, aes(x=group, y=lag_km, fill=group)) +
     geom_boxplot(alpha=0.8, outlier.shape=NA) +
     geom_jitter(width=0.2, size=1, alpha=0.4) +
     facet_wrap(~scenario) +
     scale_fill_manual(values=c("generalist"="#E69F00", "specialist"="#56B4E9")) +
-    labs(title="Biotic Constraint vs Specialization", 
-         subtitle="Does generalism buffer against host lag?",
-         y="Range Lag (km)", x=NULL) +
+    labs(y="Range Lag (km)", x=NULL) +
     theme_minimal() +
     theme(legend.position="bottom", strip.text=element_text(face="bold"))
   
@@ -1492,6 +1781,441 @@ for (sp in fish_species) {
   }
 }
 ```
+
+## NICHE BREADTH & CLIMATE SENSITIVITY (Post-Hoc Analysis)
+
+```{r}
+# ==============================================================================
+# 6. NICHE BREADTH & RANGE SHIFT (Using shift_tbl)
+# ==============================================================================
+
+# # 1. Set the path to your new results file
+# # Adjust "outputs/final_run" if your project structure is different
+# input_csv <- "outputs/final_run/analysis_tables/centroid_shifts.csv"
+# 
+# # 2. Read the data into 'shift_tbl'
+# if (file.exists(input_csv)) {
+#   shift_tbl <- read_csv(input_csv, show_col_types = FALSE)
+#   
+#   # Ensure the column types are correct for the plotting code
+#   shift_tbl <- shift_tbl %>%
+#     mutate(
+#       species = as.character(species),
+#       group = as.character(group),
+#       model_type = as.character(model_type),
+#       scenario = as.character(scenario),
+#       shift_km = as.numeric(shift_km)
+#     )
+#     
+#   cat("✅ Successfully loaded 'shift_tbl' from CSV.\n")
+#   print(head(shift_tbl))
+#   
+# } else {
+#   stop("❌ Could not find file: ", input_csv, "\nCheck your directory path!")
+# }
+
+
+# Helper: Simple Levin's B2 calculation
+calc_levins_B2 <- function(r) {
+  if(is.null(r)) return(NA)
+  v <- terra::values(r, mat=FALSE, na.rm=TRUE)
+  v <- v[v > 0]
+  if(length(v) == 0) return(NA)
+  p <- v / sum(v)
+  return(1 / (length(p) * sum(p^2)))
+}
+
+# 1. Calculate Current Niche Breadth (B2) for all species
+# We only need to load CURRENT rasters here (Fast)
+b2_results <- list()
+cat("\n--- Calculating Niche Breadth (B2) ---\n")
+
+# Combine fish and hosts (Hosts need B2 too)
+# Note: shift_tbl only has fish, so we will plot fish primarily, or just fish.
+# Your Results text focuses on "Species with broader tolerances...", implying fish.
+for (sp in fish_species) {
+  # Load Combined model for fish (Realized Niche)
+  f_curr <- find_fish_raster(sp, "Combined", "current")
+  if(is.null(f_curr)) next
+  
+  r_curr <- safe_read_rast(f_curr)
+  b2 <- calc_levins_B2(r_curr)
+  
+  b2_results[[length(b2_results)+1]] <- tibble::tibble(species = sp, niche_breadth_B2 = b2)
+}
+b2_df <- dplyr::bind_rows(b2_results)
+
+# 2. Merge with your EXISTING shift_tbl
+# shift_tbl has: species, scenario, model_type, shift_km
+if(exists("shift_tbl") && !is.null(shift_tbl) && nrow(b2_df) > 0) {
+  
+  # Filter for Realized Shift (Combined Model)
+  shifts_for_plot <- shift_tbl %>%
+    dplyr::filter(model_type == "Combined") %>%
+    dplyr::inner_join(b2_df, by = "species") %>%
+    mutate(scenario = str_replace_all(scenario, "ssp(\\d)(\\d)(\\d)_(\\d+)", "SSP\\1-\\2.\\3 \\4"))
+  
+  # 3. Plot: Niche Breadth vs Range Shift (km)
+  p_nb <- ggplot2::ggplot(shifts_for_plot, ggplot2::aes(x = niche_breadth_B2, y = shift_km, color = group)) +
+    ggplot2::geom_point(size = 3, alpha = 0.7) +
+    ggplot2::geom_smooth(method = "lm", se = TRUE, alpha = 0.2) +
+    ggplot2::facet_wrap(~scenario) +
+    ggplot2::scale_color_manual(values = c("generalist" = "#E69F00", "specialist" = "#56B4E9")) +
+    ggplot2::labs(
+      x = "Realized Niche Breadth (Levin's B2)",
+      y = "Projected Range Shift (km)"
+    ) +
+    ggplot2::theme_minimal()
+  
+  # Save
+  out_path <- file.path(fig_dir, "niche_breadth_vs_suitability_shift_all_scenarios.png") # Keeping filename same for LaTeX compatibility
+  ggplot2::ggsave(out_path, p_nb, width = 10, height = 8, bg = "white")
+  print(p_nb)
+  
+  # Save CSV for reference
+  readr::write_csv(shifts_for_plot, file.path(tab_dir, "niche_breadth_analysis.csv"))
+}
+```
+
+## Community Richness and Conservation Prioritization
+
+This section synthesizes species-level predictions into community-level metrics to inform conservation planning. We calculate aggregate species richness for both guilds under all scenarios and develop a "Conservation Priority Index" (CPI) to identify stable climate refugia.
+
+```{r}
+#| label: conservation-analysis
+#| fig-width: 12
+#| fig-height: 10
+#| warning: false
+#| message: false
+
+# ==============================================================================
+# 6. SOCIAL INFORMATICS: CONSERVATION PRIORITIZATION & ZONING (ROBUST)
+# ==============================================================================
+# This section synthesizes species-level predictions into community-level metrics.
+
+cat("\n--- STARTING CONSERVATION PRIORITIZATION ANALYSIS ---\n")
+
+# ------------------------------------------------------------------------------
+# A. HELPER FUNCTIONS
+# ------------------------------------------------------------------------------
+
+# Helper to sum rasters for a specific list of species
+get_community_richness <- function(species_list, type="fish", model="Combined", scenario="current") {
+  
+  stack_list <- list()
+  
+  for(sp in species_list) {
+    f_path <- NULL
+    
+    if(type == "fish") {
+      w <- if(scenario == "current") "current" else "future"
+      sc <- if(scenario == "current") NULL else scenario
+      f_path <- find_fish_raster(sp, model, w, scenario=sc, stat="mean")
+    } else {
+      w <- if(scenario == "current") "current" else "future"
+      sc <- if(scenario == "current") NULL else scenario
+      f_path <- find_host_raster(sp, w, scenario=sc, stat="mean")
+    }
+    
+    if(!is.null(f_path)) {
+      r <- safe_read_rast(f_path)
+      if(!is.null(r)) stack_list[[sp]] <- r
+    }
+  }
+  
+  if(length(stack_list) == 0) return(NULL)
+  
+  # Stack
+  r_stack <- terra::rast(stack_list)
+  
+  # ROBUST SUM: Align all layers to the first one to prevent extent errors
+  if(terra::nlyr(r_stack) > 1) {
+    # Use first layer as template for the stack
+    template <- r_stack[[1]]
+    r_stack <- terra::resample(r_stack, template, method="near")
+  }
+  
+  r_sum <- sum(r_stack, na.rm=TRUE)
+  names(r_sum) <- "richness"
+  return(r_sum)
+}
+
+# Plotting function
+plot_richness_map <- function(r, title_text, pal_option="D") {
+  ggplot2::ggplot() +
+    ggplot2::geom_sf(data = world_land, fill = "gray80", color = "white", size = 0.1) +
+    tidyterra::geom_spatraster(data = r) +
+    ggplot2::scale_fill_viridis_c(option = pal_option, na.value = "transparent", name = "Richness") +
+    ggplot2::coord_sf(xlim = c(30, 180), ylim = c(-40, 40), expand = FALSE) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(
+      axis.text = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank(),
+      panel.grid = ggplot2::element_blank()
+    )
+}
+
+# ------------------------------------------------------------------------------
+# B. GENERATE RICHNESS MAPS
+# ------------------------------------------------------------------------------
+scenarios_to_run <- c("current", future_scenarios)
+layers_cache <- list() 
+
+# 1. HOSTS
+host_files <- list.files(file.path(pred_cur, "hosts"), pattern="_mean.tif$")
+host_sp_list <- unique(sub("_mean.tif", "", host_files))
+
+for(sc in scenarios_to_run) {
+  cat(paste("Generating Host Richness:", sc, "\n"))
+  r_host <- get_community_richness(host_sp_list, type="host", scenario=sc)
+  
+  if(!is.null(r_host)) {
+    layers_cache[[paste0("host_", sc)]] <- r_host
+    p <- plot_richness_map(r_host, paste0("Host Richness - ", sc), "mako")
+    out_path <- file.path(fig_dir, "06_community", "hosts", paste0("richness_", sc, ".png"))
+    dir.create(dirname(out_path), recursive=TRUE, showWarnings=FALSE)
+    ggplot2::ggsave(out_path, p, width=8, height=5, bg="white")
+  }
+}
+
+# 2. FISH (Combined)
+for(sc in scenarios_to_run) {
+  cat(paste("Generating Fish Richness:", sc, "\n"))
+  r_fish <- get_community_richness(fish_species, type="fish", model="Combined", scenario=sc)
+  
+  if(!is.null(r_fish)) {
+    layers_cache[[paste0("fish_", sc)]] <- r_fish
+    p <- plot_richness_map(r_fish, paste0("Anemonefish Richness (Realized) - ", sc), "turbo")
+    out_path <- file.path(fig_dir, "06_community", "fish", paste0("richness_", sc, ".png"))
+    dir.create(dirname(out_path), recursive=TRUE, showWarnings=FALSE)
+    ggplot2::ggsave(out_path, p, width=8, height=5, bg="white")
+  }
+}
+
+# ------------------------------------------------------------------------------
+# C. CONSERVATION INDICES (FIXED GEOMETRY ALIGNMENT)
+# ------------------------------------------------------------------------------
+target_future_scen <- "ssp585_2100"
+
+# Check if layers exist
+r_curr_fish <- layers_cache$fish_current
+r_fut_host  <- layers_cache[[paste0("host_", target_future_scen)]]
+
+if(!is.null(r_curr_fish) && !is.null(r_fut_host)) {
+  
+  cat("\n--- Calculating Conservation Indices ---\n")
+  
+  # --- STEP 1: FORCE ALIGNMENT OF INPUTS ---
+  # We use r_curr_fish as the MASTER geometry template for everything.
+  # If any raster differs, we force it to match this master.
+  
+  if(!terra::compareGeom(r_curr_fish, r_fut_host, stopOnError=FALSE)) {
+    cat("Aligning Future Host raster to Master (Current Fish) geometry...\n")
+    r_fut_host <- terra::resample(r_fut_host, r_curr_fish, method="near")
+    r_fut_host <- terra::mask(r_fut_host, r_curr_fish)
+  }
+  
+  norm_r <- function(r) {
+    minmax_v <- terra::minmax(r)
+    if(minmax_v[2] == minmax_v[1]) return(r * 0) 
+    (r - minmax_v[1]) / (minmax_v[2] - minmax_v[1])
+  }
+  
+  # 1. CPI Calculation
+  r_cpi <- norm_r(r_curr_fish) * norm_r(r_fut_host)
+  names(r_cpi) <- "CPI"
+  
+  p_cpi <- ggplot2::ggplot() +
+    ggplot2::geom_sf(data = world_land, fill = "gray90", color = NA) +
+    tidyterra::geom_spatraster(data = r_cpi) +
+    ggplot2::scale_fill_gradientn(
+      colors = c("#FFFFFF", "#e5f5e0", "#a1d99b", "#41ab5d", "#005a32"), 
+      name = "Priority\nIndex", na.value = "transparent"
+    ) +
+    ggplot2::coord_sf(xlim = c(30, 180), ylim = c(-40, 40), expand = FALSE) +
+    ggplot2::theme_minimal() +
+    ggplot2::theme(panel.grid = ggplot2::element_blank())
+    
+  ggsave(file.path(fig_dir, "07_planning", "Map_Conservation_Priority_Index.png"), p_cpi, width=8, height=5, bg="white")
+  print(p_cpi)
+
+  # 2. ROI Calculation (Ghost Habitat)
+  # Needs Future EnvOnly Fish
+  r_fish_pot <- get_community_richness(fish_species, type="fish", model="EnvOnly", scenario=target_future_scen)
+  r_fish_real <- layers_cache[[paste0("fish_", target_future_scen)]]
+  
+  if(!is.null(r_fish_pot) && !is.null(r_fish_real)) {
+    
+    # --- STEP 2: FORCE ALIGNMENT OF ROI INPUTS ---
+    # Both must match the MASTER geometry (r_curr_fish) to ensure r_roi matches r_cpi later
+    if(!terra::compareGeom(r_curr_fish, r_fish_pot, stopOnError=FALSE)) {
+       r_fish_pot <- terra::resample(r_fish_pot, r_curr_fish, method="near")
+       r_fish_pot <- terra::mask(r_fish_pot, r_curr_fish)
+    }
+    if(!terra::compareGeom(r_curr_fish, r_fish_real, stopOnError=FALSE)) {
+       r_fish_real <- terra::resample(r_fish_real, r_curr_fish, method="near")
+       r_fish_real <- terra::mask(r_fish_real, r_curr_fish)
+    }
+    
+    r_roi <- r_fish_pot - r_fish_real
+    r_roi <- terra::clamp(r_roi, lower=0)
+    names(r_roi) <- "ROI"
+    
+    p_roi <- ggplot2::ggplot() +
+      ggplot2::geom_sf(data = world_land, fill = "gray90", color = NA) +
+      tidyterra::geom_spatraster(data = r_roi) +
+      ggplot2::scale_fill_gradientn(
+        colors = c("#FFFFFF", "#fcbba1", "#fb6a4a", "#cb181d", "#67000d"), 
+        name = "Restoration\nValue", na.value = "transparent"
+      ) +
+      ggplot2::coord_sf(xlim = c(30, 180), ylim = c(-40, 40), expand = FALSE) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid = ggplot2::element_blank())
+      
+    ggsave(file.path(fig_dir, "07_planning", "Map_Restoration_Opportunity_Index.png"), p_roi, width=8, height=5, bg="white")
+    print(p_roi)
+    
+    # 3. ZONING MAP
+    # Use quantile thresholds on non-zero values
+    get_thresh <- function(r, q=0.7) { 
+      v <- terra::values(r, mat=FALSE)
+      v <- v[v > 0 & !is.na(v)]
+      if(length(v) == 0) return(0)
+      quantile(v, probs=q)
+    }
+    
+    # --- STEP 3: FINAL ALIGNMENT CHECK BEFORE ZONING ---
+    # Ensure r_roi matches r_cpi exactly before boolean logic
+    if(!terra::compareGeom(r_cpi, r_roi, stopOnError=FALSE)) {
+      cat("Aligning ROI to CPI geometry for final zoning...\n")
+      r_roi <- terra::resample(r_roi, r_cpi, method="near")
+      r_roi <- terra::mask(r_roi, r_cpi)
+    }
+    
+    t_cpi <- get_thresh(r_cpi, 0.7)
+    t_roi <- get_thresh(r_roi, 0.7)
+    
+    # Initialize with template to match extents
+    r_zone <- terra::rast(r_cpi) 
+    terra::values(r_zone) <- 0
+    
+    # Vectorized assignment
+    cpi_mask <- r_cpi > t_cpi
+    roi_mask <- r_roi > t_roi
+    
+    # Logic: 1=Refugia, 2=Restore, 3=Both
+    # Using terra logic to avoid memory issues
+    r_zone <- terra::ifel(cpi_mask, 1, 0)
+    r_zone <- terra::ifel(roi_mask, 2, r_zone)
+    r_zone <- terra::ifel(cpi_mask & roi_mask, 3, r_zone)
+    
+    # Mask out zeros for cleaner plot
+    r_zone <- terra::mask(r_zone, r_zone, maskvalue=0)
+    r_zone <- terra::as.factor(r_zone)
+    
+    # Colors
+    cols <- c("1"="forestgreen", "2"="firebrick", "3"="goldenrod")
+    lbls <- c("1"="Refugia (Protect)", "2"="Ghost (Restore)", "3"="Dual Priority")
+    
+    p_zone <- ggplot2::ggplot() +
+      ggplot2::geom_sf(data = world_land, fill = "gray95", color = NA) +
+      tidyterra::geom_spatraster(data = r_zone) +
+      ggplot2::scale_fill_manual(
+        values = cols, 
+        labels = lbls,
+        na.translate = FALSE,
+        name = "Policy Zone"
+      ) +
+      ggplot2::coord_sf(xlim = c(30, 180), ylim = c(-40, 40), expand = FALSE) +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(panel.grid = ggplot2::element_blank())
+      
+    ggsave(file.path(fig_dir, "07_planning", "Map_Conservation_Zoning.png"), p_zone, width=8, height=5, bg="white")
+    print(p_zone)
+  }
+}
+```
+
+
+## Occurences Used in Models
+
+```{r}
+# ==============================================================================
+# GET FINAL OCCURRENCE COUNTS (PLAIN TEXT OUTPUT)
+# ==============================================================================
+
+# 1. Define Species Lists (17 Fish, 8 Hosts)
+final_fish_list <- c(
+  "Amphiprion_akallopisos", "Amphiprion_akindynos", "Amphiprion_allardi",
+  "Amphiprion_chrysogaster", "Amphiprion_chrysopterus", "Amphiprion_ephippium",
+  "Amphiprion_frenatus", "Amphiprion_fuscocaudatus", "Amphiprion_latifasciatus",
+  "Amphiprion_leucokranos", "Amphiprion_melanopus", "Amphiprion_nigripes",
+  "Amphiprion_ocellaris", "Amphiprion_percula", "Amphiprion_polymnus",
+  "Amphiprion_rubrocinctus", "Amphiprion_tricinctus"
+)
+
+final_host_list <- c(
+  "Cryptodendrum_adhaesivum", "Entacmaea_quadricolor", "Heteractis_aurora",
+  "Heteractis_crispa", "Heteractis_magnifica", "Heteractis_malu",
+  "Stichodactyla_gigantea", "Stichodactyla_haddoni"
+)
+
+# 2. Helper Function to find counts
+get_occ_count <- function(sp, type) {
+  # Construct path relative to your project root
+  f_path <- file.path("outputs", "final_run", "occurrences", type, paste0(sp, "_occ_used.csv"))
+  
+  if (file.exists(f_path)) {
+    # Fast count of lines (minus header)
+    df <- read.csv(f_path)
+    return(nrow(df))
+  } else {
+    return(NA)
+  }
+}
+
+# 3. Print Results to Console
+results <- data.frame(Species = character(), Type = character(), Count = integer(), stringsAsFactors = FALSE)
+
+for (sp in final_fish_list) {
+  n <- get_occ_count(sp, "fish")
+  results[nrow(results) + 1, ] <- list(sp, "Anemonefish", n)
+}
+
+for (sp in final_host_list) {
+  n <- get_occ_count(sp, "hosts")
+  results[nrow(results) + 1, ] <- list(sp, "Host Anemone", n)
+}
+
+print(results)
+```
+
+## Fold Plots
+
+```{r}
+# # Quick Check: Where is Fold 3?
+# library(ggplot2)
+# library(ENMeval)
+# 
+# # 1. Load one species occurrence file (any one will do to see the blocks)
+# # Adjust path to where your occs are stored
+# occ <- read.csv("outputs/final_run/occurrences/fish/Amphiprion_clarkii_occ_used.csv") 
+# 
+# # 2. Re-run the blocking function (block_quadrant)
+# # This reproduces the exact folds used in your model
+# folds <- get.block(occ, occ[,c("x","y")], method="block")
+# 
+# # 3. Plot it
+# occ$fold <- factor(folds$occ.grp)
+# 
+# ggplot(occ, aes(x=x, y=y, color=fold)) +
+#   geom_point(size=3) +
+#   geom_sf(data = rnaturalearth::ne_countries(returnclass = "sf"), inherit.aes=F, fill="gray") +
+#   coord_sf(xlim=c(30, 180), ylim=c(-40, 40)) +
+#   labs(title="Where is Fold 3?", color="Fold ID") +
+#   theme_minimal()
+```
+
 
 # Output locations
 

@@ -28,13 +28,12 @@ cat("Generating Scree Plot...\n")
 p_scree <- fviz_eig(pca_model, addlabels = TRUE, ylim = c(0, 50), 
                     barfill = ifelse(1:nrow(eig_val) <= 4, "#2E9FDF", "#999999"), 
                     barcolor = ifelse(1:nrow(eig_val) <= 4, "#2E9FDF", "#999999")) +
-  labs(title = "Variance Explained by Principal Components", 
-       subtitle = paste0("Selected: PC1–PC4 (Cumulative Variance: ", round(cum_var_4, 1), "%)"),
+  labs(title = "",
        y = "Percentage of Variance (%)", x = "Principal Component") +
   geom_hline(yintercept = 100/nrow(eig_val), linetype="dashed", color="red") + 
   annotate("text", x=6, y=12, label="Kaiser Criterion cutoff", color="red", size=3) +
   theme_minimal(base_size = 14) +
-  theme(panel.grid.major.x = element_blank(), plot.title = element_text(face="bold"))
+  theme(panel.grid.major.x = element_blank())
 
 ggsave(file.path(OUTPUT_DIR, "01_Scree_Plot.png"), p_scree, width = 8, height = 6, bg = "white")
 
@@ -56,9 +55,7 @@ p_biplot <- ggplot() +
   geom_text_repel(data = loadings,
                   aes(x = PC1 * scale_factor, y = PC2 * scale_factor, label = var),
                   color = "black", size = 4, fontface = "bold", box.padding = 0.5) +
-  labs(title = "Environmental Gradients (PC1 vs PC2)",
-       subtitle = "Variable contributions to the primary axes",
-       x = paste0("PC1 (", round(eig_val[1,"variance.percent"], 1), "%)"),
+  labs(x = paste0("PC1 (", round(eig_val[1,"variance.percent"], 1), "%)"),
        y = paste0("PC2 (", round(eig_val[2,"variance.percent"], 1), "%)")) +
   coord_fixed() +
   theme_minimal(base_size = 14)
@@ -81,9 +78,7 @@ p_loadings <- ggplot(rot_long, aes(x = reorder(Variable, abs(Loading)), y = Load
   facet_wrap(~PC, ncol = 2) + 
   
   coord_flip() +
-  labs(title = "Variable Loadings for Selected Components", 
-       subtitle = "Interpretation of environmental drivers for PC1–PC4",
-       x = NULL, y = "Loading Strength") +
+  labs(x = NULL, y = "Loading Strength") +
   theme_minimal(base_size = 12) +
   theme(strip.text = element_text(face = "bold", size = 12),
         panel.border = element_rect(color="grey80", fill=NA),
