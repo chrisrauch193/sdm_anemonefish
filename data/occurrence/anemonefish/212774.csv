@@ -1,0 +1,37 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,occurrenceStatus,depth,source,datasetName,species
+55.450439,-4.622639,NA,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+46.3305500007936,-9.36686501031066,2021-12,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+55.6666679382,-4.58277797699,1972-07-02T00:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_fuscocaudatus
+46.3493133811656,-9.42222923790892,12/23/2020,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+46.315750000399,-9.36692000505475,2021-12,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+46.2113,-9.37232,2021-12,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+46.201,-9.40153,2021-12,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+46.2066688538,-9.39999961853,1967-08-26T14:00:00Z,PreservedSpecimen,NA,2,OBIS,NA,Amphiprion_fuscocaudatus
+51.119042,-10.182483,1984-06-15,PreservedSpecimen,NA,12.19,OBIS,NA,Amphiprion_fuscocaudatus
+55.666668,-4.582778,1972,HumanObservation,present,NA,OBIS,NA,Amphiprion_fuscocaudatus
+53.678317,-5.67742,2025-04-06T09:36,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.429236,-4.566324,2024-06-19T10:17,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.422449,-4.594355,2024-09-27T10:59,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.424758,-4.604915,2024-10-26T11:15,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.182719,-5.226675,2024-11-03T09:24,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.757137,-4.284976,2023-02-28T10:04,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.756901,-4.290246,2023-02-22T09:45,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.399845,-4.616409,2023-02-03T11:02,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.390593,-4.619448,2023-02-05T11:42,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.420604,-4.598386,2022-04-24T10:49,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.934768,-4.580683,2022-04-12T16:51,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+46.31575,-9.36692,2021-12,HUMAN_OBSERVATION,PRESENT,NA,GBIF,NA,Amphiprion_fuscocaudatus
+46.33055,-9.366865,2021-12,HUMAN_OBSERVATION,PRESENT,NA,GBIF,NA,Amphiprion_fuscocaudatus
+46.349313,-9.422229,2020-11-24,HUMAN_OBSERVATION,PRESENT,NA,GBIF,NA,Amphiprion_fuscocaudatus
+51.155926,-10.196785,2019-03-17T10:14,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.333866,-4.502084,2019-11-21,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.827333,-4.33929,2016-09-19,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.6734,-4.25807,2014-09-08T15:00Z,HUMAN_OBSERVATION,PRESENT,8.85,GBIF,Diveboard - Scuba diving citizen science,Amphiprion_fuscocaudatus
+55.4226,-4.6028,2012-05-17T00:00,HUMAN_OBSERVATION,PRESENT,NA,GBIF,NA,Amphiprion_fuscocaudatus
+55.830118,-4.358525,2012-08-14T15:22,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_fuscocaudatus
+55.3973,-4.69772,2012-10-15T10:00Z,HUMAN_OBSERVATION,PRESENT,12,GBIF,Diveboard - Scuba diving citizen science,Amphiprion_fuscocaudatus
+55.4653,-4.73919,2012-10-15T12:00Z,HUMAN_OBSERVATION,PRESENT,6,GBIF,Diveboard - Scuba diving citizen science,Amphiprion_fuscocaudatus
+55.489,-4.78271,2012-10-20T10:00Z,HUMAN_OBSERVATION,PRESENT,9,GBIF,Diveboard - Scuba diving citizen science,Amphiprion_fuscocaudatus
+46.333333,-9.416667,1971-01-01,PRESERVED_SPECIMEN,PRESENT,NA,GBIF,NA,Amphiprion_fuscocaudatus
+46.2067,-9.4,1967-08-26,PRESERVED_SPECIMEN,PRESENT,1,GBIF,NMNH Extant Biology,Amphiprion_fuscocaudatus
+46.366667,-9.416667,1954,PRESERVED_SPECIMEN,PRESENT,NA,GBIF,NA,Amphiprion_fuscocaudatus

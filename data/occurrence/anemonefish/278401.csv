@@ -1,0 +1,19 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,occurrenceStatus,depth,source,datasetName,species
+54.692222,16.988611,NA,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_omanensis
+54.713889,16.966667,1989-04-24,PreservedSpecimen,NA,8,OBIS,NA,Amphiprion_omanensis
+58.344595,20.382483,1989-09-21,PreservedSpecimen,NA,5,OBIS,NA,Amphiprion_omanensis
+54.806611,16.945417,2013-03-19,PreservedSpecimen,NA,15,OBIS,NA,Amphiprion_omanensis
+58.815278,20.471111,NA,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_omanensis
+58.633611,20.164694,NA,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_omanensis
+54.076598,16.996488,1988-05,PreservedSpecimen,NA,3,OBIS,NA,Amphiprion_omanensis
+58.6336,20.1647,2013-03-25,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_omanensis
+58.739283,20.24424,2024-02-23T14:25,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+58.739111,20.243314,2024-02-23T14:26,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+54.740051,16.952163,2023-01-01T12:26,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+56.036147,17.504196,2019-10-21T08:58,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+55.961989,17.504196,2019-10-23T04:11,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+55.300296,17.400322,2017-11-25,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+54.277734,16.935268,2016-03-29T17:42,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+54.450559,17.238274,2014-09-30T13:44,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+54.310824,16.912415,2014-09-30T13:43,HUMAN_OBSERVATION,PRESENT,NA,GBIF,iNaturalist research-grade observations,Amphiprion_omanensis
+59.509,22.772,1900-01,MATERIAL_SAMPLE,PRESENT,NA,GBIF,"Colección de referencia de otolitos, Instituto de Ciencias del Mar-CSIC",Amphiprion_omanensis

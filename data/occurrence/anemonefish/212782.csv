@@ -1,0 +1,80 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,depth,source,species
+97.78333,9.166667,1790,HumanObservation,NA,present,NA,OBIS,Amphiprion_ephippium
+98.677222,7.671944,1964-12-05,PreservedSpecimen,NA,NA,7.62,OBIS,Amphiprion_ephippium
+99.5999984741,-2,1963-11-30T10:00:00Z,PreservedSpecimen,NA,NA,2,OBIS,Amphiprion_ephippium
+98.1999969482,8,1963-03-22T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_ephippium
+93,10,1790-07-02T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_ephippium
+98.676944,7.668611,1964-12-02/03,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_ephippium
+97.7833328247,9.16666698456,1790-07-02T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_ephippium
+97.636,8.572,1992-04-19/1992-04-22,HumanObservation,Asia-Pacific Dataset,Present,NA,OBIS,Amphiprion_ephippium
+98.333,7.817,1982-10-26,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_ephippium
+97.8330001831,1,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_ephippium
+98.676667,7.667778,1964-12-03,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_ephippium
+94,7,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_ephippium
+99.253,6.544,1994-12-13/1994-12-14,HumanObservation,Asia-Pacific Dataset,Present,NA,OBIS,Amphiprion_ephippium
+99.069,7.213,1992-02-26,HumanObservation,Asia-Pacific Dataset,Present,NA,OBIS,Amphiprion_ephippium
+98.677222,7.6725,1964-12-05,PreservedSpecimen,NA,NA,1.52,OBIS,Amphiprion_ephippium
+92.987556,11.976042,2025-01-09T08:32:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.811454,9.06033,2025-02-15T08:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.022814,9.364216,2025-02-16T08:24:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.022777,9.364252,2025-02-15T15:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+93.032314,11.996694,2025-04-05T09:59:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.856486,9.438997,2025-04-17T16:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.371713,7.599927,2025-05-06T14:20:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.87357,9.411528,2025-11-14T11:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.256258,7.301876,2024-04-20T14:03:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.989338,12.037233,2024-09-18T07:24:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.988317,12.038852,2024-10-06T08:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.985959,12.039865,2024-10-19T07:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.98714,12.039399,2024-11-18T10:38:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.500591,6.797184,2023-01-15T17:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.859247,9.429709,2023-01-10T03:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.864054,9.425348,2023-01-10T03:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.292582,6.509269,2023-02-12T11:12:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.983707,9.363898,2023-02-18T13:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.946935,12.824097,2023-04-06T18:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.270499,6.51488,2023-11-23T15:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.989703,12.038794,2023-12-30T10:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.270663,6.523402,2022-01-18T09:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.335005,6.489392,2022-01-19T09:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.334094,6.485477,2022-01-19T10:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.767517,7.690332,2022-11-15T09:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.104167,9.708889,2021-02-17T13:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.3144,6.491413,2021-07-07T10:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.335375,6.4884829999999996,2021-07-08T10:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.85005,9.415626,2021-12-14T09:34:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.26445,6.514488,2020-02-12T11:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.765744,7.654987,2020-03-11T05:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.250651,6.50631,2020-06-30T15:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.258462,6.5578,2020-12-09T11:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.268901,6.513188,2020-12-12T13:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.782667,7.633581,2018-01-17T16:14:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.768463,7.666761,2018-02-23T10:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.302177,6.508384,2018-02-19T15:04:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.78538,7.652786,2017-02-10T10:52:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.775304,7.627821,2017-03-12T14:14:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.971516,10.625739,2017-03-30T08:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.022204,9.362611,2016-01-08T05:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.02208,9.364385,2016-12-28T14:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.021908,9.362861,2015-12-25T11:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.442382,7.767923,2014-07-04T14:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.7969,7.94734,2014-08-27T11:38Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.2,GBIF,Amphiprion_ephippium
+98.0983,9.33932,2013-02-04T14:02Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.6,GBIF,Amphiprion_ephippium
+98.768,7.65766,2012-12-14T12:24Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.85,GBIF,Amphiprion_ephippium
+97.800979,8.826379,2010-01-28T09:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+93.007561,11.975838,2010-03-10T12:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+92.957297,11.975348,2010-04-14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.987787,10.142634,2009-01-22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.986414,10.142381,2009-01-22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.965938,10.134996,2009-01-18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+95.3367,5.7773,2009-02-28T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+95.3466,5.8006,2009-02-28T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+95.2512,5.8829,2009-03-01T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+95.2491,5.8828,2009-03-01T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+95.259,5.8837,2009-05-01,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+95.2597,5.8758,2009-05-01,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.876665,7.612798,2007-10-28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_ephippium
+98.25,8,1963-03-22,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,NA,GBIF,Amphiprion_ephippium
+99.5944,-2,1963-11-30,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,1,GBIF,Amphiprion_ephippium
+93.5,8,1958-08-29,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_ephippium
+97.833,1,1857,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_ephippium

@@ -1,0 +1,831 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,depth,source,species
+123.256667,9.395,NA,PreservedSpecimen,NA,NA,2,OBIS,Amphiprion_frenatus
+116.706,20.714,1990-05-05/1990-05-11,MachineObservation,Asia-Pacific Dataset,Present,9,OBIS,Amphiprion_frenatus
+123.49445343,9.1411113739,1978-05-10T11:48:00Z,PreservedSpecimen,NA,NA,10.7,OBIS,Amphiprion_frenatus
+123.370975,12.524701,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.211669922,8.74666690826,1979-05-02T06:30:00Z,PreservedSpecimen,NA,NA,3,OBIS,Amphiprion_frenatus
+124.185,24.321666666666665,1995-12-07,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,10,OBIS,Amphiprion_frenatus
+127.7715697,26.4462804,2004-07-06,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,18,OBIS,Amphiprion_frenatus
+106.836998,-6.078999996,2005-11-06,PreservedSpecimen,Ocean Genome Legacy Collection,present,NA,OBIS,Amphiprion_frenatus
+122.508331299,10.579167366,1995-09-24T13:30:00Z,PreservedSpecimen,NA,NA,4,OBIS,Amphiprion_frenatus
+124.01666666666667,24.233333333333334,1976-07-31,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,NA,OBIS,Amphiprion_frenatus
+109.245,12.2877777778,2002-05-15T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+105.8465,2.953778,2002-03-13,HumanObservation,Asia-Pacific Dataset,Present,NA,OBIS,Amphiprion_frenatus
+119.880261437599,8.90034993218769,NA,HumanObservation,NA,present,NA,OBIS,Amphiprion_frenatus
+121.400001526,18.8999996185,1990-03-11T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+120.813331604,21.9300003052,1968-05-03T09:12:00Z,PreservedSpecimen,NA,NA,8.5,OBIS,Amphiprion_frenatus
+123.180000305,9.10000038147,1979-04-28T16:00:00Z,PreservedSpecimen,NA,NA,3,OBIS,Amphiprion_frenatus
+119.400001526,4.69999980927,1909-09-24T13:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+129.26333333333332,28.188333333333333,2006-11-18,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,5,OBIS,Amphiprion_frenatus
+109.318056,12.1925,1961-02-01,PreservedSpecimen,NA,NA,1.525,OBIS,Amphiprion_frenatus
+120.933326721,10.875,1978-05-23T08:12:00Z,PreservedSpecimen,NA,NA,14,OBIS,Amphiprion_frenatus
+120.7,21.98,1990-06-15,preservedspecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+121.172605,13.409638,1931-01,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+120.833343506,21.9166660309,1968-05-02T08:30:00Z,PreservedSpecimen,NA,NA,6.5,OBIS,Amphiprion_frenatus
+127.7319924,26.3308886,2008-03-29,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,8,OBIS,Amphiprion_frenatus
+114.370002747,10.3699998856,1994-04-20T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.2566666603088,9.395000012715656,1979-04-23,preservedspecimen,NA,NA,1,OBIS,Amphiprion_frenatus
+119.822692233337,8.74372800349681,NA,HumanObservation,NA,present,NA,OBIS,Amphiprion_frenatus
+124.255,24.3847,1987-12-13,PreservedSpecimen,Fish,NA,NA,OBIS,Amphiprion_frenatus
+92.8166656494,11.1166667938,1856-07-02T00:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.385,9.43638888889,1987-05-21T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.275001526,9.06666660309,1978-06-22T15:30:00Z,PreservedSpecimen,NA,NA,3,OBIS,Amphiprion_frenatus
+124.0981851,24.4148812,2007-05-03,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+129.62916666666666,28.446666666666665,2016-10-06,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,NA,OBIS,Amphiprion_frenatus
+119.839341611354,8.79612393901102,NA,HumanObservation,NA,present,NA,OBIS,Amphiprion_frenatus
+106.242389,3.243028,2002-03-14T15:30:00+07:00,PreservedSpecimen,Asia-Pacific Dataset,Present,NA,OBIS,Amphiprion_frenatus
+120.93905,13.516533,2015-03-29,PreservedSpecimen,NA,NA,27.58,OBIS,Amphiprion_frenatus
+121.003890991,10.8533334732,1978-05-21T15:30:00Z,PreservedSpecimen,NA,NA,1,OBIS,Amphiprion_frenatus
+127.7306061,26.3668358,2007-10-30,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+121.034156799,10.9180555344,1978-05-22T08:00:00Z,PreservedSpecimen,NA,NA,4.6,OBIS,Amphiprion_frenatus
+120.992500305,13.5180559158,2000-05-16T13:30:00Z,PreservedSpecimen,NA,NA,6,OBIS,Amphiprion_frenatus
+127.278532,26.199107,2006-08-17,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+123.409859,9.39233,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+124.255,24.3533,1987-12-14,PreservedSpecimen,Fish,NA,NA,OBIS,Amphiprion_frenatus
+127.8375433,26.500003800000002,2008-12-13,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+127.8857326,26.6210259,2009-08-01,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+109.291667,12.201667,1960-02-23,PreservedSpecimen,NA,NA,3.5,OBIS,Amphiprion_frenatus
+123.453888889,9.20444444444,1987-05-22T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.201741,11.429572,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+128.2760884,26.8601916,2005-05-04,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+120.97805,13.507433,2015-04-03,PreservedSpecimen,NA,NA,22.1,OBIS,Amphiprion_frenatus
+120.929767,13.51355,2015-04-22,PreservedSpecimen,NA,NA,22.1,OBIS,Amphiprion_frenatus
+121.519996643,22.0799999237,1979-06-21T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.470001221,9.22500038147,1979-05-15T05:30:00Z,PreservedSpecimen,NA,NA,1,OBIS,Amphiprion_frenatus
+123.41166687,8.8516664505,1979-05-02T13:12:00Z,PreservedSpecimen,NA,NA,17.5,OBIS,Amphiprion_frenatus
+119.809996682856,8.80859975817503,NA,HumanObservation,NA,present,NA,OBIS,Amphiprion_frenatus
+92.75,12.5,1856-07-02T00:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+129.2225,28.193333333333335,2014-06-26,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,NA,OBIS,Amphiprion_frenatus
+106.836997986,-6.07899999619,NA,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+92.816666,11.116667,1856,HumanObservation,NA,present,NA,OBIS,Amphiprion_frenatus
+103.803433,1.35843,1947-01,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+109.238333,12.21,1960-03-14,PreservedSpecimen,NA,NA,3,OBIS,Amphiprion_frenatus
+127.8316665,26.4947624,2008-06-21,HumanObservation,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,Present,NA,OBIS,Amphiprion_frenatus
+123.514556,9.1375,2016-04-10,PreservedSpecimen,NA,NA,2.44,OBIS,Amphiprion_frenatus
+123.453887939,9.20444393158,1987-05-22T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+109.300552368,12.1719446182,2002-05-21T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+129.26666666666668,28.186666666666667,1989-09-12,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,2.5,OBIS,Amphiprion_frenatus
+120.61653,14.071887,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+114.374,10.374,1994-04-20,MachineObservation,Asia-Pacific Dataset,Present,12.5,OBIS,Amphiprion_frenatus
+123.385002136,9.43638896942,1987-05-21T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+104.155,2.825,2004-10-07/2004-10-31,HumanObservation,Asia-Pacific Dataset,Present,5.5,OBIS,Amphiprion_frenatus
+114.361,10.381,1994-04-21,MachineObservation,Asia-Pacific Dataset,Present,20.5,OBIS,Amphiprion_frenatus
+123.385,9.43666666667,1987-05-21T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.385002136,9.43666648865,1987-05-21T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+109.300834656,12.1719446182,2002-05-21T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+127.940575,26.500373,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+127.86666666666666,26.233333333333334,1976-02-20,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,NA,OBIS,Amphiprion_frenatus
+93,10,1856-07-02T00:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+109.300833333,12.1719444444,2002-05-21T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_frenatus
+120.009499999387,8.92514000302976,NA,HumanObservation,NA,present,NA,OBIS,Amphiprion_frenatus
+114.371,10.376,1994-04-21,MachineObservation,Asia-Pacific Dataset,Present,7.5,OBIS,Amphiprion_frenatus
+129.26666666666668,28.191666666666666,2013-12-09,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,NA,OBIS,Amphiprion_frenatus
+108,-3,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+124.256,24.38,1987-12-10,PreservedSpecimen,Fish,NA,NA,OBIS,Amphiprion_frenatus
+121.180386,13.416793,1921-01,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+109.245002747,12.2877779007,2002-05-15T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_frenatus
+123.985095,10.208435,2025-01-04T13:35:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.110553,11.327705,2025-01-17T16:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.970748,13.525276,2025-01-28T09:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.087975,10.051421,2025-01-28T10:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.853362,13.669862,2025-01-16T09:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.85675,13.669738,2025-01-16T11:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.50917,9.141012,2025-01-22T15:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.86240599999999,13.738813,2025-01-28T10:00:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.84125,13.690556,2025-01-17T11:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.10706,11.344946,2025-01-13T15:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.900187,13.820687,2025-01-18T11:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.923211,13.758638,2025-01-16T09:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.695033,26.267594,2025-01-31T22:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.729102,11.453349,2025-01-30T14:42:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.879388,13.702695,2025-01-19T10:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.331586,11.116734,2025-02-14T23:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.384664,9.688244,2025-02-23T20:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.27173,9.072432,2025-02-20T04:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.857647,26.626649,2025-02-13T11:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.796489,21.977628,2025-03-03T15:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.703201,21.994692,2025-03-01T11:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.866336,26.5158,2025-03-04T10:05:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.111562,11.326739,2025-03-16T15:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.365491,9.945908,2025-03-20T14:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.024479,10.031709,2025-03-15T14:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.022872,10.027847,2025-03-15T11:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.190692,11.298703,2025-03-31T11:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.98099,13.523381,2025-03-04T13:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.291025,26.225219,2025-03-19T12:04:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.268491,9.071002,2025-04-17T09:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.880188,26.508283,2025-04-19T11:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.144691,24.813219,2025-04-07T10:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.142885,24.813297,2025-04-07T11:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.103468,10.988369,2025-04-01T10:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.108244,10.151858,2025-04-24T11:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+126.259677,6.796606,2025-04-26T09:59:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.87283,13.719941,2025-04-15T17:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.988183,10.209356,2025-04-29T09:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.365346,9.95013,2025-04-29T11:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.68643,8.678262,2025-04-26T11:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.343529,9.923113,2025-04-10T07:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.476685,22.656688,2025-04-15T10:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.358812,9.955917,2025-04-09T12:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.236325,9.199083,2025-04-29T14:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.264183,9.187019,2025-04-02T04:43:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.372187,9.996179,2025-04-11T10:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+112.218756,16.946326,2025-04-10T10:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.308383,26.222028,2025-05-29T14:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.872779,13.712478,2025-05-31T16:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+107.620515,-2.556174,2025-05-10T20:01:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.689456,9.53695,2025-05-29T10:43:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.345694,26.185322,2025-05-17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.818339,24.435884,2025-05-22T15:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.343957,9.923358,2025-05-28T10:55:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.840936,13.68009,2025-06-02T09:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.84124,13.691908,2025-06-02T11:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.372958,22.360045,2025-06-07T15:00:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.111637,11.326845,2025-06-20T11:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.568675,22.040578,2025-06-07T10:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.684312,9.517033,2025-06-15T11:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.560169,22.084378,2025-06-09T10:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.4556,8.3555,2025-06-13T17:02:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.559783,22.086147,2025-06-08T10:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.179634,11.311216,2025-06-29T15:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.978321,13.522842,2025-06-29T11:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.594197,22.007595,2025-06-06T15:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.761167,9.542045,2025-06-15T13:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.490144,22.662089,2025-06-18T00:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.980074,13.523185,2025-07-06T12:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.22995,9.1401,2025-07-15T12:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.111459,11.326846,2025-07-12T12:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.481381,22.687481,2025-07-09T09:57:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.762114,9.21607,2025-07-17T04:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.761967,9.2157,2025-07-17T04:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.341666,28.136455,2025-07-23T15:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.759257,9.218677,2025-07-17T06:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.761977,9.215705,2025-07-17T03:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.759193,9.218719,2025-07-17T06:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.921083,9.500365,2025-07-12T04:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.762114,9.216149,2025-07-17T04:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.921079,9.500348,2025-07-12T04:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.135095,9.053133,2025-07-22T13:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.111012,11.327067,2025-07-15T14:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.088626,12.231238,2025-07-31T13:16:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.686009,28.543885,2025-07-23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.857527,26.511525,2025-07-20T09:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.39183,9.433443,2025-07-06T08:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.392013,9.433587,2025-07-06T08:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.249124,12.574538,2025-07-08T11:16:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.271429,9.079721,2025-07-04T17:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.47268,22.675994,2025-07-09T09:57:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.660178,11.51661,2025-08-07T14:01:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.435955,22.196878,2025-08-07T23:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+110.20023,18.577112,2025-08-05T04:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.594509,22.008025,2025-08-23T05:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.308609,26.221588,2025-08-04T12:51:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.499188,22.64572,2025-08-29T16:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.211414,12.568663,2025-08-26T12:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.277212,12.562473,2025-08-30T09:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.252429,12.466553,2025-08-27T09:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.314302,12.51301,2025-08-28T13:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.244718,12.546312,2025-08-27T09:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.594627,22.00763,2025-08-30T08:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.557276,22.022433,2025-08-29T14:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.328828,12.672423,2025-09-01T12:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.277604,26.201634,2025-09-21T04:50:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.206213,12.729088,2025-09-01T11:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.344595,26.172234,2025-09-13T05:13:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.768738,9.546776,2025-09-15T05:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.773461,9.548525,2025-09-16T03:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.320971,26.021569,2025-09-15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.768289,9.546587,2025-09-17T13:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.733611,9.587118,2025-09-17T11:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.773226,26.443641,2025-09-29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.768351,9.546766,2025-09-19T13:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272197,9.192033,2025-09-27T15:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.263529,9.19031,2025-09-28T12:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.271,9.07828,2025-09-23T15:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.28014,26.02276,2025-09-13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.80763,9.587356,2025-09-18T10:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.657423,5.961562,2025-09-11T12:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.683301,9.516107,2025-09-21T11:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.684085,9.52108,2025-09-21T13:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.397874,23.116587,2025-09-07T11:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.544806,28.55082,2025-09-19T03:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.670303,5.95164,2025-09-27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.412041,11.237688,2025-10-15T03:18:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.707281,21.996947,2025-10-25T12:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.88788,13.689784,2025-10-07T10:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.388249,9.435278,2025-10-22T09:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.371513,22.331178,2025-10-24T12:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.706458,21.995031,2025-10-11T12:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.388507,9.434627,2025-10-22T08:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.37157500000001,22.33109,2025-10-24T12:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.371468,22.331227,2025-10-24T12:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.371515,22.340416,2025-10-12T14:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.756303,9.533552,2025-10-02T11:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.397511,26.231426,2025-11-01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.317363,26.280788,2025-11-01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.348611,26.255863,2025-11-02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.241255,26.176255,2025-11-03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.872727,13.710915,2025-11-25T08:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.87394,13.700254,2025-11-11T09:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.376667,9.876113,2025-11-23T14:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.861643,13.675581,2025-11-15T09:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.83542,13.696895,2025-11-15T09:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.76032,9.882423,2025-11-18T11:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.288073,12.529401,2025-11-02T12:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.851454,13.68991,2025-11-24T18:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.33838,11.12894,2025-12-08T10:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.26555,9.186132,2024-01-04T18:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.111523,11.326909,2024-01-22T10:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.946575,11.62188,2024-01-23T10:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.702078,9.424487,2024-01-13T10:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.399272,11.393536,2024-01-20T11:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.22318,11.260287,2024-01-20T09:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.216574,11.383017,2024-01-20T11:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.554341,26.265894,2024-02-16T09:39:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.91283,13.645995,2024-02-12T15:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.878428,13.664326,2024-02-22T15:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.803731,13.731831,2024-02-16T09:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.945134,13.752807,2024-02-15T15:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.997313,13.785486,2024-02-21T11:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.937607,13.715537,2024-02-16T09:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.983506,13.609835,2024-02-21T16:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.977933,13.727756,2024-02-14T09:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.942101,13.765584,2024-02-21T08:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.986929,4.546833,2024-02-21T16:26:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.015047,5.967303,2024-03-01T11:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.712084,24.355605,2024-03-08T12:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.375016,22.35515,2024-03-03T10:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.248529,12.540993,2024-03-25T10:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.350347,11.200866,2024-03-04T17:59:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.248256,12.577836,2024-03-21T02:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.21666,2.861653,2024-03-28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.594346,22.007739,2024-03-31T16:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.373999,22.354737,2024-03-03T10:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.025036,8.917676,2024-03-16T14:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.410081,26.227565,2024-04-19T10:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.366316,9.956624,2024-04-19T12:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.918495,11.954517,2024-04-28T13:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.920261,11.957884,2024-04-29T13:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.364294,9.94937,2024-04-18T11:32,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.342431,9.922946,2024-04-18T10:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.916114,11.954699,2024-04-28T13:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.50324,22.077451,2024-04-01T15:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.104602,2.903305,2024-05-07T09:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.275149,9.196507,2024-05-14T16:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786746,1.214538,2024-05-22T13:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.75086,1.212157,2024-05-22T11:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.750627,1.21229,2024-05-22T11:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.471935,22.656484,2024-05-24T14:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.263128,9.190745,2024-05-20T10:45:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.923895,13.757719,2024-05-04T12:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.852056,1.222761,2024-05-28T10:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.852125,1.223163,2024-05-28T10:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.308485,26.222744,2024-06-15T11:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.647222,28.401756,2024-06-25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.598777,22.009669,2024-06-18T16:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.599308,22.010174,2024-06-18T16:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.598777,22.009987,2024-06-18T16:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.713499,26.373899,2024-06-03T12:21:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.59385,22.008206,2024-06-24T16:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.86434,4.595825,2024-06-25T06:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.307933,26.243661,2024-06-15T14:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.403006,11.214097,2024-06-09T10:51:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.061621,5.621184,2024-06-13T12:51:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.47885,12.6713,2024-06-04T13:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.746357,26.326652,2024-06-20T09:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.763037,9.212992,2024-07-11T08:04:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.250979,9.159483,2024-07-14T09:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267021,9.076355,2024-07-16T11:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.268122,9.069633,2024-07-15T09:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.266548,9.170664,2024-07-17T09:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267405,9.070328,2024-07-16T09:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.503881,9.7339,2024-07-13T11:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.473215,22.65468,2024-07-10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.822158,9.173211,2024-07-25T06:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.412734,23.123414,2024-08-10T11:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.568449,22.072252,2024-08-16T12:13:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786105,1.214804,2024-08-25T09:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.245757,12.565298,2024-08-27T10:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.548047,22.088924,2024-08-16T12:16:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.629145,28.435676,2024-08-02T11:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.271751,9.191466,2024-08-23T10:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.113495,11.32396,2024-08-01T16:25:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.556869,22.084223,2024-08-16T12:15:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.213735,9.121269,2024-08-27T12:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.314418,26.2319,2024-09-11T14:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.215803,9.159897,2024-09-05T07:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+108.479588,15.946723,2024-09-01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.293903,26.217542,2024-09-12T11:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.56951,22.084698,2024-09-09T10:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.98055600000001,13.527261,2024-09-28T10:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.74432,26.327262,2024-09-05T10:11:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.014881,5.967237,2024-10-04T14:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.371486,22.341945,2024-10-11T16:25:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.36579,22.339103,2024-10-11T16:19:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.232856,24.931319,2024-10-05T14:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.232833,24.931347,2024-10-05T14:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.75156,1.228136,2024-10-31T11:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.244804,12.577223,2024-10-13T02:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.247465,12.580155,2024-10-13T01:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.245834,12.578982,2024-10-13T04:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.88161,13.684115,2024-10-20T04:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.36152,22.33989,2024-10-11T10:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.860594,4.594974,2024-11-01T14:21:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.97547900000001,13.521892,2024-11-20T14:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.986596,13.514255,2024-11-21T10:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.975445,13.521935,2024-11-20T13:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.840611,13.689156,2024-11-25T03:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.946167,13.5245,2024-11-23T09:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.827919,13.696679,2024-11-30T09:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.39919,9.692725,2024-12-29T12:06:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.577008,9.738202,2024-12-19T08:02:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.115636,11.335846,2024-12-26T14:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.36755,9.94251,2024-12-17T10:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.277903,9.195197,2024-12-11T05:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.746934,1.226108,2024-12-14T09:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.773943,9.618215,2024-12-16T09:14:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.27173,9.0852,2024-12-07T07:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.496086,9.153793,2024-12-28T14:18:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.848437,1.219514,2024-12-16T18:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.311635,9.332461,2024-12-03T09:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.971286,13.521252,2024-12-02T21:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.102971,13.532412,2024-12-06T12:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.972429,13.524108,2024-12-04T11:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.85,1.216667,2024-12-16T18:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.9891,13.522188,2023-01-27T15:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267524,9.073396,2023-01-02T12:54:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.268243,9.085082,2023-01-02T09:25:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.891242,13.686359,2023-02-14T11:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.682873,9.519079,2023-02-26T11:28:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.579707,9.705628,2023-02-04T00:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.531643,9.698855,2023-02-08T00:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.87523,13.706919,2023-03-14T11:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.853965,13.671332,2023-03-15T06:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.871417,13.709884,2023-03-20T10:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.874363,13.723483,2023-03-19T10:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.274562,9.073322,2023-03-22T12:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.889949,13.687363,2023-03-17T06:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.47562,9.16475,2023-03-21T02:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.872897,13.708039,2023-03-17T11:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.747802,21.946105,2023-03-07T12:46:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.398155,23.114659,2023-04-24T09:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.861486,13.681372,2023-04-09T12:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.11571000000001,11.336488,2023-04-30T14:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.910059,13.757582,2023-04-08T16:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.908511,13.755705,2023-04-08T06:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.989766,13.496413,2023-04-06T16:03:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.347952,12.07437,2023-04-12T23:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.316323,11.151595,2023-04-07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.788235,21.937548,2023-05-16T13:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.402099,23.114905,2023-05-14T11:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.75632,9.54085,2023-05-09T22:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.063852,24.432807,2023-05-02T14:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.564591,9.726519,2023-06-22T12:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.81386,9.046167,2023-06-10T14:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.598,12.7131,2023-06-30T11:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.358322,24.724092,2023-06-22T12:15:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.42668,12.661101,2023-06-05T19:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.021444,10.254781,2023-06-19T07:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.240285,9.573077,2023-06-15T11:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.840769,13.68335,2023-06-22T09:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.871132,13.713602,2023-06-24T16:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.191071,9.087763,2023-06-19T07:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.265846,9.186176,2023-06-15T13:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.193704,9.092612,2023-06-03T20:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.266715,9.076923,2023-06-16T10:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267069,9.07634,2023-06-16T08:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.873339,13.709994,2023-07-02T10:28:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+108.530863,15.917489,2023-07-08T07:13:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.747136,1.226348,2023-07-22T14:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.95412,13.501891,2023-07-29T21:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.252773,9.17205,2023-07-28T08:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272631,9.192246,2023-07-27T11:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272856,9.192286,2023-07-29T09:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.746758,1.225286,2023-07-15T11:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.827972,13.697528,2023-07-01T10:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.6862,9.5195,2023-07-01T17:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272679,9.193136,2023-07-28T10:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.192813,9.093493,2023-07-22T14:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.195105,9.089893,2023-07-20T19:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.805971,21.939581,2023-07-07T12:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.495772,28.407289,2023-07-22T12:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.841045,13.682485,2023-07-08T12:37:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.55851,22.08678,2023-07-11T09:01:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786483,1.214986,2023-08-09T11:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.247405,9.16618,2023-08-13T09:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.133056,2.809722,2023-08-08T17:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272205,9.072719,2023-08-03T09:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.33915,26.175531,2023-08-18T17:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.746854,21.936889999999998,2023-08-19T12:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.747353,21.937045,2023-08-19T12:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.708747,26.088431,2023-08-20T12:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.508425,22.083284,2023-08-21T15:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.309023,26.22258,2023-08-17T14:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.107392,24.479899,2023-09-08T12:05:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.878476,13.705204,2023-09-30T12:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.193321,9.09293,2023-09-05T15:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.265453,9.185476,2023-09-11T10:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.261086,9.17716,2023-09-04T16:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.21227,9.11839,2023-09-17T11:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.605925,8.692905,2023-10-05T14:24:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.287364,26.220817,2023-10-17T09:33:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.371095,22.353288,2023-10-31T12:54:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.344761,26.168842,2023-10-09T10:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.369721,9.942746,2023-10-03T16:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.598766,12.711745,2023-11-07T14:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.194112,9.091575,2023-11-21T12:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.479284,22.636358,2023-11-18T11:09:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.47851,22.637959,2023-11-18T10:57:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.673846,10.517101,2023-11-03T14:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.75121,10.251508,2023-11-06T09:29:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.703168,21.992924,2023-12-31T13:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.92155,12.309588,2023-12-31T13:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786779,1.214852,2022-04-17T09:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.738282,26.357737,2022-04-09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.342805,11.212028,2022-06-02T12:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.339811,11.195496,2022-06-02T13:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.379004,11.194031,2022-06-02T09:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.313665,11.129025,2022-06-04T11:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.7734,9.5486,2022-06-27T06:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.876732,13.737051,2022-06-19T10:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.976639,13.526517,2022-06-29T14:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.851529,1.224668,2022-07-07T22:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+108.545178,15.981343,2022-07-09T10:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.558708,22.081994,2022-07-14T12:04:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.650147,28.452967,2022-08-05T15:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.190833,11.310278,2022-08-15T08:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.253255,11.118323,2022-08-16T13:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.34326,9.923824,2022-08-18T12:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.502877,22.077288,2022-09-09T10:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.502748,22.077282,2022-09-09T10:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+115.996184,5.970462,2022-09-21T16:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.766325,13.78612,2022-09-21T21:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.829364,1.25065,2022-09-21T19:09:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.907304,13.723551,2022-10-22T06:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.364713,22.352329,2022-10-24T11:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.326741,26.230658,2022-10-07T10:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272182,9.192591,2022-10-20T15:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267389,9.071197,2022-10-19T10:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.973872,27.016695,2022-10-01T15:29:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+107.67568,-2.560617,2022-10-29T12:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.194707,9.094225,2022-10-19T15:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.40076,9.955661,2022-10-27T13:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.798827,9.531933,2022-11-29T14:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.102746,10.99066,2022-11-01T10:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.871211,26.456285,2022-11-26T09:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.069976,26.548544,2022-11-26T13:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.13272,10.065723,2022-11-05T13:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.821249,24.427301,2022-11-18T13:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.883771,13.728078,2022-12-02T09:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.025,10.3123,2022-12-08T10:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.90968,13.75599,2022-12-27T16:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.875898,13.695381,2022-12-26T10:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.218342,11.962126,2022-12-19T11:23:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.046238,11.97959,2022-12-21T10:03:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267266,9.076628,2022-12-29T13:58:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.379007,9.933756,2022-12-01T17:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.916036,13.759733,2022-12-11T16:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.023785,11.970798,2022-12-21T14:07:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.255818,9.174927,2022-12-28T09:32:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.268146,9.085294,2022-12-31T09:51:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.211305,9.111549,2022-12-30T09:40:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.905078,13.724671,2022-12-03T12:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267642,9.073693,2022-12-31T11:26:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.48926,22.678874,2021-01-13T14:42Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.74123,26.32973,2021-02-23T15:14:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.747606,21.935022,2021-02-06T18:13:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786496,1.214966,2021-03-16T14:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+109.755933,18.309174,2021-03-04T12:46Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786262,1.21506,2021-04-13T12:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.491192,22.637463,2021-04-03T11:23:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.768611,1.212222,2021-04-02T07:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.746983,1.226017,2021-05-01T14:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786444,1.214976,2021-05-13T14:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.735661,26.428406,2021-06-03T06:11:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786214,1.215119,2021-07-04T11:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.890816,10.316188,2021-07-11T15:09:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.974728,26.520922,2021-07-17T08:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.493831,22.677736,2021-08-25T08:49:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.95438,13.518804,2021-08-30T10:51:32,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.557277,22.022023,2021-09-08T08:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.786613,1.214954,2021-09-12T10:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.473161,22.655407,2021-10-15T16:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.565703,22.006712,2021-10-19T10:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.77129,1.212217,2021-12-28T13:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.86434,4.595854,2020-01-16T01:00:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.348293,11.171708,2020-01-23T12:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.751631,1.226899,2020-03-08T09:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.514022,23.484077,2020-03-16T14:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.958889,27.863056,2020-06-30,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.500873,22.680581,2020-06-26T15:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.48154100000001,22.67778,2020-06-24T11:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.900462,27.034588,2020-07-23T14:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.40625,26.030269,2020-07-22T09:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.502089,26.022855,2020-07-22T10:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.516156,22.084403,2020-07-07T10:12:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.499903,22.08237,2020-08-10T11:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.568598,22.074906,2020-08-12T14:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.538257,22.024135,2020-08-13T10:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.559501,22.080994,2020-08-12T15:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.891093,5.795461,2020-08-18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.747083,1.22623,2020-09-13T10:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.547838,22.013538,2020-09-06T10:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.933889,28.284444,2020-10-01,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+117.49444,8.472498,2020-11-18T10:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.465905,22.655164,2020-12-07T13:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.360426,22.340408,2020-12-14T09:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.371652,22.331153,2019-02-28T14:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267256,9.081265,2019-02-22T09:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267346,9.070838,2019-02-22T11:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.344766,26.206879,2019-03-01T11:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.326436,26.227756,2019-03-01T11:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.34964,26.218195,2019-03-01T10:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.681946,9.51531,2019-03-29T10:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.884823,13.69212,2019-04-26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.827069,13.687463,2019-04-27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.901163,13.658816,2019-04-30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.726023,3.09232,2019-05-19T15:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.990615,26.393862,2019-05-15T15:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.840528,13.679563,2019-05-20T11:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.840742,13.679543,2019-05-20T13:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.892884,13.681606,2019-05-27T11:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.902804,13.690098,2019-05-04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.710571,21.985414,2019-05-04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.217681,9.123619,2019-05-12T12:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.009025,6.008297,2019-05-13T10:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.897709,13.65705,2019-05-01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+114.497,-8.09348,2019-06-27T10:19Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8.95,GBIF,Amphiprion_frenatus
+123.270599,9.077194,2019-06-18T11:48:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.266236,9.077118,2019-06-18T14:03:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+109.312657,12.171001,2019-08-28T11:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.470074,22.677088,2019-08-01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.473169,22.655839,2019-09-13T02:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.716944,28.475833,2019-09-01,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.878428,13.726064,2019-10-05T09:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.883911,13.727861,2019-10-26T12:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.763503,25.162196,2019-10-26T15:04Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+129.975833,28.288333,2019-11-28,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.362248,9.94609,2019-11-19T09:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.744782,21.930115,2019-12-15T12:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.022595,10.027633,2019-12-19T16:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.068789,9.820348,2019-12-21T11:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.178341,10.144973,2019-12-22T10:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.05022,10.262325,2019-12-26T10:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.871909,13.716089,2019-12-29T14:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.844619,13.686916,2019-12-27T11:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.87348,13.708571,2019-12-26T17:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.250384,24.852823,2019-12-11T06:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.746568,1.225531,2018-01-20T11:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+115.996,6.01534,2018-01-20T09:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7,GBIF,Amphiprion_frenatus
+116.008,6.00658,2018-01-20T14:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8,GBIF,Amphiprion_frenatus
+116.029,5.9934,2018-02-17T09:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8.5,GBIF,Amphiprion_frenatus
+116.014,5.96653,2018-02-16T14:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7,GBIF,Amphiprion_frenatus
+116.007,5.97309,2018-02-16T11:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8,GBIF,Amphiprion_frenatus
+123.11937,9.050293,2018-03-03T14:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.999085,10.282094,2018-03-03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.12185,11.336098,2018-03-07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.948317,13.523717,2018-04-17T14:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.740411,5.886569,2018-04-08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.874703,13.707783,2018-05-11T16:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.875453,13.723118,2018-05-17T11:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.990807,13.51682,2018-05-22T11:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.985998,13.522445,2018-05-22T14:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.99116,13.51857,2018-05-24T14:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.121193,11.329221,2018-05-23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.121259,11.329303,2018-05-23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.835252,13.700224,2018-05-09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.841349,13.673484,2018-05-07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.892893,13.681788,2018-05-17T11:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.947381,26.910186,2018-07-07T14:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.954599,26.915966,2018-07-08T14:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.733889,26.370278,2018-09-30,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.019911,6.030302,2018-09-07T03:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+109.221069,12.202917,2018-09-08T16:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.117558,2.295156,2018-10-07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.34288,9.922621,2018-11-09T15:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.76599,9.540846,2018-11-22T12:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.315935,11.222205,2018-11-17T14:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.747526,9.542428,2018-11-22T10:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.785059,9.797068,2018-11-01T11:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.110572,11.348868,2017-01-08T03:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.848,9.56295,2017-04-03T10:42Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.065,GBIF,Amphiprion_frenatus
+123.693,9.50694,2017-04-04T13:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.84,GBIF,Amphiprion_frenatus
+123.797,9.536,2017-04-07T11:49Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,13.23,GBIF,Amphiprion_frenatus
+123.741,9.60094,2017-04-06T10:07Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.8,GBIF,Amphiprion_frenatus
+123.775,9.52588,2017-04-07T14:22Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.13,GBIF,Amphiprion_frenatus
+123.688,9.51834,2017-04-04T15:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.915,GBIF,Amphiprion_frenatus
+120.975002,13.525689,2017-04-30T15:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.61,8.67,2017-04-25,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.787068,26.447642,2017-04-18T14:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.057797,13.731108,2017-05-06T12:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.900823,13.821063,2017-05-17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.900706,13.821273,2017-05-12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.843881,13.686222,2017-05-08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.781977,9.549286,2017-05-25T14:28:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.516855,9.72143,2017-05-30T09:34:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.499861,9.745602,2017-05-31T12:03:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.377086,9.933956,2017-05-16T18:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.798429,24.418816,2017-06-22T17:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.725,24.333333,2017-06-22T12:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.415,27.065278,2017-06-30,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.476389,22.678056,2017-06-24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.280407,9.162957,2017-06-06T01:31Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.267519,9.07059,2017-06-14T09:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.23835,12.58305,2017-06-16T11:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.24955,12.52746,2017-06-16T09:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.23934,12.5647,2017-06-07T16:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.366407,9.944645,2017-07-18T15:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.745173,1.2251050000000001,2017-07-15T20:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.400556,27.051944,2017-07-01,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.413056,27.048333,2017-07-03,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.743129,5.912043,2017-07-27T18:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.77208,9.548237,2017-10-31T07:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.684159,9.516742,2017-11-01T01:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.375354,9.952279,2016-01-13T00:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.865195,13.698709,2016-03-26T16:47:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.684674,9.516107,2016-03-20T20:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.119907,11.347139,2016-05-16T14:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.105142,11.346088,2016-05-17T11:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.26687,11.756474,2016-05-18T13:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272802,9.086332,2016-05-21T10:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.266794,9.071924,2016-05-21T12:32,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.842615,13.691914,2016-05-13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.843581,13.686285,2016-05-12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.907525,13.755822,2016-05-12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.51406,23.485126,2016-05-30T11:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.041,-8.3642,2016-06-21T14:29Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,13.4,GBIF,Amphiprion_frenatus
+116.052,-8.35807,2016-06-20T14:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_frenatus
+128.966667,27.666667,2016-06-19,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.387289,9.435686,2016-06-12T12:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.888611,27.870278,2016-07-02,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.642222,27.418611,2016-07-15,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.135553,2.73211,2016-07-20T23:13:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.74279,5.90465,2016-07-21T02:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.74287,5.904147,2016-07-21T08:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.742778,5.904873,2016-07-21T10:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.254181,9.141461,2016-09-23T04:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.091169,24.300815,2016-10-30T09:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.673952,9.526123,2015-01-20T03:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.824,9.7064,2015-02-03,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.024191,10.090803,2015-02-27T12:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+98.896,7.42915,2015-03-21T13:04Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.365,GBIF,Amphiprion_frenatus
+120.939,13.5165,2015-03-29,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,27.5,GBIF,Amphiprion_frenatus
+128.411944,27.049167,2015-03-18,PRESERVED_SPECIMEN,NA,PRESENT,1.5,GBIF,Amphiprion_frenatus
+120.868496,13.720508,2015-03-08T17:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.93,13.5136,2015-04-22,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,22,GBIF,Amphiprion_frenatus
+120.978,13.5074,2015-04-03,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,22,GBIF,Amphiprion_frenatus
+123.889797,24.369713,2015-04-26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.841457,13.673400000000001,2015-05-04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.84099,13.673746,2015-05-09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.845148,13.672483,2015-05-09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.475,12.675833,2015-05-05T15:13Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.730788,9.587833,2015-05-06T08:25:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.266701,24.521513,2015-06-20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.113922,24.459026,2015-06-18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.728855,5.933237,2015-08-05T05:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.950556,24.440833,2015-09-17,PRESERVED_SPECIMEN,NA,PRESENT,20,GBIF,Amphiprion_frenatus
+123.36626,9.944538,2015-09-18T11:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.845352,13.687189,2014-01-06T04:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.78188,26.440509,2014-01-19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.878425,11.447113,2014-01-04T01:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+92.69,11.62,2014-02-10,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+114.35768,10.37897,2014-03-26,HUMAN_OBSERVATION,NA,PRESENT,19,GBIF,Amphiprion_frenatus
+114.365,10.38202,2014-03-26,HUMAN_OBSERVATION,NA,PRESENT,14,GBIF,Amphiprion_frenatus
+114.36197,10.38083,2014-03-27,HUMAN_OBSERVATION,NA,PRESENT,17,GBIF,Amphiprion_frenatus
+113.830699,7.399994,2014-04-30T08:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.304203,26.238953,2014-05-25T13:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.816,13.6724,2014-05-05,MATERIAL_SAMPLE,NMNH Material Samples (USNM),PRESENT,10.5,GBIF,Amphiprion_frenatus
+123.362701,9.972171,2014-05-10T09:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+115.514,-8.53024,2014-07-25T13:41Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8.38,GBIF,Amphiprion_frenatus
+104.135698,2.731702,2014-07-30T17:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.685,9.5292,2014-09-24T10:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9,GBIF,Amphiprion_frenatus
+120.826,13.6995,2013-01-02T11:36Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.85,GBIF,Amphiprion_frenatus
+106.624246,8.636946,2013-01-30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.379447,9.933333,2013-01-19T03:46:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.683,9.51246,2013-02-04T09:51Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.5,GBIF,Amphiprion_frenatus
+123.360511,9.956546,2013-02-08T01:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.735,8.69276,2013-05-24T10:31Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.35,GBIF,Amphiprion_frenatus
+106.739,8.69768,2013-05-29T10:33Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,14.2,GBIF,Amphiprion_frenatus
+120.75066,21.943053,2013-07-21T10:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.730936,26.374638,2013-07-07T06:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+117.212,-11.708,2013-08-22T15:55Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.74,GBIF,Amphiprion_frenatus
+120.74986,21.947832,2013-08-10T13:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.904499,13.715111,2013-09-15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.106712,11.347767,2013-10-06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.338005,6.711104,2013-12-25T17:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.009598,13.526517,2012-01-06T09:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.514,22.0507,2012-04-27T16:18Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,4.5,GBIF,Amphiprion_frenatus
+98.7662,7.65404,2012-04-17T09:59Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.885,GBIF,Amphiprion_frenatus
+128.408056,27.031667,2012-04-15,PRESERVED_SPECIMEN,NA,PRESENT,5,GBIF,Amphiprion_frenatus
+121.92,25.1101,2012-05-27T10:20Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_frenatus
+127.8736,26.664,2012-05-09T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.8242,26.6456,2012-05-11T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.864208,26.633664,2012-06-27,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.063,2.88653,2012-08-05T09:45Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.2,GBIF,Amphiprion_frenatus
+128.4,27.035833,2012-08-16,PRESERVED_SPECIMEN,NA,PRESENT,1,GBIF,Amphiprion_frenatus
+128.401389,27.050278,2012-08-19,PRESERVED_SPECIMEN,NA,PRESENT,0,GBIF,Amphiprion_frenatus
+116.003577,6.006652,2012-08-19T06:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.998211,5.736478,2012-08-02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.495916,22.669309,2012-10-11T16:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+122.272511,12.612354,2012-11-29T11:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.922034,9.491273,2011-02-21T16:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.275405,9.080475,2011-04-13T07:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+99.9908,9.94472,2011-07-15T09:16Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.8,GBIF,Amphiprion_frenatus
+118.631584,4.245701,2011-09-06T18:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.297799,0.495861,2011-12-03T09:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.205681,0.612435,2011-12-03T09:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.239172,0.521575,2011-12-03T09:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.007805,6.009657,2010-02-28T11:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+102.717331,5.934052,2010-03-03T13:27:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+131.716667,32.45,2010-05-05,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+113.827919,7.384888,2010-07-24T11:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+113.844659,7.375344,2010-07-28T16:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+113.851033,7.380841,2010-07-25T08:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+113.830316,7.385347,2010-07-24T11:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+113.819967,7.364353,2010-07-26T08:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.967853,13.511238,2010-08-04T14:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.881754,13.731408,2010-12-27T00:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+95.3367,5.7773,2009-02-28T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.901223,13.799858,2009-02-21T14:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.001593,10.187782,2009-05-15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272974,9.072008,2009-06-08T05:29Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.001622,8.92988,2009-06-02T07:02Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272631,9.071585,2009-06-08T05:07Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.272974,9.071415,2009-06-08T07:41Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.001493,8.929732,2009-06-02T07:37Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+114.3678,10.37331,2009-06-29,HUMAN_OBSERVATION,NA,PRESENT,19,GBIF,Amphiprion_frenatus
+114.36901,10.37107,2009-06-29,HUMAN_OBSERVATION,NA,PRESENT,10,GBIF,Amphiprion_frenatus
+127.885733,26.621026,2009-08-01,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,NA,GBIF,Amphiprion_frenatus
+115.593,-8.27535,2008-01-04T11:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_frenatus
+127.77157,26.44628,2008-01-20,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,14,GBIF,Amphiprion_frenatus
+116.007198,6.019245,2008-02-10T12:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.756287,9.879594,2008-03-20T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.731992,26.330889,2008-03-29,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,8,GBIF,Amphiprion_frenatus
+127.831667,26.494762,2008-06-21,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.504901,9.133149,2008-07-22T20:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.013411,5.964518,2008-07-06T12:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+116.001619,6.015403,2008-08-30T10:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.051179,10.283414,2008-09-27T13:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.99923,10.185798,2008-10-13T16:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.269455,9.0776230000000009,2008-12-26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.837543,26.500004,2008-12-13,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.783915,9.94163,2007-02-17T10:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+109.233414,12.251317,2007-02-09T06:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.035986,10.058169,2007-03-14T12:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+125.026544,10.050482,2007-03-14T12:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.976604,13.525748,2007-04-05T05:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+124.098185,24.414881,2007-05-03,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,NA,GBIF,Amphiprion_frenatus
+127.730606,26.366836,2007-10-30,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,NA,GBIF,Amphiprion_frenatus
+130.594167,31.591667,2007-11-27,PRESERVED_SPECIMEN,NA,PRESENT,3,GBIF,Amphiprion_frenatus
+121.22,23.05,2006-11-07,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+128.276088,26.860192,2005-05-04,HUMAN_OBSERVATION,Image collection in the Coral Reef Network WEB System: A snapshot of the fauna and flora around the coral reefs of the Ryukyu Islands from 2002 to 2013,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.837,-6.079,2005-11-06,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.836998,-6.079,2005-11-06,PRESERVED_SPECIMEN,Ocean Genome Legacy Collection,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.84,-6.08,2005-11-06,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+130.890547,-0.512429,2005,MACHINE_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+104.101367,2.918225,2004-08-03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.9747,11.6758,2003,PRESERVED_SPECIMEN,NA,PRESENT,14.5,GBIF,Amphiprion_frenatus
+109.245,12.287778,2002-05-15,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_frenatus
+109.300833,12.171944,2002-05-21,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_frenatus
+116.015333,5.975434,2001-07-24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.993,13.5181,2000-05-16,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,6,GBIF,Amphiprion_frenatus
+120.9925,13.5181,2000,PRESERVED_SPECIMEN,NA,PRESENT,6,GBIF,Amphiprion_frenatus
+122.508,10.5792,1995-09-24,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,2,GBIF,Amphiprion_frenatus
+123.0833,9.0333,1995,PRESERVED_SPECIMEN,NA,PRESENT,15,GBIF,Amphiprion_frenatus
+114.37,10.37,1994-04-20,OCCURRENCE,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.37,18.85,1990-03-11,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,NA,GBIF,Amphiprion_frenatus
+109.65,18.216667,1990-11-23,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.385,9.436389,1987-05-21,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_frenatus
+123.385,9.436667,1987-05-21,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_frenatus
+123.453889,9.204444,1987-05-22,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_frenatus
+125.6,7.06667,1981-03-07,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.05,16.22,1981-06-23,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.04,16.2,1981-06-22,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.05,16.19,1981-06-29,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.01,16.34,1981-06-25,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.05,16.21,1981-06-21,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.04,16.22,1981-06-22,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+121.03,13.51,1981-07-11,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.95,13.53,1981-07-13,PRESERVED_SPECIMEN,LACM Vertebrates,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.18,9.07,1979-04-28,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,1.5,GBIF,Amphiprion_frenatus
+123.412,8.8517,1979-05-02,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,17.5,GBIF,Amphiprion_frenatus
+123.47,9.225,1979-05-15,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,0.5,GBIF,Amphiprion_frenatus
+123.212,8.7467,1979-05-02,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,1.5,GBIF,Amphiprion_frenatus
+121.52,22.08,1979-06-21,OCCURRENCE,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+123.494,9.1411,1978-05-10,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,5.35,GBIF,Amphiprion_frenatus
+120.933,10.875,1978-05-23,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,7,GBIF,Amphiprion_frenatus
+121.034,10.9181,1978-05-22,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,2.3,GBIF,Amphiprion_frenatus
+121.004,10.8533,1978-05-21,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,1,GBIF,Amphiprion_frenatus
+123.275,9.0667,1978-06-22,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,3,GBIF,Amphiprion_frenatus
+124.18036,24.37663,1976-04-28,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+139.67072,35.2045,1969-06-19,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+120.833,21.9167,1968-05-02,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,6.5,GBIF,Amphiprion_frenatus
+120.813,21.93,1968-05-03,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,8.5,GBIF,Amphiprion_frenatus
+118.1167,6.1667,1950,PRESERVED_SPECIMEN,NA,PRESENT,0.5,GBIF,Amphiprion_frenatus
+103.648087,1.239603,1937-02,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.38,-4.67,1909-09-24,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,NA,GBIF,Amphiprion_frenatus
+118.51667,2.15,NA,OCCURRENCE,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+106.76,-6.14,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.063333,5.598889,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+103.061389,5.611389,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_frenatus
+119.880261,8.90035,NA,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_frenatus

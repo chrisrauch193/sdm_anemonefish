@@ -1,0 +1,55 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,depth,source,species
+72.95,2.8666668,1853,HumanObservation,NA,present,NA,OBIS,Amphiprion_sebae
+106.98500061,10.1450004578,NA,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+120.478996277,14.2460002899,NA,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+106.9850006,10.14500046,2006-01-17,PreservedSpecimen,Ocean Genome Legacy Collection,present,NA,OBIS,Amphiprion_sebae
+78.3192,8.6626,2007/2008,HumanObservation,NA,present,5,OBIS,Amphiprion_sebae
+106.836998,-6.078999996,2006-01-17,PreservedSpecimen,Ocean Genome Legacy Collection,present,NA,OBIS,Amphiprion_sebae
+59.5972222222,22.5666666667,1981-11-13T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+72.0986,16.4806,2019-12-24/2019-12-27,HumanObservation,NA,present,24,OBIS,Amphiprion_sebae
+106.8294,-6.17444,NA,preservedspecimen,NA,NA,NA,OBIS,Amphiprion_sebae
+132.5,-7.5,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_sebae
+79.31,9.28,1998/2002,HumanObservation,NA,present,NA,OBIS,Amphiprion_sebae
+106.3322,-6.329722,1853,HumanObservation,NA,present,NA,OBIS,Amphiprion_sebae
+106.836997986,-6.07899999619,NA,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+119.880261437599,8.90034993218769,NA,HumanObservation,NA,present,NA,OBIS,Amphiprion_sebae
+78.8867,8.9532,2002/2011,HumanObservation,NA,present,NA,OBIS,Amphiprion_sebae
+93,10,1853-07-02T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+106.332199097,-6.32972192764,1853-07-02T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+128.375,-3.533333333333333,1992-11-27,PreservedSpecimen,Fish collection of National Museum of Nature and Science,Present,10,OBIS,Amphiprion_sebae
+72.9499969482,2.86666679382,1853-07-02T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_sebae
+95.272086,5.854788,2024-09-28T21:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+98.807283,7.963957,2023-03-23T02:24:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+78.375116,9.07069,2023-09-20T04:45:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+78.368722,9.073686,2023-09-20T05:07:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+58.499229,23.643738,2022-01-19T23:51:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+125.65,7.10418,2022-01-15T11:04Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,5.79,GBIF,Amphiprion_sebae
+125.676,6.96525,2022-05-01T01:21Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.755,GBIF,Amphiprion_sebae
+98.765961,7.695637,2022-07-19T10:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+98.76593,7.695524,2022-07-19T10:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+115.514328,-8.53114,2020-01-16T11:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+98.772978,7.628203,2018-01-27T10:43:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+115.446919,-8.717626,2018-06-11T18:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+115.514772,-8.528334,2018-11-06T13:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+119.643,-8.54383,2018-12-17T07:01Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11,GBIF,Amphiprion_sebae
+124.801,1.62657,2017-11-18T15:05Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.27,GBIF,Amphiprion_sebae
+99.535365,6.830171,2016-12-25T13:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+81.2033,8.72203,2015-06-18T10:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.55,GBIF,Amphiprion_sebae
+115.61208,-8.294288,2015-08-16T17:08:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+56.38,26.84,2014-09-24,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+78.7844,9.23135,2014-12-20,MATERIAL_SAMPLE,NA,PRESENT,155,GBIF,Amphiprion_sebae
+115.58899,-8.293215,2008-06-06T09:03:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_sebae
+106.985001,10.145,2006-01-17,PRESERVED_SPECIMEN,Ocean Genome Legacy Collection,PRESENT,NA,GBIF,Amphiprion_sebae
+106.836998,-6.079,2006-01-17,PRESERVED_SPECIMEN,Ocean Genome Legacy Collection,PRESENT,NA,GBIF,Amphiprion_sebae
+106.98,10.14,2006-01-17,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+106.84,-6.08,2006-01-17,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+120.48,14.25,2005-09-07,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+59.597222,22.566667,1981-11-13,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_sebae
+119.504807,-8.58333,1970-01,PRESERVED_SPECIMEN,NA,PRESENT,0,GBIF,Amphiprion_sebae
+93.5,8,1958-08-28,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+99.90811,-1.0928,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+129.47791,-3.50456,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_sebae
+98.383333,9.366667,NA,PRESERVED_SPECIMEN,NA,PRESENT,0,GBIF,Amphiprion_sebae
+106.858283,-6.02014,NA,PRESERVED_SPECIMEN,Fish,PRESENT,NA,GBIF,Amphiprion_sebae
+106.829,-6.17444,NA,PRESERVED_SPECIMEN,NA,PRESENT,0,GBIF,Amphiprion_sebae
+119.880261,8.90035,NA,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_sebae

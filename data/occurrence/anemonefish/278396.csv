@@ -1,0 +1,35 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,depth,source,datasetName,occurrenceStatus,species
+145.848327637,-5.19000005722,1972-04-13T12:00:00Z,PreservedSpecimen,7,OBIS,NA,NA,Amphiprion_leucokranos
+145.822297,-5.198479,1985-12-04,PreservedSpecimen,12,OBIS,NA,NA,Amphiprion_leucokranos
+145.84833,-5.19,NA,preservedspecimen,7,OBIS,NA,NA,Amphiprion_leucokranos
+151.522129,-4.731056,2025-07-03T15:26:57,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+150.617836,-2.72754,2025-10-22T10:34,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+157.948283,-8.424572,2024-03-27T09:13,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.120866,-9.074917,2024-06-15T12:18,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+156.963603,-8.146098,2024-08-20T10:55,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.03072,-9.026676,2024-12-11T14:38,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.279624,-9.057142,2024-12-10T17:44,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+150.838889,-9.967778,2023-03-13T15:56,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+156.495234,-7.886127,2023-04-10T09:44,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+157.103985,-8.3164650000000009,2020-02-29T11:13:01,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.0434,-9.026502,2019-04-15T15:02,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+158.069075,-8.462157,2019-04-19T12:32,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+158.263827,-8.779428,2019-07-21T12:30,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.160691,-9.090512,2019-07-18T07:32,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+157.997076,-8.512749,2019-10-21T15:29,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.248582,-9.013209,2019-10-18T16:48,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+150.280216,-5.303421,2019-12-10T11:51,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.040742,-9.040355,2018-03-22T18:33,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.361812,-9.126567,2018-03-28T18:31,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.058333,-8.9875,2018-11-21T12:27,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.041667,-9.04,2018-11-29T11:31,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.0617,-8.99102,2017-04-07T11:55,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+159.142672,-9.0145130000000009,2014-11-14T23:51:49,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+157.992092,-8.5054,2014-11-19T08:46:12,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+158.730903,-9.01853,2014-11-22T11:43:53,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+157.9737,-8.43455,2014-11-06T09:53,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+156.834312,-8.105826,2014-11-09T09:33,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+150.767969,-2.597105,2012-04-26T15:47,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+156.7995,-8.0252,2011-08-14T00:00,HUMAN_OBSERVATION,NA,GBIF,NA,PRESENT,Amphiprion_leucokranos
+156.704567,-8.0113,2007-09-12T18:07,HUMAN_OBSERVATION,NA,GBIF,iNaturalist research-grade observations,PRESENT,Amphiprion_leucokranos
+145.848,-5.19,1972-04-13,PRESERVED_SPECIMEN,7,GBIF,NMNH Extant Biology,PRESENT,Amphiprion_leucokranos

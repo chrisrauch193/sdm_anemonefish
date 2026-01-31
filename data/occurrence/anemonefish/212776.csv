@@ -1,0 +1,45 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,depth,source,occurrenceStatus,species
+72.2286148071,-5.36250019073,1979-03-22T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.23033333,-5.3575,2013-02-28,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+71.8119444444,-5.45055555556,1979-02-20T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2091674805,-5.34417009354,1979-03-17T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+71.7488888889,-5.38583333333,1979-03-29T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.26222229,-5.30111122131,1979-03-23T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+71.7488861084,-5.3858332634,1979-03-29T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+70.7661132812,-5.4069442749,1979-02-07T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+70.7661111111,-5.40694444444,1979-02-07T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.3833312988,-7.24694395065,1967-06-22T08:12:00Z,PreservedSpecimen,NA,2,OBIS,NA,Amphiprion_chagosensis
+72.22866667,-5.35931667,2013-02-27,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2622222222,-5.30111111111,1979-03-23T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2139,-5.33908333,2013-02-26,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2091666667,-5.34416666667,1979-03-18T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2044444444,-5.35527777778,1979-03-25T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2044448853,-5.35527801514,1979-03-25T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.4616699219,-7.34555578232,1967-06-26T12:00:00Z,PreservedSpecimen,NA,2,OBIS,NA,Amphiprion_chagosensis
+72.4636077881,-7.33611106873,1967-07-07T12:00:00Z,PreservedSpecimen,NA,1,OBIS,NA,Amphiprion_chagosensis
+71.76055,-5.26276667,2013-03-01,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2097,-5.34472,1979-03-19,PreservedSpecimen,Fish,NA,OBIS,NA,Amphiprion_chagosensis
+72.2099990845,-5.34472227097,1979-03-19T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.22358333,-5.34238333,2013-02-28,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.20917,-5.34417,1979-03-17T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.28088333,-5.33418333,2013-02-27,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+71.8119430542,-5.45055580139,1979-02-20T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+72.2091674805,-5.34416675568,1979-03-18T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_chagosensis
+71.973086,-6.865964,2015-03-01,HUMAN_OBSERVATION,iNaturalist research-grade observations,NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.2139,-5.339083,2013-02-26,PRESERVED_SPECIMEN,NA,NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.280883,-5.334183,2013-02-27,PRESERVED_SPECIMEN,NA,NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.228667,-5.359317,2013-02-27,PRESERVED_SPECIMEN,NA,NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.223583,-5.342383,2013-02-28,PRESERVED_SPECIMEN,NA,NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.230333,-5.3575,2013-02-28,PRESERVED_SPECIMEN,NA,NA,GBIF,PRESENT,Amphiprion_chagosensis
+71.76055,-5.262767,2013-03-01,PRESERVED_SPECIMEN,NA,NA,GBIF,PRESENT,Amphiprion_chagosensis
+71.77,-5.406945,1979-02-07,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),NA,GBIF,PRESENT,Amphiprion_chagosensis
+71.811944,-5.450556,1979-02-20,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),NA,GBIF,PRESENT,Amphiprion_chagosensis
+71.74889,-5.38583,1979-03-29,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.209167,-5.344167,1979-03-18,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.201488,-5.355278,1979-03-25,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.262222,-5.301111,1979-03-23,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),NA,GBIF,PRESENT,Amphiprion_chagosensis
+72.2286,-5.3625,1979-03-22,PRESERVED_SPECIMEN,NMNH Extant Biology,21.5,GBIF,PRESENT,Amphiprion_chagosensis
+72.3833,-7.2469,1967-06-22,PRESERVED_SPECIMEN,NMNH Extant Biology,1,GBIF,PRESENT,Amphiprion_chagosensis
+72.4714,-7.3597,1967-06-23,PRESERVED_SPECIMEN,NMNH Extant Biology,1.5,GBIF,PRESENT,Amphiprion_chagosensis
+72.4617,-7.3456,1967-06-26,PRESERVED_SPECIMEN,NMNH Extant Biology,1.25,GBIF,PRESENT,Amphiprion_chagosensis
+72.4636,-7.3361,1967-07-07,PRESERVED_SPECIMEN,NMNH Extant Biology,1.5,GBIF,PRESENT,Amphiprion_chagosensis

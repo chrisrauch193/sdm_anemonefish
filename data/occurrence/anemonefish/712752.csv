@@ -1,0 +1,7 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,depth,source,species
+-173.9520667,-18.72718333,2017-10-28,HumanObservation,Tonga Reef survey data 2016-2018,present,5,OBIS,Amphiprion_pacificus
+-174.526883,-19.840817,2018-07-17,HumanObservation,Tonga Reef survey data 2016-2018,present,6,OBIS,Amphiprion_pacificus
+-178.841339,-18.211216,2024-10-11T15:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_pacificus
+-173.952067,-18.727183,2017-10-28,HUMAN_OBSERVATION,Tonga Reef survey data 2016-2018,PRESENT,5,GBIF,Amphiprion_pacificus
+-174.30206,-19.65661,2009,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_pacificus
+-174.30067,-19.64858,2009,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_pacificus

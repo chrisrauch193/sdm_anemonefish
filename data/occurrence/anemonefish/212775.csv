@@ -1,0 +1,80 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,source,depth,species
+43.656665802,-12.3977775574,1988-11-26T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+40.36666667,-22.36666667,2011,HumanObservation,NA,present,OBIS,NA,Amphiprion_latifasciatus
+45.2125015259,-12.9811115265,1988-11-14T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+48.3816680908,-13.4361114502,1964-02-14T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+45.2125,-12.9811111111,1988-11-14T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+43.71583,-12.3894,1988-11-22T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+43.7158317566,-12.3893995285,1988-11-22T12:00:00Z,PreservedSpecimen,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+43.6566666667,-12.3977777778,1988-11-26T12:00:00Z,HumanObservation,NA,NA,OBIS,NA,Amphiprion_latifasciatus
+45.094921,-12.788748,2025-07-05T08:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.094316,-12.787016,2025-09-11T14:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.086787,-13.313452,2025-09-24T11:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.140857,-13.153518,2024-04-23T09:00:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.105762,-12.649812,2023-04-27T11:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.11744,-13.31197,2023-06-14,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.1165,-13.30991,2023-06-14,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+57.62141,-19.94403,2023-09-27,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.677931,-12.396676,2022-08-06T08:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.060805,-13.338102,2022-08-21T09:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.505452,-23.093413,2022-09-13T17:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.28222,-12.87139,2022-09-17,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.21609,-21.07355,2022-10-31,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.33035,-21.27253,2022-10-29,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.04022,-13.356442,2022-11-19T11:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.093779,-13.321701,2022-11-18T08:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.22261,-21.02349,2022-11-03,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.22833,-21.02222,2022-11-03,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.227,-21.05669,2022-11-06,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.085035,-13.40749,2022-12-23T08:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.095,-12.7882,2022-12-17T18:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.2063,-21.05374,2021-07-17,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+44.97194,-12.9225,2021-10-26,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.28444,-21.18556,2021-12-05,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.24889,-21.11167,2020-10-07,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+55.21722,-21.02333,2020-10-05,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+49.80464,-17.058339,2019-01-03T12:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.27202,-12.86316,2019-03-08,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.812342,-13.642448,2019-10-24T01:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.259261,-13.315019,2019-12-25T20:52Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.364818,-13.423404,2018-06-20T10:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.164503,-13.323704,2018-07-07T10:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.656493,-14.371655,2017-02-15T11:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.533325,-23.146674,2017-11-17T10:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.576241,-23.103102,2017-11-17T10:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+49.797451,-17.101265,2017-12-30T11:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.555976,-23.153262,2016-02-15T09:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.27926,-12.87369,2016-07-29,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.27957,-12.8762,2016-07-30,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.227478,-14.988234,2016-09-02T11:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.258377,-14.955068,2016-09-09T11:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+49.903852,-16.924781,2016-10-05T10:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.214481,-12.984354,2015-09-03T21:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.28436,-12.82795,2015-09-28,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.05137,-12.67296,2015-10-05,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.605176,-23.649845,2013-11-10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.269495,-12.867766,2012-05-14T10:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.33786,-11.52437,2012-12-11,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.24695,-11.61546,2012-12-09,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.24623,-11.52509,2012-12-14,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.55091,-23.149431,2012-12-09T09:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.552285,-23.152394,2012-12-09T09:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.340509,-13.495464,2011-09-29T17:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.237487,-13.482788,2011-09-30T10:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.217028,-12.986288,2009-01-03T06:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.199319,-13.47226,2009-06-03T13:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.239085,-13.483851,2008-04-08T17:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.554517,-23.150184,2008-04-05T20:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.54061,-23.133014,2008-04-05T18:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.952,-13.50389,2008-05-13,MATERIAL_SAMPLE,NA,PRESENT,GBIF,10,Amphiprion_latifasciatus
+48.233,-13.48056,2008-05-14,MATERIAL_SAMPLE,NA,PRESENT,GBIF,2,Amphiprion_latifasciatus
+48.608,-13.70717,2008-05-08,MATERIAL_SAMPLE,NA,PRESENT,GBIF,2,Amphiprion_latifasciatus
+48.61,-13.71,2008-05-08,PRESERVED_SPECIMEN,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+47.95,-13.5,2008-05-13,PRESERVED_SPECIMEN,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.23,-13.48,2008-05-14,PRESERVED_SPECIMEN,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.06402,-12.969079,2008-12-08T15:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.2125,-12.981111,1988-11-14,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,GBIF,NA,Amphiprion_latifasciatus
+43.656667,-12.397778,1988-11-26,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,GBIF,NA,Amphiprion_latifasciatus
+48.3817,-13.4361,1964-01-28,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+45.14743,-12.8206,NA,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus
+40.83955,-20.74312,NA,HUMAN_OBSERVATION,NA,PRESENT,GBIF,NA,Amphiprion_latifasciatus

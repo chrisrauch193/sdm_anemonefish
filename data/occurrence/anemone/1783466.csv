@@ -1,0 +1,45 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,depth,source,species
+142.190002441,-9.96000003815,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+142.2599945,-9.890000343,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+139.5,34.0999984741,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+153.399993896,-27.1800003052,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+141.2799988,-6.110000134,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+145.465,-14.6876,2013-08-12 23:08:00,HumanObservation,NA,present,NA,OBIS,Macrodactyla_doreensis
+145.466,-14.6879,2015-10-17 00:10:00,HumanObservation,NA,present,NA,OBIS,Macrodactyla_doreensis
+109.400001526,12.8199996948,NA,HumanObservation,NA,NA,20,OBIS,Macrodactyla_doreensis
+153.3999939,-27.18000031,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+128.160003662,-3.70000004768,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+145.5,-14.6300001144,NA,HumanObservation,NA,NA,2,OBIS,Macrodactyla_doreensis
+134.080001831,-0.870000004768,NA,HumanObservation,NA,NA,0,OBIS,Macrodactyla_doreensis
+142.259994507,-9.89000034332,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+123.07526,-12.19208,1986-09-14T14:00:00Z,PreservedSpecimen,NA,present,NA,OBIS,Macrodactyla_doreensis
+134.0800018,-0.870000005,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+136.71667,-12.17667,NA,PreservedSpecimen,NA,present,NA,OBIS,Macrodactyla_doreensis
+119.300003052,-5.5,NA,HumanObservation,NA,NA,13.5,OBIS,Macrodactyla_doreensis
+142.1900024,-9.960000038,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+153.4,-27.5,1961-08-08,PreservedSpecimen,NA,present,NA,OBIS,Macrodactyla_doreensis
+134.5,-6.19999980927,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+120.60553,13.90801,2014-05-09,PreservedSpecimen,NA,NA,NA,OBIS,Macrodactyla_doreensis
+144.070007324,-9.92000007629,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+145.5,-14.63000011,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,2,OBIS,Macrodactyla_doreensis
+153.4,-27.49166,2005-02-10,PreservedSpecimen,NA,present,NA,OBIS,Macrodactyla_doreensis
+122.1333,-17.4833,NA,PreservedSpecimen,NA,present,NA,OBIS,Macrodactyla_doreensis
+125.50833333333334,-8.55638888888889,1935-03-06,PreservedSpecimen,NA,NA,NA,OBIS,Macrodactyla_doreensis
+141.279998779,-6.11000013351,NA,HumanObservation,NA,NA,NA,OBIS,Macrodactyla_doreensis
+128.1600037,-3.700000048,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+145.468,-14.6892,2013-11-17 00:11:00,HumanObservation,NA,present,NA,OBIS,Macrodactyla_doreensis
+134.5,-6.199999809,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+145.800003052,-5.15000009537,NA,HumanObservation,NA,NA,15,OBIS,Macrodactyla_doreensis
+144.0700073,-9.9200000760000009,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,NA,OBIS,Macrodactyla_doreensis
+153.3999939,-27.5,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,1,OBIS,Macrodactyla_doreensis
+145.8000031,-5.150000095,NA,HumanObservation,South Pacific Regional Fisheries Management Organisation Vulnerable Marine Ecosystem dataset,present,15,OBIS,Macrodactyla_doreensis
+153.399993896,-27.5,NA,HumanObservation,NA,NA,1,OBIS,Macrodactyla_doreensis
+119.8,-19.9,2022-07-27T19:43Z,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+145.465427,-14.687572,2016-06-05T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+145.465803,-14.687868,2015-10-17T15:00,OBSERVATION,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+145.465416,-14.687557,2013-08-13T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+145.468447,-14.689204,2013-11-17T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+153.4,-27.491667,2005-02-10,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+123.0753,-12.1919,1986-09-15,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis
+136.716667,-12.176667,NA,PRESERVED_SPECIMEN,NA,PRESENT,2.5,GBIF,Macrodactyla_doreensis
+153.5,-27.5,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Macrodactyla_doreensis

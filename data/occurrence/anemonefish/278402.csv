@@ -1,0 +1,492 @@
+decimalLongitude,decimalLatitude,eventDate,basisOfRecord,datasetName,occurrenceStatus,depth,source,species
+123.333333333,9.41666666667,1985-08-11T12:00:00Z,HumanObservation,NA,NA,NA,OBIS,Amphiprion_percula
+152.399993896,-4.19999980927,1965-02-25T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+122.398683,4.543299,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+145.45399,-14.7044,2014-01-21 00:01:00,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+147.286052,-9.524376,1974-11-08,PreservedSpecimen,NA,NA,1,OBIS,Amphiprion_percula
+145.616,-14.583,1923-06-16,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+155.616667,-6.2,1963-09-10,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+121.975003,13.82968,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+166.845,-11.708333,1963-09-03,PreservedSpecimen,NA,NA,1.52,OBIS,Amphiprion_percula
+123.333335876,9.41666698456,1985-08-11T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+155,-6,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+121.037263,13.683926,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+166.291671753,-10.3000001907,1998-09-17T12:00:00Z,PreservedSpecimen,NA,NA,7.5,OBIS,Amphiprion_percula
+166.29166,-10.266,1998-09-17,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.7,-15.75,1969-01-20,preservedspecimen,NA,NA,NA,OBIS,Amphiprion_percula
+146.05199,-16.69967,2006-09-05T12:00:00Z,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+152.173614502,-4.23472213745,1965-02-27T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+144.066,-9.933,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+161.75,-10.283,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+150.53582,-20.99363,2012-01-14,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+143.41666,-9.73333,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+146.39343,-17.52037,2015-12-15,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+146.81666,-19.26667,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+146.166,-16.7,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+146.39603,-17.523,2015-12-15,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+144.06666,-9.93333,1974-07-18,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.46667,-14.66667,1981-10-25,PreservedSpecimen,NA,present,6,OBIS,Amphiprion_percula
+152.466,-4.2,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+123.03596,9.044203,1948-07-23,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+146.39053,-17.51795,2014-03-22,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+123.6,-16.13333,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+144,-11.6,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.44099,-14.6743,2018-03-07 00:03:00,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.797978,-5.22119,1985-12-26,PreservedSpecimen,NA,NA,7.75,OBIS,Amphiprion_percula
+146.40308,-17.46652,2010-04-09,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+150.5,-9.5,1972-05-29,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+147.43333,-2.05,1982-10-08,PreservedSpecimen,NA,present,2.5,OBIS,Amphiprion_percula
+178.38,-19.03,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+150.36666666666667,-5.166666666666668,NA,humanobservation,NA,NA,NA,OBIS,Amphiprion_percula
+145.65245,-16.04495,2013-01-07,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+135.40027,-1.74972,2006-02-12,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+160.286126,-9.291517,1932-03,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+166.316,-10.25,1998-09-17,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+-151.75,-16.5,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+146.06666,-16.7,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+160.583,-8.4,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+144.02062,-11.40687,2013-01-16,HumanObservation,NA,present,0,OBIS,Amphiprion_percula
+145.45,-15.016,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.45,-15.75,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+152,-3.83299994469,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+143.76667,-9.58333,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+124.166195,10.19927,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+166.832992554,-11.6999998093,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+145.99313,-16.92315,2013-01-17,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+130.75,-0.233333,1929-06-08,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+146.196949,-4.786537,1987-05-18,PreservedSpecimen,NA,NA,3.05,OBIS,Amphiprion_percula
+127.699996948,0.899999976158,1979-05-31T12:00:00Z,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+134.225,-2.15944,2006-02-24,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+120.769846,12.748699,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+146,-16.83333,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.444,-14.6867,2005-10-16 00:10:00,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+155,-5,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+147.45533,-18.40378,2000-05-02,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+159.6,-9.316,1973-07-08,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+121.437955,13.750015,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+145.8,-5.147,1992-10-21,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+151.733,-23.533,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+167.157226562,-9.86111068726,1998-09-21T10:00:00Z,PreservedSpecimen,NA,NA,20,OBIS,Amphiprion_percula
+146.52682,-17.797,2005-12-05,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+166.96667,-11.61667,NA,preservedspecimen,NA,NA,NA,OBIS,Amphiprion_percula
+156.16667,-8.1,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.75,-5.25,1972-04-02,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.466,-14.6879,2014-11-09 00:11:00,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+160,-8,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+136.47,-13.98,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+146.47787,-17.2336,2018-02-18,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+136.26,-1.245,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.446,-14.6639,2017-01-12 00:01:00,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+145.56666,-16.38333,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.966,-16.766,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+146.47847,-17.22917,2007-09-03,HumanObservation,NA,present,5,OBIS,Amphiprion_percula
+145.77,-16.85,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.448,-14.651,2018-03-07 00:03:00,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.44501,-14.6743,2018-03-07 00:03:00,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.483,-15.666,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+147.26265,-9.5393,2011-01-26,PreservedSpecimen,Ocean Genome Legacy Collection,present,0,OBIS,Amphiprion_percula
+135.48,-0.093,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+120.764637,12.752379,NA,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+145.833,-5.183,1970-05-30,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+127.900001526,1,1978-05-16T12:00:00Z,PreservedSpecimen,NA,NA,3,OBIS,Amphiprion_percula
+162.736751,-8.390035,1933-05-14,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+151.083,-8.5,1970-06-11,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.45399,-14.7045,2015-03-08 00:03:00,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+119.148215,4.722753,1948-06-23,PreservedSpecimen,NA,NA,NA,OBIS,Amphiprion_percula
+145.44,-14.6839,2017-01-11 00:01:00,HumanObservation,NA,present,NA,OBIS,Amphiprion_percula
+144.8666666667,-4.1666666667,1996-10-15,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+145.48333,-16.53333,NA,PreservedSpecimen,NA,present,NA,OBIS,Amphiprion_percula
+166.471507,-11.317361,2025-01-02T09:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.989725,-16.926039,2025-01-25T13:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.116892,-5.484527,2025-02-08T16:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.981078,-16.463029,2025-02-16T22:57:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.655447,-16.013691,2025-02-25T16:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.965231,-4.933974,2025-03-24T15:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.989695,-16.927516,2025-03-08T10:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.0857,-17.220169,2025-04-23T11:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.987836,-16.930714,2025-04-22T10:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.085636,-17.218058,2025-04-23T13:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.085808,-17.218375,2025-04-23T13:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.451274,-16.942357,2025-04-28T13:54:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.227097,-16.84685,2025-05-20T10:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.897951,-16.207717,2025-05-30T12:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.097453,-5.428554,2025-06-28T15:07:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.091009,-5.411971,2025-06-30T13:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.267678,-16.729774,2025-06-27T11:03:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.796117,-16.017034,2025-06-09T11:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.736603,-16.055442,2025-06-02T10:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+152.327042,-4.263318,2025-07-06T11:12:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.990066,-16.925074,2025-07-05T14:31:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.994819,-16.923601,2025-07-16T15:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.994346,-16.933667,2025-07-31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.002711,-16.517244,2025-07-31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.989551,-16.926997,2025-07-26T09:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.020147,-16.500499,2025-08-01T13:30,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.382608,-17.727266,2025-08-19T10:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.974324,-16.606062,2025-09-01T15:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.666313,-16.122015,2025-09-12T05:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.379716,-17.736453,2025-09-21T14:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.380283,-17.736167,2025-09-21T13:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.104421,-5.293585,2025-09-22T11:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.38029,-17.736148,2025-09-21T14:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.413877,-17.728277,2025-09-21T14:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.076431,-17.205197,2025-10-05T13:51:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.796772,-16.017386,2025-10-02T12:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+153.55505,-4.029686,2025-10-12T11:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+153.207723,-3.542857,2025-10-13T11:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.733899,-2.663566,2025-10-19T17:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+153.210869,-3.544947,2025-10-13T11:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.888034,-16.178144,2025-11-03T12:12,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.888902,-16.226779,2025-11-07T20:58,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.449827,-14.683188,2025-11-07T13:42:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.483611,-17.849944,2025-11-05T18:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.484599,-17.852452,2025-11-05T18:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.899631,-16.202545,2025-11-07T20:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.790215,-15.497815,2025-11-12T14:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.371135,-9.163736,2025-11-22T10:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+151.070426,-8.509391,2025-11-30T10:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.400817,-9.171871,2025-11-22T12:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.267163,-16.730327,2025-11-09T16:27:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.393245,-8.950616,2025-11-24T10:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.311132,-9.08602,2025-11-22T16:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.489517,-9.132018,2025-11-25T09:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+151.725411,-10.739142,2025-12-01T11:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.970675,-16.758425,2024-02-08T13:40:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.780208,-16.322691,2024-02-11T12:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.840785,-10.546924,2024-02-29T17:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.890122,-16.223258,2024-02-23T10:04:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+165.796125,-10.705909,2024-03-22T20:54:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.126258,-5.308824,2024-03-17T15:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.186056,-5.089218,2024-03-20T15:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.503226,-4.679386,2024-03-22T15:53,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+147.252802,-9.577492,2024-03-29T11:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.50326,-4.679394,2024-03-22T16:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.273376,-16.72437,2024-05-28T10:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.779311,-9.286254,2024-06-24T17:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.240055,-9.035297,2024-06-12T11:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.190208,-9.078499,2024-06-13T12:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.213872,-9.128139,2024-06-14T08:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.992808,-16.421867,2024-07-10T11:10:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.968559,-16.71737,2024-07-18T10:58:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.000553,-16.518986,2024-07-14T03:50,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.075164,-17.20482,2024-07-19T13:05:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.874676,-9.386001,2024-08-17T07:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.104444,-5.294167,2024-08-22T22:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.273565,-16.728386,2024-09-01T16:50:56,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.821007,-16.743567,2024-09-23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.227039,-16.847372,2024-10-10T11:15:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.413098,-15.469714,2024-10-20T10:08:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.5,-5.166667,2024-10-19T12:18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.181607,-5.325375,2024-10-17T09:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.787781,-15.501781,2024-10-30T10:48,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+144.057039,-11.685081,2024-10-17T10:07:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.822939,-15.98239,2024-11-28T11:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.555606,-17.831126,2024-12-03T11:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.298749,-9.073061,2024-12-10T14:54,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.056572,-8.950503,2024-12-17T14:26,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.990036,-16.436041,2024-12-17T13:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.058385,-8.98826,2024-12-11T12:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.930977,-16.67172,2024-12-14T14:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.970831,-16.755817,2023-01-27T15:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.810317,-16.020191,2023-01-01T01:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.257779,-16.683968,2023-02-04T08:35,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.714444,-9.743056,2023-03-14T08:17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.688674,-18.759553,2023-03-10T11:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.989487,-16.925487,2023-04-15T13:02Z,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.716944,-16.880526,2023-06-15T11:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+152.311547,-4.336489,2023-06-29T10:55:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.897838,-16.210284,2023-07-11T13:46:29,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.996625,-16.42858,2023-07-11T20:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.995844,-16.436341,2023-07-04T14:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.982626,-16.464597,2023-07-13T11:23:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.151741,-5.31575,2023-09-20T09:39:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.642864,-16.047132,2023-10-24T14:54:57,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.448364,-14.650978,2023-10-20T07:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+130.802588,-0.450301,2023-10-13T17:25,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.933623,-16.681866,2023-10-08T02:40,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.9,-16.7,2023-10-01T15:28:15Z,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.07428,-17.204614,2023-11-09T11:54:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+125.672,6.92871,2022-05-01T10:21Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.8,GBIF,Amphiprion_percula
+145.449012,-14.697141,2022-05-24T11:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+123.251,9.17192,2022-06-18T11:14Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.58,GBIF,Amphiprion_percula
+146.68845,-16.061987,2022-07-07T13:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.834348,-16.047512,2022-07-15T12:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.988553,-16.461391,2022-07-25T07:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.016001,-16.515744,2022-07-22T09:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.987438,-16.460046,2022-07-25T06:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.014769,-16.511653,2022-07-21T11:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.006654,-16.516384,2022-07-21T11:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.936642,-16.672924,2022-08-11T11:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.969721,-16.756342,2022-09-26T10:50,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+158.188087,-8.666039,2022-10-28T21:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+158.18799,-8.666151,2022-10-29T09:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+158.188052,-8.666301,2022-10-29T12:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.99005,-16.92753,2022-11-03T09:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.074433,-17.204457,2021-10-19T13:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.074677,-17.20439,2021-10-19T10:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.788117,-15.501983,2021-12-17T08:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+147.699192,-18.287067,2020-01-13T22:35:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+147.278275,-9.536194,2020-01-22T12:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+157.240137,-8.376963,2020-02-29T10:12:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.449245,-14.683156,2020-02-03T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.982752,-16.934596,2020-03-11T14:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.989455,-16.654732,2020-04-18T17:07:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.99071,-16.657264,2020-04-18T13:31:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.7,-14.8,2020-06-22T11:58:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.987744,-14.929368,2020-10-07T01:44,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.779231,-15.399513,2020-10-07T12:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+143.013179,-11.166683,2019-02-18T17:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+143.026815,-11.173823,2019-02-18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.311747,-9.125482,2019-04-14T17:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+158.052707,-8.764075,2019-04-17T14:34,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.183163,-9.106267,2019-04-25T14:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.160085,-9.11214,2019-04-26T11:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.890317,-16.223467,2019-06-23T05:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.793089,-15.516116,2019-06-16T10:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.465668,-14.687846,2019-07-12T19:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.3136,-9.0809,2019-07-25T14:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.450019,-14.651567,2019-07-09T11:00,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.443789,-14.687551,2019-07-09T11:00,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.445259,-14.676627,2019-07-09T11:00,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.014919,-16.508598,2019-07-20T18:30Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.053089,-8.988786,2019-07-22T12:09,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.100556,-9.0325,2019-07-25T11:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.103414,-5.29438,2019-09-02T18:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.193208,-9.031927,2019-10-25T16:16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.254075,-9.0166,2019-10-17T15:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.459235,-14.647362,2019-10-13T11:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.076224,-17.206176,2019-10-31T21:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.674062,-2.6221,2019-11-20T10:36:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.733795,-2.664473,2019-12-13T00:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.733108,-2.664302,2019-12-12T21:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+115.996,6.01534,2018-01-20T09:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7,GBIF,Amphiprion_percula
+116.008,6.00658,2018-01-20T14:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8,GBIF,Amphiprion_percula
+146.267507,-16.73296,2018-01-16T17:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+116.029,5.9934,2018-02-17T09:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8.5,GBIF,Amphiprion_percula
+116.007,5.97309,2018-02-16T09:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+116.014,5.96653,2018-02-16T14:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7,GBIF,Amphiprion_percula
+158.204487,-8.62098,2018-03-25T09:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+158.29796,-8.76162,2018-03-26T12:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.311348,-9.12524,2018-03-28T09:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.160437,-9.112303,2018-03-29T15:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.445272,-14.674269,2018-03-07T12:00,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.447641,-14.651012,2018-03-07T12:00,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.440794,-14.674338,2018-03-07T12:00,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+-151.773,-16.4967,2018-06-28T09:10Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,15,GBIF,Amphiprion_percula
+146.273996,-16.72528,2018-06-23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.777642,-15.287345,2018-06-14T08:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.996858,-16.670524,2018-06-15T07:55:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+143.07075,-9.493492,2018-06-21T22:46,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+157.9499,-8.429783,2018-07-30T16:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.101,-16.7246,2018-07-19T12:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.856434,-16.027466,2018-08-05T13:20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+116.024,5.96992,2018-08-13T12:03Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+146.011297,-16.513393,2018-08-17T11:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+157.235325,-8.368045,2018-11-23T09:37:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+157.793333,-8.641667,2018-11-24T17:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.041667,-9.04,2018-11-29T10:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.233333,-9.008612,2018-12-01T07:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.056667,-8.950555,2018-12-02T15:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.446058,-14.663896,2017-01-12T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.439957,-14.683929,2017-01-11T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+123.848,9.56295,2017-04-03T10:42Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.065,GBIF,Amphiprion_percula
+123.685,9.5292,2017-04-04T11:06Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,14.715,GBIF,Amphiprion_percula
+123.688,9.51834,2017-04-04T15:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.915,GBIF,Amphiprion_percula
+123.693,9.50694,2017-04-04T13:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.84,GBIF,Amphiprion_percula
+123.797,9.536,2017-04-07T11:49Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,13.23,GBIF,Amphiprion_percula
+123.714,9.559,2017-04-06T12:23Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.78,GBIF,Amphiprion_percula
+150.713379,-2.618587,2017-08-10T09:07,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.73857,-2.608298,2017-08-10T11:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.009833,-16.51384,2017-09-07T18:25Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.733613,-2.665478,2017-09-16T15:45,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.792336,-15.501416,2017-10-30T03:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+153.155,-26.6794,2016-01-09T10:45Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7,GBIF,Amphiprion_percula
+146.273,-16.7332,2016-04-01T10:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,3.66,GBIF,Amphiprion_percula
+124.782,1.60705,2016-06-30T11:01Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.82,GBIF,Amphiprion_percula
+115.661,-8.33718,2016-07-06T09:09Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.82,GBIF,Amphiprion_percula
+152.908466,-25.288066,2016-07-21T16:07,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.028588,-16.657637,2016-07-27T10:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.891922,-9.407208,2016-07-17T11:32:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.784412,-2.577312,2016-09-05T23:19:36,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+116.022,-8.34943,2016-10-03T09:22Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+145.976,-16.5829,2016-11-05T06:33Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.91,GBIF,Amphiprion_percula
+145.98,-16.4262,2016-11-07T06:40Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,5.4,GBIF,Amphiprion_percula
+146.009,-16.5223,2016-11-06T10:48Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.535,GBIF,Amphiprion_percula
+145.988622,-16.931408,2016-12-12T17:05:14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+124.689,8.6698,2015-01-31T10:46Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+145.453611,-14.704496,2015-03-08T17:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.945044,-16.672648,2015-03-18T03:41:27.014,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+-148.281,-15.0069,2015-04-18T11:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.65,GBIF,Amphiprion_percula
+123.267,9.07672,2015-04-24T15:10Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+120.982,13.5242,2015-04-04T13:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+145.973802,-16.759723,2015-04-16T14:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+-149.609,-17.5441,2015-05-13T10:58Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.65,GBIF,Amphiprion_percula
+146.275,-16.727,2015-06-08T11:06Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.5,GBIF,Amphiprion_percula
+145.782,-15.5159,2015-06-18T11:32Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,14.815,GBIF,Amphiprion_percula
+145.797,-15.5045,2015-06-18T15:27Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,13.04,GBIF,Amphiprion_percula
+143.4109,-12.2824,2015-07-28T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.437058,-14.765941,2015-09-22T10:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.606785,-10.273488,2015-09-21T08:49,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.275,-16.7381,2015-10-07T13:51Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7.1,GBIF,Amphiprion_percula
+145.834,-16.031,2015-10-09T10:10Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7.1,GBIF,Amphiprion_percula
+143.5978,-9.8556,2015-11-28T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.256,-16.5898,2015-12-24T08:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11.5,GBIF,Amphiprion_percula
+145.453621,-14.704431,2014-01-21T18:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+159.216863,-8.913843,2014-03-27T18:32,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.465527,-14.687578,2014-03-29T11:47,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.465643,-14.687716,2014-03-29T12:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+168.261,-17.6975,2014-04-23T10:45Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.5,GBIF,Amphiprion_percula
+168.223,-17.5689,2014-04-24T14:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.5,GBIF,Amphiprion_percula
+123.69,9.51541,2014-05-08T09:35Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.5,GBIF,Amphiprion_percula
+154.66921,-5.438958,2014-05-24T14:32Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+154.66921,-5.439857,2014-05-24T14:32Z,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.48,-2.486,2014-06-20,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+124.811,1.45963,2014-07-31T14:16Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+146.035773,-16.688273,2014-07-10T20:08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+124.768,1.59622,2014-08-11T11:34Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11,GBIF,Amphiprion_percula
+120.016,11.9785,2014-08-23T11:20Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,4,GBIF,Amphiprion_percula
+120.038,11.9463,2014-08-23T09:20Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12,GBIF,Amphiprion_percula
+145.803641,-16.365412,2014-08-01T02:55,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+123.847,9.56192,2014-09-23T00:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+146.27,-16.7342,2014-09-18T14:57Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.85,GBIF,Amphiprion_percula
+156.910604,-8.115813,2014-09-13T09:05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+116.36,-9,2014-09-22,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_percula
+160.182475,-9.105455,2014-11-13T08:51:19,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+157.992092,-8.5054,2014-11-18T14:34:13,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.465575,-14.687918,2014-11-09T11:00,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.103501,-16.761742,2014-11-29T10:33,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.664,-14.6647,2013-01-21T02:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,5,GBIF,Amphiprion_percula
+145.661,-14.9342,2013-01-21T01:01Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7.5,GBIF,Amphiprion_percula
+144.02063,-11.40686,2013-01-05/2013-01-16,OCCURRENCE,Raine Island Fauna Survey (Raine Island NP (Scientific)),PRESENT,NA,GBIF,Amphiprion_percula
+123.752,9.88994,2013-02-15T14:08Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8.99,GBIF,Amphiprion_percula
+123.683,9.51246,2013-02-04T09:51Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.5,GBIF,Amphiprion_percula
+145.973,-16.6044,2013-04-26T11:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,4.6,GBIF,Amphiprion_percula
+121.91,11.9404,2013-05-18T10:05Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+150.787151,-2.585834,2013-05-08T06:52,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.780542,-2.565684,2013-05-07T11:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+147.744,-19.3422,2013-06-12T22:20Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11,GBIF,Amphiprion_percula
+148.261,-19.9791,2013-06-10T21:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,3,GBIF,Amphiprion_percula
+146.262971,-16.803364,2013-06-01T09:42,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.676817,-14.928342,2013-07-10T11:21,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+136.6853,-11.222,2013-08-10T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+118.835,9.95412,2013-09-14T10:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,11,GBIF,Amphiprion_percula
+115.49,-8.77516,2013-12-08T09:44Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.3,GBIF,Amphiprion_percula
+145.778961,-15.515882,2012-01-01T10:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+121.774,12.8797,2012-04-02T16:10Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+146.006908,-16.501468,2012-04-18T10:59,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.315761,-9.080864,2012-04-12T17:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.268,-16.735,2012-05-11T13:58Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6.3,GBIF,Amphiprion_percula
+146.18,-16.7815,2012-06-15T13:50Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7.5,GBIF,Amphiprion_percula
+146.268,-16.7296,2012-06-15T11:45Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9,GBIF,Amphiprion_percula
+146.27,-16.733,2012-06-15T10:15Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+115.483,-8.68165,2012-06-18T11:56Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+115.593,-8.27535,2012-08-30T08:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,13.5,GBIF,Amphiprion_percula
+118.99,4.47135,2012-09-16T14:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+135.547404,-3.104809,2012-09-17T01:51,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.807,-15.957,2012-11-28T04:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+146.263733,-16.715123,2012-11-12T11:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+123.401,9.95566,2012-12-12T08:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10,GBIF,Amphiprion_percula
+145.777588,-15.518528,2012-12-09T10:15,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+147.26264,-9.53931,2011-01-25,PRESERVED_SPECIMEN,NA,PRESENT,16,GBIF,Amphiprion_percula
+147.28461,-9.52203,2011-01-16,PRESERVED_SPECIMEN,NA,PRESENT,2,GBIF,Amphiprion_percula
+145.844,-16.1026,2011-02-14T15:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,6,GBIF,Amphiprion_percula
+152.022541,-4.243694,2011-05-01T16:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+151.933394,-4.272454,2011-05-01T16:37,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+152.024989,-4.247613,2011-05-04T14:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+151.934007,-4.191192,2011-05-01T16:10,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+118.695,4.21972,2011-08-04T12:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.1,GBIF,Amphiprion_percula
+156.9107,-8.1132,2011-08-14T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+157.952097,-8.428323,2011-10-05T15:04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+157.949775,-8.43222,2011-11-16T14:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.268339,-16.788663,2010-01-02T15:28,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.99591,-16.441845,2010-06-17,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.9935,-16.5282,2010-07-05T00:00,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.9931,-16.52803,2010-07-05,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.986694,-16.797503,2010-08-17T18:39,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+178.094,-18.3754,2010-09-07T15:19Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,8.99,GBIF,Amphiprion_percula
+178.091,-18.3912,2010-09-08T08:35Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.6,GBIF,Amphiprion_percula
+178.095,-18.3865,2010-09-08T11:09Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.145,GBIF,Amphiprion_percula
+178.166,-17.2975,2010-09-12T09:31Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.975,GBIF,Amphiprion_percula
+178.189,-17.292,2010-09-12T11:30Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,9.45,GBIF,Amphiprion_percula
+178.583,-17.3172,2010-09-13T11:42Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.65,GBIF,Amphiprion_percula
+178.218,-17.2525,2010-09-15T14:35Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,10.67,GBIF,Amphiprion_percula
+178.504,-17.2982,2010-09-14T09:24Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,12.205,GBIF,Amphiprion_percula
+149.493889,-4.679719,2010-11-18T10:22,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.823653,-5.165821,2009-10-05T14:03,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.1,-17.2,2008-01-11T21:29:02Z,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+149.323157,-9.084596,2008-03-04,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+149.327792,-9.078833,2008-03-05,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.733881,-2.663594,2008-03-08T16:11,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.87934,-16.341429,2008-09-18,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.268133,-16.728717,2008-11-17T09:27,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+147.296288,-9.552025,2007-02-25T14:00,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.738611,-14.847847,2007-02-13T14:06,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.051363,-16.736901,2007-03-26T11:31,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.879696,-9.379548,2007-04-15T08:41,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+160.156194,-9.64571,2007-04-14T11:43,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+146.012,-16.5151,2007-08-11T15:00Z,HUMAN_OBSERVATION,Diveboard - Scuba diving citizen science,PRESENT,7.3,GBIF,Amphiprion_percula
+147.29085,-9.59991,2007-08-29T12:01,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+156.843964,-8.098213,2007-09-14T14:24,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.971628,-16.761419,2006-05-11T08:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.97172,-16.756158,2006-05-11T08:23,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.968867,-10.283433,2006-09-28T09:38,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+150.456588,-10.20278,2006-09-24T17:02,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+136.06,-1.17,2005-09-09,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.443637,-14.68669,2005-10-16T16:10:27,OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+150.74,-5.74,2005,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_percula
+121.87,-0.42,2004-11-15,MATERIAL_SAMPLE,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.797794,-15.492671,2001-11-14,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+140.485,-2.435,2000-08-19,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.824553,-15.953813,2000-10-20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+145.730209,-16.124985,1999-12-08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+166.31667,-10.25,1998-09-17,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+166.29167,-10.266666,1998-09-17,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+166.292,-10.27,1998-09-17,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,7.5,GBIF,Amphiprion_percula
+167.157,-9.8611,1998-09-21,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,20,GBIF,Amphiprion_percula
+144.866667,-4.166667,1996-10-15,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+159.844816,-9.35028,1994-04-08,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.133572,-9.064746,1987-08-16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.784675,-9.134288,1987-08-20,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+159.142153,-9.066102,1987-08-16,HUMAN_OBSERVATION,iNaturalist research-grade observations,PRESENT,NA,GBIF,Amphiprion_percula
+123.388969,9.434852,1985-08-11,PRESERVED_SPECIMEN,Royal Ontario Museum Ichthyology (ROMI),PRESENT,NA,GBIF,Amphiprion_percula
+127.68,0.88,1979-05-31,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,NA,GBIF,Amphiprion_percula
+127.93,0.97,1978-05-16,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,1.5,GBIF,Amphiprion_percula
+144.066667,-9.933333,1974-07-18,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+159.6,-9.316667,1973-07-08,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+119.504807,-8.58333,1970-01,PRESERVED_SPECIMEN,NA,PRESENT,0,GBIF,Amphiprion_percula
+145.83333,-5.183333,1970-05-30,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+151.08333,-8.5,1970-06-11,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+160.58333,-8.4,1968-07,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+152.43,-4.23,1965-02-25,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,4.5,GBIF,Amphiprion_percula
+152.174,-4.2347,1965-02-27,PRESERVED_SPECIMEN,NMNH Extant Biology,PRESENT,7.5,GBIF,Amphiprion_percula
+157,-7,1961,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+124,12,1957-10-01,PRESERVED_SPECIMEN,Beaty Biodiversity Museum Fish Collection,PRESENT,NA,GBIF,Amphiprion_percula
+155.000333,-6.000333,1956-08-23,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+150.66,-10.61,1953-03-30,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+150.663062,-10.613946,1953,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+121.17747,13.4097,1933-01-06,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+119.401948,4.717582,1931-08-07,PRESERVED_SPECIMEN,Fish,PRESENT,NA,GBIF,Amphiprion_percula
+145.78334,-16.433332,1928,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.56667,-16.383333,1928,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.16667,-16.7,1926,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.61667,-14.583333,1923-06-16,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.45,-15.016666,1916-07,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+151.73334,-23.533333,1912-08,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.48334,-15.666667,1910,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+144.06667,-9.933333,1907,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.96666,-16.766666,1901,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+161.75,-10.283334,1881,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+152.46666,-4.2,1880,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+130.83333,-12.46667,1878-03-15,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+166.833,-11.7,1829,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+152,-3.833,1827,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+150.366667,-5.166667,NA,HUMAN_OBSERVATION,NA,PRESENT,NA,GBIF,Amphiprion_percula
+129.173918,-2.108318,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+135.400278,-1.749722,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.483333,-16.533333,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146,-16.833333,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.816667,-19.266667,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+143.766667,-9.583333,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+145.566667,-16.383333,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+143.416667,-9.733333,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
+146.066667,-16.7,NA,PRESERVED_SPECIMEN,NA,PRESENT,NA,GBIF,Amphiprion_percula
